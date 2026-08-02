@@ -16,6 +16,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
+using Bookmarkarr.Application.Audiobooks.Common;
 using Bookmarkarr.Tests.Common;
 using Bookmarkarr.Tests.Builders;
 
@@ -285,6 +287,73 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Library
             Assert.NotNull(stored);
             // Uses fallback logic with folder naming pattern
             Assert.Equal(Path.Join(tempRoot, "Custom Author"), stored.BasePath);
+        }
+
+        [Fact]
+        public async Task AddToLibrary_WithoutRootFolderOrExplicitDestination_ReturnsBadRequestWithoutWritingBook()
+        {
+            foreach (var root in await _rootFolderRepository.GetAllAsync())
+            {
+                await _rootFolderRepository.RemoveAsync(root.Id);
+            }
+
+            var controller = _provider.GetRequiredService<LibraryController>();
+            var result = await controller.AddToLibrary(new LibraryController.AddToLibraryRequest
+            {
+                Metadata = new AudibleBookMetadata { Title = "No Root", Author = "Example Author" },
+                Monitored = true
+            });
+
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Contains("root folder", JsonSerializer.Serialize(badRequest.Value), StringComparison.OrdinalIgnoreCase);
+            Assert.Empty(await _audiobookRepository.GetAllAsync());
+        }
+
+        [Fact]
+        public async Task AddToLibrary_ResponseUsesNonCyclicDto_AndEditionTracksDefaultRoot()
+        {
+            var defaultRoot = await _rootFolderRepository.GetDefaultAsync();
+            Assert.NotNull(defaultRoot);
+
+            var controller = _provider.GetRequiredService<LibraryController>();
+            var result = await controller.AddToLibrary(new LibraryController.AddToLibraryRequest
+            {
+                Metadata = new AudibleBookMetadata { Title = "Safe Response", Author = "Example Author" },
+                Monitored = true,
+                RootFolderId = defaultRoot.Id
+            });
+
+            var ok = Assert.IsType<OkObjectResult>(result);
+            var responseAudiobook = ok.Value?.GetType().GetProperty("audiobook")?.GetValue(ok.Value);
+            var responseDto = Assert.IsType<AudiobookDto>(responseAudiobook);
+            var responseEdition = Assert.Single(responseDto.Editions);
+            Assert.Equal(defaultRoot.Id, responseEdition.RootFolderId);
+            var json = JsonSerializer.Serialize(ok.Value);
+            Assert.Contains("Safe Response", json);
+
+            var stored = Assert.Single(await _audiobookRepository.GetAllAsync());
+            var edition = Assert.Single(stored.Editions);
+            Assert.Equal(defaultRoot.Id, edition.RootFolderId);
+        }
+
+        [Fact]
+        public async Task AddToLibrary_DestinationOutsideSelectedRoot_ReturnsBadRequest()
+        {
+            var defaultRoot = await _rootFolderRepository.GetDefaultAsync();
+            Assert.NotNull(defaultRoot);
+            var outsidePath = FileService.GetTempDirectory("bookmarkarr-outside-root");
+            var controller = _provider.GetRequiredService<LibraryController>();
+
+            var result = await controller.AddToLibrary(new LibraryController.AddToLibraryRequest
+            {
+                Metadata = new AudibleBookMetadata { Title = "Outside Root", Author = "Example Author" },
+                DestinationPath = outsidePath,
+                RootFolderId = defaultRoot.Id
+            });
+
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Contains("inside the selected root folder", JsonSerializer.Serialize(badRequest.Value));
+            Assert.Empty(await _audiobookRepository.GetAllAsync());
         }
     }
 }

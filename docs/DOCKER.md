@@ -15,6 +15,8 @@ docker compose ps
 
 The downloaded `docker-compose.yml` contains `image: ghcr.io/gitsumhubs/bookmarkarr:latest` and no `build:` configuration. The four mounts isolate mutable configuration/database, audiobook media, ebook media, and download staging. Relative defaults make the file runnable as-is. Edit the host side of those volume entries for existing libraries, or use an optional `.env` file to override the checked-in defaults.
 
+The service also maps `host.docker.internal` to Docker's host gateway. On Linux this permits Bookmarkarr to reach a separately deployed service through its published host port, for example `host.docker.internal:6789`, without joining that service's Compose network.
+
 ## External Docker Networks
 
 Services in separate Compose projects normally occupy separate default networks. A hostname such as `prowlarr` or `rdtclient` resolves from Bookmarkarr only when the containers share a Docker network.
@@ -59,6 +61,12 @@ This source-development override is not used by normal deployments. Runtime beha
 ## Authentication and Public URL
 
 Set `BOOKMARKARR_AUTHENTICATION_REQUIRED=true` for authenticated deployments. `BOOKMARKARR_PUBLIC_URL` is used for external links and notifications. A fixed `BOOKMARKARR_API_KEY` is optional; leaving it empty permits normal runtime configuration. Put overrides directly in Compose or in an optional `.env`; protect `.env` and never commit it.
+
+## Library Roots and Download Categories
+
+Configure `/audiobooks` and `/ebooks` as root folders before adding books. An implicit add with no configured root is rejected, and an old `/app/` output fallback is cleared at startup so imported media cannot disappear with the container layer.
+
+Each download-client entry stores one category. When one NZBGet, SABnzbd, qBittorrent, or RDT endpoint handles both formats, create two Bookmarkarr entries pointing to that endpoint: one with category `audiobooks` and download path `/downloads/audiobooks`, and one with category `ebooks` and download path `/downloads/ebooks`. Matching paths require no remote path mapping.
 
 ## Health and Logs
 

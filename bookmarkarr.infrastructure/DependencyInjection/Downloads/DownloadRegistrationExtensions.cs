@@ -65,6 +65,7 @@ internal static class DownloadRegistrationExtensions
         services.AddScoped<DirectDownloadWorkflow>();
         services.AddScoped<DownloadRemovalWorkflow>();
         services.AddScoped<DownloadQueueCandidateLoader>();
+        services.AddSingleton<IDownloadClientQueueFetcher, ScopedDownloadClientQueueFetcher>();
         services.AddScoped<DownloadClientQueuePoller>();
         services.AddScoped<DownloadOrphanCleanupService>();
         services.AddScoped<IDownloadQueueService, DownloadQueueService>();

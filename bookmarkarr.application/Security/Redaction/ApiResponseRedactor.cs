@@ -189,9 +189,11 @@ public static class ApiResponseRedactor
             config.Host,
             config.Port,
             config.Username,
+            config.DownloadPath,
             config.UseSSL,
             config.IsEnabled,
             config.RemoveCompletedDownloads,
+            config.Category,
             Settings = config.Settings,
             config.CreatedAt
         };
@@ -207,9 +209,11 @@ public static class ApiResponseRedactor
             config.Host,
             config.Port,
             config.Username,
+            config.DownloadPath,
             config.UseSSL,
             config.IsEnabled,
             config.RemoveCompletedDownloads,
+            config.Category,
             Settings = config.Settings,
             config.CreatedAt
         };

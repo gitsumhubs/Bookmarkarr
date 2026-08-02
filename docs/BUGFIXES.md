@@ -82,6 +82,8 @@ This append-only ledger tracks inherited and production regressions. Resolved en
 - 2026-08-02: portable one-service Compose configuration validated; the readiness endpoint reported current migrations and database connectivity, the frontend returned HTTP 200, and container health was healthy with zero restarts.
 - 2026-08-02: persisted SQLite inspection confirmed `Books`, `BookEditions`, `EditionFiles`, and `CatalogImportBatches`, with `20260802064333_AddUnifiedBookEditionsAndCatalogImports` as the latest migration.
 - 2026-08-02: isolated empty-volume startup using the final image completed healthy with zero restarts, no error log entries, and exactly one canonical `ApplicationSettings` row (`Id=1`).
+- 2026-08-02: reported download-client/root-folder/add-response/queue-polling regression group passed 60/60 in .NET 10; architecture-inclusive follow-up passed 78/78.
+- 2026-08-02: final current-source backend suite passed 1,247/1,247; Vue TypeScript checking passed; Vitest passed 397/397 tests across 76 files (1 file intentionally skipped).
 
 ## BF-009 — Fresh-start application-settings initialization race
 
@@ -90,3 +92,35 @@ This append-only ledger tracks inherited and production regressions. Resolved en
 - Implementation: `bookmarkarr.infrastructure/Persistence/Repositories/EfApplicationSettingsRepository.cs` serializes singleton saves; `BookmarkarrDbContext.cs` preserves EF concurrency exceptions for repository handling; `ConfigurationService.cs` serializes the complete get/create/default-save initialization sequence and promotes real edit payloads to the loaded version. Version-zero partial-update compatibility and optimistic conflict checks remain active for real settings edits.
 - Regression tests: `ApplicationSettingsConcurrencyTests.ConcurrentFreshStart_CreatesOneCanonicalSettingsRowWithoutErrors` releases eight independent SQLite contexts simultaneously and requires one row, no caller errors, and a version increment for every serialized write. The stale-update test still requires a stable conflict response.
 - Validation: A stale-binary stress run reproduced the prior edge; after rebuilding current source, the focused settings/concurrency/import group passed 42/42 and the full backend suite passed 1,238/1,238. An isolated empty-volume startup of the final image was healthy with zero restarts, no error log entries, and exactly one settings row with `Id=1`.
+
+## BF-010 — Download-client category and update API compatibility
+
+- Status: Resolved and validated
+- Root cause: `DownloadClientConfiguration` persisted category only inside `SettingsJson`; a common top-level `category` payload was accepted but silently discarded. Read responses also omitted `DownloadPath`, and the controller exposed only POST upsert, causing conventional `PUT /download-clients/{id}` calls to return 405.
+- Implementation: the domain model exposes a non-mapped category compatibility property that normalizes into `SettingsJson` regardless of JSON property order; summary/detail responses include category and download path; the controller accepts route-ID PUT updates while retaining POST upsert compatibility.
+- Regression tests: `DownloadClientConfiguration_TopLevelCategory_PersistsInsideSettingsJson`, `UpdateDownloadClientConfiguration_PutRoute_UpsertsRouteIdAndCategory`, and `DownloadClientDetailResponse_IncludesDownloadPathAndCategory`.
+- Validation: focused reported-defect regression group passed 60/60 in .NET 10; full backend suite passed 1,247/1,247; frontend type checking and 397/397 Vitest tests passed.
+
+## BF-011 — Unsafe application-directory library fallback
+
+- Status: Resolved and validated
+- Root cause: an empty output path with no default root was persisted as `AppContext.BaseDirectory`, which is `/app/` in the container image. Adds could then write media into the ephemeral application layer despite zero configured root folders.
+- Implementation: settings initialization never selects the application directory, clears previously persisted application-directory values, and uses a configured default root only. `LibraryAddService` rejects implicit adds without a root, validates selected-root containment, records `RootFolderId` on the edition, and the add dialog disables submission until a configured root or explicit custom destination is selected.
+- Regression tests: `GetApplicationSettings_WithoutRootFolder_LeavesOutputPathEmpty`, `GetApplicationSettings_ExistingApplicationDirectoryOutput_IsCleared`, `AddToLibrary_WithoutRootFolderOrExplicitDestination_ReturnsBadRequestWithoutWritingBook`, and `AddToLibrary_DestinationOutsideSelectedRoot_ReturnsBadRequest`.
+- Validation: focused reported-defect regression group passed 60/60 in .NET 10; full backend suite passed 1,247/1,247; frontend type checking and 397/397 Vitest tests passed.
+
+## BF-012 — Cyclic library-add response after a committed write
+
+- Status: Resolved and validated
+- Root cause: the add endpoint returned the tracked audiobook/entity navigation graph directly. `BookEdition.Book.Editions` recursed beyond the serializer depth after the database write had committed, so callers saw a broken response and could retry a successful add.
+- Implementation: every add and duplicate-conflict response now uses `AudiobookDtoFactory`; the DTO includes the unified edition data required by the frontend but contains no back-references.
+- Regression tests: `AddToLibrary_ResponseUsesNonCyclicDto_AndEditionTracksDefaultRoot` serializes the response and verifies the selected root survives in its edition DTO.
+- Validation: focused reported-defect regression group passed 60/60 in .NET 10; full backend suite passed 1,247/1,247.
+
+## BF-013 — Parallel queue polls shared a scoped EF Core context
+
+- Status: Resolved and validated
+- Root cause: `DownloadClientQueuePoller` launched per-client tasks concurrently through one scoped `IDownloadClientGateway`. Path translation beneath that gateway queried one scoped remote-path repository/DbContext from several tasks, producing EF Core's second-operation-on-context exception.
+- Implementation: an infrastructure queue fetcher creates and owns an asynchronous dependency scope for each client poll and resolves its own gateway/repositories/DbContext. A timed-out task retains its scope until cancellation completes, while poll concurrency and stale-snapshot behavior remain intact.
+- Regression tests: `ScopedDownloadClientQueueFetcherTests.GetQueueAsync_CreatesIndependentScopeForEachConcurrentClientPoll` starts simultaneous clients and requires two distinct scoped gateway instances; queue reconciliation coverage continues to pass.
+- Validation: focused reported-defect regression group passed 60/60 and the architecture-inclusive follow-up passed 78/78 in .NET 10; full backend suite passed 1,247/1,247.

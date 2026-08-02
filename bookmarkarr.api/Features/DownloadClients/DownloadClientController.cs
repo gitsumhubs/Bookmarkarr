@@ -176,6 +176,25 @@ namespace Bookmarkarr.Api.Features.DownloadClients
         }
 
         /// <summary>
+        /// Update a download client configuration by ID.
+        /// </summary>
+        /// <param name="id">Download client configuration ID.</param>
+        /// <param name="config">Updated download client configuration.</param>
+        [HttpPut("{id}")]
+        public async Task<ActionResult<object>> UpdateDownloadClientConfiguration(
+            string id,
+            [FromBody] DownloadClientConfiguration config)
+        {
+            if (config == null)
+            {
+                return BadRequest("Missing download client configuration");
+            }
+
+            config.Id = id;
+            return await SaveDownloadClientConfiguration(config);
+        }
+
+        /// <summary>
         /// Delete a download client configuration by ID.
         /// </summary>
         /// <param name="id">Download client configuration ID.</param>

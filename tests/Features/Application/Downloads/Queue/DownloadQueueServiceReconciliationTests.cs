@@ -41,15 +41,20 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Queue
             var httpFactory = new Mock<IHttpClientFactory>();
             var httpClient = Track(new HttpClient());
             httpFactory.Setup(h => h.CreateClient(It.IsAny<string>())).Returns(httpClient);
-            var scopeProvider = Track(new ServiceCollection().BuildServiceProvider());
-            var scopeFactory = scopeProvider.GetRequiredService<IServiceScopeFactory>();
+            var queueFetcher = new Mock<IDownloadClientQueueFetcher>();
+            queueFetcher
+                .Setup(value => value.GetQueueAsync(
+                    It.IsAny<DownloadClientConfiguration>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns((DownloadClientConfiguration client, CancellationToken cancellationToken) =>
+                    clientGateway.GetQueueAsync(client, cancellationToken));
             var candidateLoader = new DownloadQueueCandidateLoader(
                 downloadRepository,
                 processingJobRepository,
                 NullLogger<DownloadQueueCandidateLoader>.Instance);
             var clientQueuePoller = new DownloadClientQueuePoller(
                 resolvedMemoryCache,
-                clientGateway,
+                queueFetcher.Object,
                 metrics,
                 NullLogger<DownloadClientQueuePoller>.Instance);
             var service = new DownloadQueueService(

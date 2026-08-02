@@ -17,6 +17,7 @@
  */
 using System.Security.Cryptography;
 using System.Text;
+using Bookmarkarr.Domain.Common;
 using Microsoft.Extensions.Logging;
 
 namespace Bookmarkarr.Application.Audiobooks.Catalog
@@ -119,6 +120,9 @@ namespace Bookmarkarr.Application.Audiobooks.Catalog
                 }
             }
 
+            var settings = await _configurationService.GetApplicationSettingsAsync();
+            var destination = await ResolveDestinationAsync(request, metadata, settings);
+
             var imageUrl = await MoveImageToLibraryStorageAsync(metadata, request.SearchResult, firstIsbn);
 
             var audiobook = metadata.ToAudiobook();
@@ -147,33 +151,7 @@ namespace Bookmarkarr.Application.Audiobooks.Catalog
                 }
             }
 
-            var settings = await _configurationService.GetApplicationSettingsAsync();
-
-            // Check validity of given path
-            var baseDirectory = request.DestinationPath;
-            if (!string.IsNullOrWhiteSpace(baseDirectory))
-            {
-                try
-                {
-                    Path.GetFullPath(baseDirectory);
-                }
-                catch (Exception)
-                {
-                    baseDirectory = string.Empty;
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(baseDirectory))
-            {
-                var rootFolder = await _rootFolderService.GetDefaultAsync();
-                baseDirectory = rootFolder != null ? rootFolder.Path : settings.OutputPath;
-
-                audiobook.BasePath = Path.Join(baseDirectory, _fileNamingService.ApplyNamingPattern(settings.FolderNamingPattern, metadata));
-            }
-            else
-            {
-                audiobook.BasePath = baseDirectory;
-            }
+            audiobook.BasePath = destination.Path;
 
             audiobook.Editions =
             [
@@ -183,6 +161,7 @@ namespace Bookmarkarr.Application.Audiobooks.Catalog
                     Monitored = request.Monitored,
                     Status = request.Monitored ? EditionWantedStatus.Missing : EditionWantedStatus.Unmonitored,
                     QualityProfileId = audiobook.QualityProfileId,
+                    RootFolderId = destination.RootFolderId,
                     RootPath = audiobook.BasePath,
                     DownloadCategory = "audiobooks"
                 }
@@ -209,6 +188,56 @@ namespace Bookmarkarr.Application.Audiobooks.Catalog
                 Message = "Audiobook added to library successfully",
                 Audiobook = audiobook
             };
+        }
+
+        private async Task<(string Path, int? RootFolderId)> ResolveDestinationAsync(
+            LibraryAddOperationRequest request,
+            AudibleBookMetadata metadata,
+            ApplicationSettings settings)
+        {
+            RootFolder? selectedRoot = null;
+            if (request.RootFolderId.HasValue)
+            {
+                selectedRoot = await _rootFolderService.GetByIdAsync(request.RootFolderId.Value);
+                if (selectedRoot == null)
+                {
+                    throw new LibraryRootFolderRequiredException("The selected root folder no longer exists. Choose a valid root folder and try again.");
+                }
+            }
+
+            string? explicitDestination = null;
+            if (!string.IsNullOrWhiteSpace(request.DestinationPath))
+            {
+                try
+                {
+                    explicitDestination = Path.GetFullPath(request.DestinationPath);
+                }
+                catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+                {
+                    _logger.LogWarning(ex, "Ignoring invalid destination path while adding '{Title}'", metadata.Title);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(explicitDestination))
+            {
+                if (selectedRoot != null &&
+                    !FileUtils.IsPathSameOrInside(explicitDestination, selectedRoot.Path))
+                {
+                    throw new LibraryRootFolderRequiredException("The destination path must be inside the selected root folder.");
+                }
+
+                return (explicitDestination, selectedRoot?.Id);
+            }
+
+            selectedRoot ??= await _rootFolderService.GetDefaultAsync();
+            if (selectedRoot == null)
+            {
+                throw new LibraryRootFolderRequiredException(
+                    "No library root folder is configured. Add a root folder in Settings, then choose it before adding a book.");
+            }
+
+            var relativePath = _fileNamingService.ApplyNamingPattern(settings.FolderNamingPattern, metadata);
+            return (Path.Join(selectedRoot.Path, relativePath), selectedRoot.Id);
         }
 
         private async Task<string?> MoveImageToLibraryStorageAsync(

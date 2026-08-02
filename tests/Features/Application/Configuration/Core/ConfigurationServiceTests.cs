@@ -26,6 +26,34 @@ namespace Bookmarkarr.Tests.Features.Application.Configuration.Core
     public class ConfigurationServiceTests : BaseTests
     {
         [Fact]
+        public async Task GetApplicationSettings_WithoutRootFolder_LeavesOutputPathEmpty()
+        {
+            var svc = _provider.GetRequiredService<IConfigurationService>();
+
+            var settings = await svc.GetApplicationSettingsAsync();
+
+            Assert.True(string.IsNullOrWhiteSpace(settings.OutputPath));
+            Assert.NotEqual(AppContext.BaseDirectory, settings.OutputPath);
+        }
+
+        [Fact]
+        public async Task GetApplicationSettings_ExistingApplicationDirectoryOutput_IsCleared()
+        {
+            await _applicationSettingsRepository.SaveAsync(new ApplicationSettings
+            {
+                Id = 1,
+                OutputPath = AppContext.BaseDirectory
+            });
+            var svc = _provider.GetRequiredService<IConfigurationService>();
+
+            var settings = await svc.GetApplicationSettingsAsync();
+            var persisted = await _applicationSettingsRepository.GetAsync();
+
+            Assert.True(string.IsNullOrWhiteSpace(settings.OutputPath));
+            Assert.True(string.IsNullOrWhiteSpace(persisted.OutputPath));
+        }
+
+        [Fact]
         public async Task SaveApplicationSettings_PersistsChanges()
         {
             var testOutputPath = FileUtils.GetAbsolutePath("test-output");

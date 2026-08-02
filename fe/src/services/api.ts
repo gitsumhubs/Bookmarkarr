@@ -1157,6 +1157,7 @@ class ApiService {
       autoSearch?: boolean
       searchResult?: SearchResult
       destinationPath?: string
+      rootFolderId?: number
     },
   ): Promise<{ message: string; audiobook: Audiobook }> {
     const normalizedMetadata = this.normalizeMetadataForApi(metadata)
@@ -1174,6 +1175,7 @@ class ApiService {
       autoSearch: options?.autoSearch ?? false,
       searchResult: normalizedSearchResult,
       destinationPath: options?.destinationPath,
+      rootFolderId: options?.rootFolderId,
     }
     return this.request<{ message: string; audiobook: Audiobook }>('/library/add', {
       method: 'POST',

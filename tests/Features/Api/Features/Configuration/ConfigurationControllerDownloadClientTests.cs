@@ -16,6 +16,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 using System.Net;
+using System.Text.Json;
 using Bookmarkarr.Api.Attributes;
 using Bookmarkarr.Tests.Mocks;
 using Microsoft.AspNetCore.Http;
@@ -259,6 +260,71 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Configuration
             Assert.Equal("server-api-key", apiKeyProp!.GetValue(ok.Value)?.ToString());
             configurationService.Verify(x => x.GetStartupConfigAsync(), Times.Once);
             configurationService.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        public void DownloadClientConfiguration_TopLevelCategory_PersistsInsideSettingsJson()
+        {
+            var config = JsonSerializer.Deserialize<DownloadClientConfiguration>(
+                """{"id":"client-1","name":"NZBGet","type":"nzbget","category":"ebooks","settings":{"removeCompleted":true}}""",
+                new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+            Assert.NotNull(config);
+            Assert.Equal("ebooks", config.Category);
+            Assert.Equal("ebooks", config.Settings["category"]?.ToString());
+            Assert.Equal("True", config.Settings["removeCompleted"]?.ToString());
+        }
+
+        [Fact]
+        public async Task UpdateDownloadClientConfiguration_PutRoute_UpsertsRouteIdAndCategory()
+        {
+            var configurationService = new Mock<IConfigurationService>(MockBehavior.Strict);
+            configurationService
+                .Setup(service => service.GetDownloadClientConfigurationAsync("client-1"))
+                .ReturnsAsync(new DownloadClientConfiguration { Id = "client-1" });
+            configurationService
+                .Setup(service => service.SaveDownloadClientConfigurationAsync(
+                    It.Is<DownloadClientConfiguration>(client =>
+                        client.Id == "client-1" &&
+                        client.Category == "audiobooks" &&
+                        client.Settings.ContainsKey("category"))))
+                .ReturnsAsync("client-1");
+
+            var controller = new DownloadClientController(
+                configurationService.Object,
+                Mock.Of<IDownloadClientGateway>(),
+                NullLogger<DownloadClientController>.Instance);
+
+            var result = await controller.UpdateDownloadClientConfiguration(
+                "client-1",
+                new DownloadClientConfiguration
+                {
+                    Id = "client-1",
+                    Name = "NZBGet (audiobooks)",
+                    Type = "nzbget",
+                    Category = "audiobooks"
+                });
+
+            Assert.IsType<OkObjectResult>(result.Result);
+            configurationService.VerifyAll();
+        }
+
+        [Fact]
+        public void DownloadClientDetailResponse_IncludesDownloadPathAndCategory()
+        {
+            var response = ApiResponseRedactor.ToDownloadClientDetailResponse(new DownloadClientConfiguration
+            {
+                Id = "client-1",
+                DownloadPath = "/downloads/ebooks",
+                Category = "ebooks"
+            });
+
+            Assert.Equal(
+                "/downloads/ebooks",
+                response.GetType().GetProperty("DownloadPath")?.GetValue(response));
+            Assert.Equal(
+                "ebooks",
+                response.GetType().GetProperty("Category")?.GetValue(response));
         }
     }
 }

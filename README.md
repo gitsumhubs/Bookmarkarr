@@ -54,12 +54,14 @@ services:
       - ./data/downloads:/downloads
     ports:
       - 3018:4545
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 ```
 
 Open `http://localhost:3018` after the health status becomes `healthy`. Edit the host side of the volume mappings if your libraries or download staging directory live elsewhere. The selected `PUID:PGID` must be able to write to all four host paths; never reuse another application's config/database directory.
 
-The checked-in Compose file has the same image-only service plus a health check, bounded Docker log rotation, and optional `${VARIABLE:-default}` overrides. It works unchanged without `.env`; copy [.env.example](.env.example) to `.env` only when you want to override those defaults without editing YAML.
+The checked-in Compose file has the same image-only service plus a health check, bounded Docker log rotation, Linux `host.docker.internal` support, and optional `${VARIABLE:-default}` overrides. It works unchanged without `.env`; copy [.env.example](.env.example) to `.env` only when you want to override those defaults without editing YAML.
 
 ### Connect external services
 
@@ -91,11 +93,11 @@ Every declared external network must already exist. Multiple services can share 
 
 ## First-Run Configuration
 
-1. Open Bookmarkarr and go to **Settings → Root Folders**. Add `/audiobooks` as the default audiobook library root. Ebook imports use the separately mounted `/ebooks` root.
-2. Open **Settings → Download Clients** and add each client using a URL or Docker hostname reachable from Bookmarkarr. Use the built-in Test action before saving.
-3. Create both `audiobooks` and `ebooks` categories in each applicable client. Save `audiobooks` as the client's normal Bookmarkarr category; ebook submissions are assigned to `ebooks`.
+1. Open Bookmarkarr and go to **Settings → Root Folders**. Add `/audiobooks` as the default audiobook library root and `/ebooks` as the ebook library root. Bookmarkarr rejects an implicit library add until a root exists; it never falls back to the container application directory.
+2. Open **Settings → Download Clients** and add each client using a URL or Docker hostname reachable from Bookmarkarr. Use the built-in Test action before saving. `host.docker.internal` is available when reaching a service through its host-published port.
+3. Create both `audiobooks` and `ebooks` categories in each applicable client. Because one Bookmarkarr client entry owns one category, add two entries for the same endpoint when one downloader handles both formats—for example, `NZBGet (audiobooks)` with category `audiobooks` and download path `/downloads/audiobooks`, plus `NZBGet (ebooks)` with category `ebooks` and download path `/downloads/ebooks`.
 4. For RDT Client, select the **qBittorrent** client type and enter RDT's qBittorrent-compatible API host, port, and credentials.
-5. Make the download client and Bookmarkarr see completed data at the same `/downloads` container path. If the client reports a different path, add a mapping under **Settings → Download Clients → Add Mapping** from the client-reported path to `/downloads`.
+5. Make the download client and Bookmarkarr see completed data at the same `/downloads` container path. No remote path mapping is needed when both sides report matching paths such as `/downloads/audiobooks` and `/downloads/ebooks`; otherwise add a mapping under **Settings → Download Clients → Add Mapping** from the client-reported path to `/downloads`.
 6. Open **Settings → Indexers → Import from Prowlarr**. Enter a reachable Prowlarr URL such as `http://prowlarr:9696`, its API key from Prowlarr **Settings → General**, and an optional tag filter. Import the indexers and test each one.
 7. Configure AudiobookBay in a Prowlarr installation or maintained indexer definition that supports it, then verify it inside Prowlarr. Bookmarkarr accepts the resulting Torznab magnet directly; Bookmarkarr does not install the indexer definition and the former custom Torznab proxy is not required.
 8. Review **Settings → Quality Profiles** and **Settings → General Settings**, then add or import a book and choose the intended audiobook or ebook edition.

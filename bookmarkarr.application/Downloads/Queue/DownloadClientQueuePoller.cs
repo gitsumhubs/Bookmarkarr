@@ -23,7 +23,7 @@ namespace Bookmarkarr.Application.Downloads.Queue
 {
     public sealed class DownloadClientQueuePoller(
         IMemoryCache cache,
-        IDownloadClientGateway clientGateway,
+        IDownloadClientQueueFetcher queueFetcher,
         IAppMetricsService metrics,
         ILogger<DownloadClientQueuePoller> logger)
     {
@@ -74,7 +74,7 @@ namespace Bookmarkarr.Application.Downloads.Queue
 
             try
             {
-                var pollTask = clientGateway.GetQueueAsync(client, timeoutCts.Token);
+                var pollTask = queueFetcher.GetQueueAsync(client, timeoutCts.Token);
                 var completedTask = await Task.WhenAny(pollTask, Task.Delay(clientQueueTimeout));
                 if (completedTask != pollTask)
                 {

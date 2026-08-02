@@ -6,6 +6,8 @@ Bookmarkarr is a standalone full-source Listenarr 1.2.2 fork for managing audiob
 
 Normal operators deploy from the public `ghcr.io/gitsumhubs/bookmarkarr:latest` image with the standalone root `docker-compose.yml`. The file contains no build configuration and requires neither a source checkout nor `.env`; environment-variable overrides and external Docker networks remain optional.
 
+Library adds require either a configured root folder or an explicit destination. Empty and legacy application-directory output paths are never used for media storage. Download-client API compatibility maps a top-level category into `SettingsJson`, exposes category/download path on reads, and accepts both POST upsert and `PUT /download-clients/{id}`. Concurrent client queue polls resolve an isolated scoped gateway per client so EF Core contexts are not shared across parallel work.
+
 Appearance preferences are frontend-only and stored per browser in local storage. The canonical polished mark is `fe/public/bookmarkarr-logo.png`; the Bookmarkarr, Ocean, Forest, and Plum palettes and System/Light/Dark modes are implemented in `fe/src/services/appearance.ts` and `fe/src/styles/appearance.css`.
 
 ## Tech Stack
@@ -108,7 +110,7 @@ data/                        ignored local runtime mounts
 
 ## Configuration Files
 
-- `docker-compose.yml`: standalone one-service deployment fixed to the public GHCR image; no build section or source checkout required
+- `docker-compose.yml`: standalone one-service deployment fixed to the public GHCR image; no build section or source checkout required; includes Linux host-gateway resolution for `host.docker.internal`
 - `docker-compose.dev.yml`: optional source-build override
 - `docker-compose.external-networks.example.yml`: sanitized template for attaching Bookmarkarr to externally managed service networks
 - A deployment may add its own ignored Compose override for host-specific external networks, mounts, or routing
@@ -143,6 +145,8 @@ docker compose down
 
 For Docker-name connectivity to separately managed Prowlarr, NZBGet, or RDT Client, add the relevant pre-existing external networks directly to the deployment's `docker-compose.yml`. The checked-in `docker-compose.external-networks.example.yml` remains an optional source-checkout template for operators who prefer multiple Compose files.
 
+For host-published services, the root Compose file maps `host.docker.internal` to `host-gateway`; URLs such as `host.docker.internal:6789` work without joining another stack's bridge network. Configure two Bookmarkarr client entries when one endpoint handles both media types because each entry persists one category: `audiobooks` with `/downloads/audiobooks` and `ebooks` with `/downloads/ebooks`.
+
 ## Database and Migration
 
 Runtime data is in `${BOOKMARKARR_CONFIG_PATH}/database/bookmarkarr.db`. EF migrations run at startup. Never edit a live SQLite file; back up the config directory first. The Listenarr migration is never automatic. Follow [docs/MIGRATION.md](docs/MIGRATION.md), complete a successful dry run, review its plan, and explicitly supply the generated confirmation token for commit.
@@ -162,11 +166,17 @@ curl --fail http://localhost:3018/api/v1/system/ready
 
 Filesystem-mutating tests create unique paths below the operating system temporary directory. They must never require write access to a host-root media or mount path in local or CI runs.
 
+The download-client/root/add/queue regression group covers top-level category normalization, PUT upsert, download-path responses, rejection without a root, cleanup of persisted application-directory output, non-cyclic add DTOs, selected-root containment, and independent scopes for concurrent client polls.
+
 ## Troubleshooting
 
 ### Readiness reports pending migrations
 
 Inspect container logs and verify the config mount is writable by `PUID:PGID`. Restore a consistent config backup before retrying after a database failure.
+
+### Add is blocked because no root folder exists
+
+Add `/audiobooks` and `/ebooks` under Settings → Root Folders and select the correct root in the add dialog. Bookmarkarr intentionally leaves `OutputPath` empty and rejects the add instead of writing into `/app/`. Existing persisted values equal to the application directory are cleared during settings initialization.
 
 ### External service is unreachable
 

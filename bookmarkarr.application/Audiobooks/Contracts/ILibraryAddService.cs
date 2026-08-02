@@ -37,11 +37,20 @@ namespace Bookmarkarr.Application.Audiobooks.Contracts
 
         public string? DestinationPath { get; set; }
 
+        public int? RootFolderId { get; set; }
+
         public SearchResult? SearchResult { get; set; }
 
         public string HistorySource { get; set; } = "AddNew";
 
         public string? HistoryMessage { get; set; }
+    }
+
+    public sealed class LibraryRootFolderRequiredException : InvalidOperationException
+    {
+        public LibraryRootFolderRequiredException(string message) : base(message)
+        {
+        }
     }
 
     public sealed class LibraryAddOperationResult

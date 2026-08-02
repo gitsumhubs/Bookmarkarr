@@ -42,7 +42,11 @@ namespace Bookmarkarr.Application.Audiobooks.Common
         public string[]? Narrators { get; set; }
         public string? Asin { get; set; }
         public List<string>? Isbn { get; set; }
+        public string? OpenLibraryId { get; set; }
+        public string? GoodreadsId { get; set; }
         public string? Language { get; set; }
+        public string? Publisher { get; set; }
+        public int? Runtime { get; set; }
         public List<string>? Genres { get; set; }
         public string[]? Tags { get; set; }
         public string? Description { get; set; }
@@ -56,6 +60,7 @@ namespace Bookmarkarr.Application.Audiobooks.Common
         public long? FileSize { get; set; }
         public string? BasePath { get; set; }
         public AudiobookFileDto[]? Files { get; set; }
+        public int FileCount { get; set; }
         public string? ImageUrl { get; set; }
         public string? Quality { get; set; }
         public int? QualityProfileId { get; set; }
@@ -65,6 +70,22 @@ namespace Bookmarkarr.Application.Audiobooks.Common
         public bool? Explicit { get; set; }
         public string? FilePathHash { get; set; }
         public bool? Wanted { get; set; }
+        public string[]? AuthorAsins { get; set; }
+        public AudiobookEditionDto[]? Editions { get; set; }
+    }
+
+    public sealed class AudiobookEditionDto
+    {
+        public int Id { get; set; }
+        public EditionMediaType MediaType { get; set; }
+        public bool Monitored { get; set; }
+        public bool UpgradeAllowed { get; set; }
+        public EditionWantedStatus Status { get; set; }
+        public bool Wanted { get; set; }
+        public int? QualityProfileId { get; set; }
+        public int? RootFolderId { get; set; }
+        public string? RootPath { get; set; }
+        public string DownloadCategory { get; set; } = string.Empty;
     }
 
     public class AudiobookSeriesMembershipDto

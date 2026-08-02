@@ -49,7 +49,11 @@ namespace Bookmarkarr.Application.Mapping
                 Narrators = audiobook.Narrators?.ToArray(),
                 Asin = audiobook.Asin,
                 Isbn = audiobook.Isbn,
+                OpenLibraryId = audiobook.OpenLibraryId,
+                GoodreadsId = audiobook.GoodreadsId,
                 Language = audiobook.Language,
+                Publisher = audiobook.Publisher,
+                Runtime = audiobook.Runtime,
                 Genres = audiobook.Genres,
                 Tags = audiobook.Tags?.ToArray(),
                 Description = audiobook.Description,
@@ -75,13 +79,31 @@ namespace Bookmarkarr.Application.Mapping
                 FileSize = audiobook.FileSize,
                 BasePath = audiobook.BasePath,
                 Files = files,
+                FileCount = files?.Length ?? 0,
                 ImageUrl = audiobook.ImageUrl,
                 Quality = audiobook.Quality,
                 QualityProfileId = audiobook.QualityProfileId,
                 Edition = audiobook.Edition,
                 Version = audiobook.Version,
                 Abridged = audiobook.Abridged,
-                Explicit = audiobook.Explicit
+                Explicit = audiobook.Explicit,
+                AuthorAsins = audiobook.AuthorAsins?.ToArray(),
+                Editions = audiobook.Editions?
+                    .OrderBy(edition => edition.MediaType)
+                    .Select(edition => new AudiobookEditionDto
+                    {
+                        Id = edition.Id,
+                        MediaType = edition.MediaType,
+                        Monitored = edition.Monitored,
+                        UpgradeAllowed = edition.UpgradeAllowed,
+                        Status = edition.Status,
+                        Wanted = edition.IsWanted,
+                        QualityProfileId = edition.QualityProfileId,
+                        RootFolderId = edition.RootFolderId,
+                        RootPath = edition.RootPath,
+                        DownloadCategory = edition.DownloadCategory
+                    })
+                    .ToArray()
             };
 
             // Compute wanted flag: true if monitored but has no file records

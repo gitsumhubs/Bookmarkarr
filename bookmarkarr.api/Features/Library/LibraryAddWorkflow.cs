@@ -18,6 +18,7 @@
 
 using System.Security.Cryptography;
 using System.Text;
+using Bookmarkarr.Application.Mapping;
 using Bookmarkarr.Domain.Common;
 using Microsoft.AspNetCore.Mvc;
 
@@ -55,24 +56,41 @@ namespace Bookmarkarr.Api.Features.Library
         {
             if (_libraryAddService != null)
             {
-                var result = await _libraryAddService.AddToLibraryAsync(new LibraryAddOperationRequest
+                LibraryAddOperationResult result;
+                try
                 {
-                    Metadata = request.Metadata,
-                    Monitored = request.Monitored,
-                    QualityProfileId = request.QualityProfileId,
-                    AutoSearch = request.AutoSearch,
-                    DestinationPath = request.DestinationPath,
-                    SearchResult = request.SearchResult,
-                    HistorySource = "AddNew",
-                    HistoryMessage = $"Audiobook '{request.Metadata.Title}' added to library from Add New page"
-                });
+                    result = await _libraryAddService.AddToLibraryAsync(new LibraryAddOperationRequest
+                    {
+                        Metadata = request.Metadata,
+                        Monitored = request.Monitored,
+                        QualityProfileId = request.QualityProfileId,
+                        AutoSearch = request.AutoSearch,
+                        DestinationPath = request.DestinationPath,
+                        RootFolderId = request.RootFolderId,
+                        SearchResult = request.SearchResult,
+                        HistorySource = "AddNew",
+                        HistoryMessage = $"Audiobook '{request.Metadata.Title}' added to library from Add New page"
+                    });
+                }
+                catch (LibraryRootFolderRequiredException ex)
+                {
+                    return new BadRequestObjectResult(new { message = ex.Message });
+                }
 
                 if (result.AlreadyExists)
                 {
-                    return new ConflictObjectResult(new { message = result.Message, audiobook = result.Audiobook });
+                    return new ConflictObjectResult(new
+                    {
+                        message = result.Message,
+                        audiobook = result.Audiobook == null ? null : AudiobookDtoFactory.BuildFromEntity(result.Audiobook)
+                    });
                 }
 
-                return new OkObjectResult(new { message = result.Message, audiobook = result.Audiobook });
+                return new OkObjectResult(new
+                {
+                    message = result.Message,
+                    audiobook = result.Audiobook == null ? null : AudiobookDtoFactory.BuildFromEntity(result.Audiobook)
+                });
             }
 
             var metadata = request.Metadata;
@@ -89,7 +107,7 @@ namespace Bookmarkarr.Api.Features.Library
                 var existingByAsin = await _repo.GetByAsinAsync(metadata.Asin);
                 if (existingByAsin != null)
                 {
-                    return new ConflictObjectResult(new { message = "Audiobook already exists in library", audiobook = existingByAsin });
+                    return new ConflictObjectResult(new { message = "Audiobook already exists in library", audiobook = AudiobookDtoFactory.BuildFromEntity(existingByAsin) });
                 }
             }
 
@@ -99,7 +117,7 @@ namespace Bookmarkarr.Api.Features.Library
                 var existingByIsbn = await _repo.GetByIsbnAsync(firstIsbn);
                 if (existingByIsbn != null)
                 {
-                    return new ConflictObjectResult(new { message = "Audiobook already exists in library", audiobook = existingByIsbn });
+                    return new ConflictObjectResult(new { message = "Audiobook already exists in library", audiobook = AudiobookDtoFactory.BuildFromEntity(existingByIsbn) });
                 }
             }
 
@@ -110,7 +128,7 @@ namespace Bookmarkarr.Api.Features.Library
             }
             catch (LibraryAddConflictException ex)
             {
-                return new ConflictObjectResult(new { message = "Audiobook already exists in library", audiobook = ex.Audiobook });
+                return new ConflictObjectResult(new { message = "Audiobook already exists in library", audiobook = AudiobookDtoFactory.BuildFromEntity(ex.Audiobook) });
             }
 
             var audiobook = metadata.ToAudiobook();
@@ -146,7 +164,7 @@ namespace Bookmarkarr.Api.Features.Library
             _logger.LogInformation("Added audiobook '{Title}' (ASIN: {Asin}) to library with Monitored={Monitored}, QualityProfileId={QualityProfileId}, AutoSearch={AutoSearch}",
                 audiobook.Title, audiobook.Asin, request.Monitored, audiobook.QualityProfileId, request.AutoSearch);
 
-            return new OkObjectResult(new { message = "Audiobook added to library successfully", audiobook });
+            return new OkObjectResult(new { message = "Audiobook added to library successfully", audiobook = AudiobookDtoFactory.BuildFromEntity(audiobook) });
         }
 
         private void TryExtractPublishYear(LibraryController.AddToLibraryRequest request)

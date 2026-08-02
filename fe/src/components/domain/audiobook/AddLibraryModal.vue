@@ -438,7 +438,7 @@
         <PhX />
         Cancel
       </button>
-      <button class="btn btn-primary" @click="addToLibrary" :disabled="isAdding || metadataLoading">
+      <button class="btn btn-primary" @click="addToLibrary" :disabled="isAdding || metadataLoading || !hasValidDestination">
         <PhSpinner v-if="isAdding" class="ph-spin" />
         <PhPlus v-else />
         {{ isAdding ? 'Adding...' : 'Add to Library' }}
@@ -775,6 +775,10 @@ const displaySeriesMemberships = computed(() =>
 const rootStore = useRootFoldersStore()
 const selectedRootId = ref<number | null>(null)
 const customRootPath = ref<string | null>(null)
+const hasValidDestination = computed(() => {
+  if (selectedRootId.value && selectedRootId.value > 0) return true
+  return selectedRootId.value === 0 && (customRootPath.value || '').trim().length > 0
+})
 
 const rootPath = ref<string>('')
 const previewFull = ref<string>('')
@@ -790,7 +794,7 @@ const estimatedFullPath = computed(() => {
     root = found?.path || ''
   } else {
     const defaultRoot = rootStore.folders.find((f) => f.isDefault)
-    root = defaultRoot?.path || configStore.applicationSettings?.outputPath || ''
+    root = defaultRoot?.path || ''
   }
   if (selectedRootId.value === 0) return root
   const rel = (options.value.relativePath || '').trim()
@@ -1227,9 +1231,9 @@ const addToLibrary = async () => {
       const found = rootStore.folders.find((f) => f.id === selectedRootId.value)
       root = found?.path || ''
     } else {
-      // Use default root folder, fallback to legacy outputPath for compatibility
+      // Use the configured default root folder. The API rejects a missing root.
       const defaultRoot = rootStore.folders.find((f) => f.isDefault)
-      root = defaultRoot?.path || configStore.applicationSettings?.outputPath || ''
+      root = defaultRoot?.path || ''
     }
 
     if (selectedRootId.value === 0) {
@@ -1250,6 +1254,8 @@ const addToLibrary = async () => {
       qualityProfileId: options.value.qualityProfileId || undefined,
       autoSearch: options.value.autoSearch,
       destinationPath: destination || undefined,
+      rootFolderId:
+        selectedRootId.value && selectedRootId.value > 0 ? selectedRootId.value : undefined,
     })
     toast.success('Added', `"${metadataToSend.title}" has been added to your library!`)
     emit('added', result.audiobook)

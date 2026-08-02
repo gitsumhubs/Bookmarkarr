@@ -171,8 +171,16 @@ namespace Bookmarkarr.Application.Configuration.Core
                 settings.EnabledNotificationTriggers ??= [];
                 settings.Webhooks ??= [];
 
-                if (string.IsNullOrEmpty(settings.OutputPath))
+                var outputPathWasApplicationDirectory = ApplicationOutputPathPolicy.IsApplicationDirectory(settings.OutputPath);
+                if (string.IsNullOrEmpty(settings.OutputPath) || outputPathWasApplicationDirectory)
                 {
+                    if (outputPathWasApplicationDirectory)
+                    {
+                        logger.LogWarning(
+                            "Discarding unsafe application-directory OutputPath {OutputPath}",
+                            settings.OutputPath);
+                    }
+
                     // Fallback to default root folder
                     var rootFolder = await rootFolderRepository.GetDefaultAsync();
                     if (rootFolder != null)
@@ -182,11 +190,15 @@ namespace Bookmarkarr.Application.Configuration.Core
                     }
                     else
                     {
-                        settings.OutputPath = AppContext.BaseDirectory;
-                        logger.LogInformation($"OutputPath not configured, using: {settings.OutputPath}");
+                        settings.OutputPath = string.Empty;
+                        logger.LogWarning(
+                            "OutputPath is not configured and no default root folder exists; library additions without an explicit destination will be rejected");
                     }
 
-                    await settingsRepository.SaveAsync(settings);
+                    if (!string.IsNullOrWhiteSpace(settings.OutputPath) || outputPathWasApplicationDirectory)
+                    {
+                        await settingsRepository.SaveAsync(settings);
+                    }
                 }
 
                 return settings;

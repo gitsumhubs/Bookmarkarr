@@ -1,9 +1,12 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 
 namespace Bookmarkarr.Domain.Downloads
 {
     public class DownloadClientConfiguration
     {
+        private string? _category;
+
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public string Name { get; set; } = string.Empty;
         public string Type { get; set; } = string.Empty; // "qbittorrent", "transmission", "sabnzbd", "nzbget"
@@ -30,7 +33,51 @@ namespace Bookmarkarr.Domain.Downloads
             get => string.IsNullOrWhiteSpace(SettingsJson)
                 ? new Dictionary<string, object>()
                 : JsonSerializer.Deserialize<Dictionary<string, object>>(SettingsJson) ?? [];
-            set => SettingsJson = JsonSerializer.Serialize(value);
+            set
+            {
+                var settings = value ?? new Dictionary<string, object>();
+                if (!string.IsNullOrWhiteSpace(_category))
+                {
+                    settings["category"] = _category;
+                }
+
+                SettingsJson = JsonSerializer.Serialize(settings);
+            }
+        }
+
+        /// <summary>
+        /// API compatibility alias for the category stored in SettingsJson.
+        /// Older/external clients commonly submit category at the top level.
+        /// </summary>
+        [NotMapped]
+        public string Category
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(_category))
+                {
+                    return _category;
+                }
+
+                return Settings.TryGetValue("category", out var category)
+                    ? category?.ToString() ?? string.Empty
+                    : string.Empty;
+            }
+            set
+            {
+                _category = value?.Trim() ?? string.Empty;
+                var settings = Settings;
+                if (string.IsNullOrWhiteSpace(_category))
+                {
+                    settings.Remove("category");
+                }
+                else
+                {
+                    settings["category"] = _category;
+                }
+
+                SettingsJson = JsonSerializer.Serialize(settings);
+            }
         }
 
         public int GetPollingInterval(int defaultInterval = 30)
