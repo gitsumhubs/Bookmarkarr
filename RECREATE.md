@@ -161,6 +161,8 @@ docker build -t bookmarkarr:local .
 curl --fail http://localhost:3018/api/v1/system/ready
 ```
 
+Filesystem-mutating tests create unique paths below the operating system temporary directory. They must never require write access to a host-root media or mount path in local or CI runs.
+
 ## Troubleshooting
 
 ### Readiness reports pending migrations

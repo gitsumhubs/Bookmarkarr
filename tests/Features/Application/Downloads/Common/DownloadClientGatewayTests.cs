@@ -9,7 +9,12 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Common
     [Trait("Category", "DownloadClientGateway")]
     public class DownloadClientGatewayTests : BaseTests
     {
-        private readonly string localMapping = FileUtils.GetAbsolutePath("mnt", "wdelements", "downloads");
+        private readonly string localMapping = Path.Combine(
+            Path.GetTempPath(),
+            "bookmarkarr-tests",
+            nameof(DownloadClientGatewayTests),
+            Guid.NewGuid().ToString("N"),
+            "downloads");
         private readonly string localPath = null!;
 
         private IDownloadClientGateway downloadClientGateway = null!;
@@ -338,7 +343,7 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Common
         [Trait("Scenario", "Resolve ebook single-file content directory without recursive sibling selection")]
         public async Task GetQueueItemAsync_ExtensionShapedContentDirectory_ResolvesExactNestedEbookOnly()
         {
-            const string releaseName = "A Wizard's Guide to Defensive Baking.epub";
+            const string releaseName = "Example Ebook.epub";
             var localDownloadDirectory = Path.Join(localPath, releaseName);
             var exactNestedFile = Path.Join(localDownloadDirectory, releaseName);
             var unrelatedEbookFile = Path.Join(localDownloadDirectory, "Unrelated Book.epub");
