@@ -1,0 +1,100 @@
+/*
+ * Bookmarkarr - Audiobook Management System
+ * Copyright (C) 2024-2026 Bookmarkarr Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ */
+
+using Bookmarkarr.Application.Common;
+using Microsoft.Extensions.Logging;
+using System.Text.Json;
+
+namespace Bookmarkarr.Application.Downloads.Submission
+{
+    public sealed class DirectDownloadWorkflow(
+        IDownloadRepository downloadRepository,
+        ILogger<DirectDownloadWorkflow> logger)
+    {
+        public async Task<string> CreateTrackedDownloadAsync(
+            PreparedDirectDownloadSubmission submission,
+            int? audiobookId,
+            int? editionId = null,
+            SearchContentType contentType = SearchContentType.Audiobook)
+        {
+            if (submission.Artifacts.Count == 0)
+            {
+                throw new DownloadClientSubmissionException(
+                    "The direct-download submission does not contain any artifacts.");
+            }
+
+            try
+            {
+                var primaryArtifact = submission.Artifacts[0];
+                var artifactPlan = submission.Artifacts
+                    .Select(artifact => new PersistedDirectDownloadArtifact(
+                        artifact.DownloadUri.ToString(),
+                        artifact.FileName,
+                        artifact.ExpectedSize,
+                        artifact.Packaging))
+                    .ToList();
+                var id = Guid.NewGuid().ToString();
+                var download = new Download
+                {
+                    Id = id,
+                    AudiobookId = audiobookId,
+                    EditionId = editionId,
+                    Title = submission.Title,
+                    Artist = submission.Artist,
+                    Album = submission.Album,
+                    Language = submission.Language,
+                    OriginalUrl = primaryArtifact.DownloadUri.ToString(),
+                    Progress = 0,
+                    TotalSize = submission.Size,
+                    DownloadedSize = 0,
+                    DownloadPath = string.Empty,
+                    FinalPath = string.Empty,
+                    StartedAt = DateTime.UtcNow,
+                    DownloadClientId = DirectDownloadMetadataKeys.ClientId,
+                    Metadata = new Dictionary<string, object>
+                    {
+                        ["Source"] = submission.Source,
+                        ["Quality"] = submission.Quality ?? string.Empty,
+                        ["Language"] = submission.Language ?? string.Empty,
+                        [DirectDownloadMetadataKeys.DownloadType] = DirectDownloadMetadataKeys.ClientId,
+                        // The worker revalidates this policy before every HTTP request so
+                        // future DDL sources stay additive without making Bookmarkarr fetch arbitrary URLs.
+                        [DirectDownloadMetadataKeys.SourcePolicyKey] = submission.SourcePolicyKey,
+                        [DirectDownloadMetadataKeys.OriginalHost] = primaryArtifact.DownloadUri.Host,
+                        [DirectDownloadMetadataKeys.ArtifactPlan] = JsonSerializer.Serialize(
+                            new PersistedDirectDownloadArtifactPlan(
+                                PersistedDirectDownloadArtifactPlan.CurrentVersion,
+                                artifactPlan)),
+                        [DirectDownloadMetadataKeys.RequiresArchiveExtraction] = artifactPlan.Any(
+                            artifact => artifact.Packaging == DirectDownloadArtifactPackaging.Archive),
+                        ["ContentType"] = contentType == SearchContentType.Ebook
+                            ? DownloadContentTypes.Ebook
+                            : DownloadContentTypes.Audiobook
+                    }
+                };
+
+                await downloadRepository.AddAsync(download);
+                return id;
+            }
+            catch (UniqueConstraintViolationException) when (audiobookId.HasValue)
+            {
+                logger.LogInformation(
+                    "Concurrent duplicate direct download prevented for audiobook {AudiobookId}",
+                    audiobookId);
+                return string.Empty;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException && ex is not OutOfMemoryException && ex is not StackOverflowException)
+            {
+                logger.LogError(ex, "Failed to persist direct-download reservation");
+                throw new PersistenceException("Failed to persist direct-download reservation.", ex);
+            }
+        }
+    }
+}

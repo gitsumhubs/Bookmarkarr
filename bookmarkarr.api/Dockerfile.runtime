@@ -1,0 +1,47 @@
+# Build gosu with a modern Go toolchain to avoid golang/stdlib CVEs present in
+# the Debian-packaged version (compiled with Go 1.19.x).
+FROM golang:1.26.2-alpine AS gosu-builder
+ARG GOSU_VERSION=1.19
+RUN CGO_ENABLED=0 go install github.com/tianon/gosu@${GOSU_VERSION}
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+WORKDIR /app
+EXPOSE 4545
+
+# Set the URL to Bookmarkarr's default port.
+ENV ASPNETCORE_URLS=http://*:4545
+
+ENV DOCKER_ENV=true
+COPY docker/runtime/ /tmp/bookmarkarr-runtime/
+
+# Use the gosu binary built above instead of the apt package.
+COPY --from=gosu-builder /go/bin/gosu /usr/local/bin/gosu
+RUN chmod +x /usr/local/bin/gosu
+
+RUN sh /tmp/bookmarkarr-runtime/create-bookmarkarr-user.sh
+
+# Copy the Docker-specific publish output produced by the CI pipeline.
+# Release ZIP artifacts are published under bookmarkarr.api/publish and must not
+# be copied into the runtime image.
+ARG TARGETARCH
+COPY bookmarkarr.api/docker-publish/${TARGETARCH}/ /app/
+
+RUN sh /tmp/bookmarkarr-runtime/finalize-app.sh
+
+# Explicitly copy the Discord bot source so it is available even if a local
+# publish skipped optional tool copying.
+COPY tools/discord-bot/ /app/tools/discord-bot/
+
+# Install Node.js only for the Discord bot runtime. npm is used for the install
+# and then removed from the final filesystem; the bot only needs node.
+RUN sh /tmp/bookmarkarr-runtime/install-discord-bot-runtime.sh
+
+# Return to app root
+WORKDIR /app
+
+# Copy entrypoint script for PUID/PGID/UMASK support
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN sh /tmp/bookmarkarr-runtime/prepare-entrypoint.sh \
+	&& rm -rf /tmp/bookmarkarr-runtime
+
+ENTRYPOINT ["/docker-entrypoint.sh"]

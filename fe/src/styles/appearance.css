@@ -1,0 +1,320 @@
+/* Appearance tokens are applied to <html> by services/appearance.ts. */
+html[data-theme='bookmarkarr'] {
+  --brand-50: #e6fbf9;
+  --brand-100: #c5f5f1;
+  --brand-200: #8de9e1;
+  --brand-300: #50d8cf;
+  --brand-400: #20c3b9;
+  --brand-500: #11b8aa;
+  --brand-600: #0b9188;
+  --brand-700: #08716c;
+  --brand-focus: #11b8aa;
+  --brand-rgb: 17, 184, 170;
+  --theme-accent: #ff5b42;
+  --theme-nav-light: #071f49;
+  --theme-nav-dark: #05162f;
+}
+
+html[data-theme='ocean'] {
+  --brand-50: #e3f2fd;
+  --brand-100: #bbdefb;
+  --brand-200: #90caf9;
+  --brand-300: #64b5f6;
+  --brand-400: #42a5f5;
+  --brand-500: #2196f3;
+  --brand-600: #1976d2;
+  --brand-700: #0d47a1;
+  --brand-focus: #1976d2;
+  --brand-rgb: 33, 150, 243;
+  --theme-accent: #7dd3fc;
+  --theme-nav-light: #123d63;
+  --theme-nav-dark: #0a2844;
+}
+
+html[data-theme='forest'] {
+  --brand-50: #ebfbee;
+  --brand-100: #d3f9d8;
+  --brand-200: #b2f2bb;
+  --brand-300: #8ce99a;
+  --brand-400: #51cf66;
+  --brand-500: #2f9e44;
+  --brand-600: #2b8a3e;
+  --brand-700: #237032;
+  --brand-focus: #2f9e44;
+  --brand-rgb: 47, 158, 68;
+  --theme-accent: #8ce99a;
+  --theme-nav-light: #1d493d;
+  --theme-nav-dark: #112f28;
+}
+
+html[data-theme='plum'] {
+  --brand-50: #f5f3ff;
+  --brand-100: #ede9fe;
+  --brand-200: #ddd6fe;
+  --brand-300: #c4b5fd;
+  --brand-400: #a78bfa;
+  --brand-500: #8b5cf6;
+  --brand-600: #7c3aed;
+  --brand-700: #6d28d9;
+  --brand-focus: #8b5cf6;
+  --brand-rgb: 139, 92, 246;
+  --theme-accent: #d8b4fe;
+  --theme-nav-light: #4b2a72;
+  --theme-nav-dark: #2d1946;
+}
+
+html[data-color-mode='light'] {
+  --color-background: #f4f7fa;
+  --color-background-soft: #ffffff;
+  --color-background-mute: #e9eef3;
+  --color-border: rgba(15, 31, 49, 0.13);
+  --color-border-hover: rgba(15, 31, 49, 0.28);
+  --color-heading: #10243b;
+  --color-text: #23364b;
+  --bg-primary: #f4f7fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #edf2f6;
+  --bg-surface: #ffffff;
+  --text-primary: #17283b;
+  --text-secondary: #41566c;
+  --text-muted: #687b8f;
+  --text-disabled: #94a1af;
+  --card-bg: #ffffff;
+  --border-color: rgba(15, 31, 49, 0.13);
+  --text-color: #23364b;
+  --button-bg: #ffffff;
+  --button-hover-bg: rgba(var(--brand-rgb), 0.08);
+  --input-bg: #ffffff;
+  --selected-bg: rgba(var(--brand-rgb), 0.1);
+  --muted-bg: #edf2f6;
+  --app-shell-bg: #f4f7fa;
+  --app-sidebar-bg: #ffffff;
+  --app-sidebar-border: rgba(15, 31, 49, 0.12);
+  --app-nav-bg: var(--theme-nav-light);
+  --app-nav-border: rgba(255, 255, 255, 0.14);
+  --app-nav-text: #f7fbff;
+  --app-card-shadow: 0 12px 30px rgba(7, 31, 73, 0.08);
+  --md-sys-color-primary: var(--brand-600);
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: var(--brand-100);
+  --md-sys-color-on-primary-container: #10243b;
+  --md-sys-color-background: var(--color-background);
+  --md-sys-color-on-background: var(--color-text);
+  --md-sys-color-surface: var(--card-bg);
+  --md-sys-color-on-surface: var(--text-color);
+  --md-sys-color-surface-variant: #e9eef3;
+  --md-sys-color-on-surface-variant: #33485d;
+  --md-sys-color-outline: rgba(15, 31, 49, 0.18);
+}
+
+html[data-color-mode='dark'] {
+  --color-background: #0d131b;
+  --color-background-soft: #141d28;
+  --color-background-mute: #1c2734;
+  --color-border: rgba(218, 232, 246, 0.12);
+  --color-border-hover: rgba(218, 232, 246, 0.25);
+  --color-heading: #f1f6fb;
+  --color-text: #d7e1eb;
+  --bg-primary: #0d131b;
+  --bg-secondary: #141d28;
+  --bg-tertiary: #1c2734;
+  --bg-surface: #22303f;
+  --text-primary: #f3f7fb;
+  --text-secondary: #c2cfdb;
+  --text-muted: #94a5b6;
+  --text-disabled: #637384;
+  --card-bg: #141d28;
+  --border-color: rgba(218, 232, 246, 0.12);
+  --text-color: #d7e1eb;
+  --button-bg: #1c2734;
+  --button-hover-bg: rgba(var(--brand-rgb), 0.12);
+  --input-bg: #101821;
+  --selected-bg: rgba(var(--brand-rgb), 0.16);
+  --muted-bg: #1c2734;
+  --app-shell-bg: #0d131b;
+  --app-sidebar-bg: #111a24;
+  --app-sidebar-border: rgba(218, 232, 246, 0.1);
+  --app-nav-bg: var(--theme-nav-dark);
+  --app-nav-border: rgba(255, 255, 255, 0.1);
+  --app-nav-text: #f7fbff;
+  --app-card-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+  --md-sys-color-primary: var(--brand-300);
+  --md-sys-color-on-primary: #052c2a;
+  --md-sys-color-primary-container: var(--brand-700);
+  --md-sys-color-on-primary-container: #e6fffc;
+  --md-sys-color-background: var(--color-background);
+  --md-sys-color-on-background: var(--color-text);
+  --md-sys-color-surface: var(--card-bg);
+  --md-sys-color-on-surface: var(--text-color);
+  --md-sys-color-surface-variant: #263342;
+  --md-sys-color-on-surface-variant: #ced8e2;
+  --md-sys-color-outline: rgba(218, 232, 246, 0.15);
+}
+
+html[data-color-mode] body,
+html[data-color-mode] #app {
+  background: var(--app-shell-bg);
+  color: var(--text-color);
+}
+
+html[data-color-mode] #app .top-nav {
+  background: var(--app-nav-bg);
+  border-bottom-color: var(--app-nav-border);
+}
+
+html[data-color-mode] #app .nav-brand h1,
+html[data-color-mode] #app .top-nav .nav-btn {
+  color: var(--app-nav-text);
+}
+
+html[data-color-mode] #app .brand-logo {
+  filter: none;
+  object-fit: contain;
+}
+
+html[data-color-mode] #app .sidebar,
+html[data-color-mode] #app .sidebar-footer {
+  background: var(--app-sidebar-bg);
+  border-color: var(--app-sidebar-border);
+}
+
+html[data-color-mode] #app .main-content {
+  background: var(--app-shell-bg);
+}
+
+html[data-color-mode] #app .nav-item {
+  color: var(--text-secondary);
+}
+
+html[data-color-mode] #app .nav-item:hover {
+  color: var(--text-primary);
+  background: var(--button-hover-bg);
+}
+
+html[data-color-mode] #app .nav-item.router-link-active {
+  color: #ffffff;
+  background: var(--brand-600);
+}
+
+html[data-color-mode] #app .tab-button.active {
+  color: var(--brand-400);
+  background: var(--selected-bg);
+}
+
+html[data-color-mode] #app .tab-button.active::after {
+  background: var(--brand-500);
+}
+
+html[data-theme='bookmarkarr'] #app .nav-item.router-link-active::before {
+  background: var(--theme-accent);
+}
+
+html[data-color-mode='light'] #app .user-menu,
+html[data-color-mode='light'] #app .search-results-inline {
+  background: #ffffff;
+  border-color: var(--border-color);
+  color: var(--text-color);
+  box-shadow: var(--app-card-shadow);
+}
+
+html[data-color-mode='light'] #app .user-menu-item,
+html[data-color-mode='light'] #app .user-menu-item.username {
+  color: var(--text-color);
+}
+
+html[data-color-mode='light'] #app .user-menu-item:hover {
+  background: var(--button-hover-bg);
+}
+
+/* The inherited settings views predate semantic color tokens. Keep their main
+   surfaces coherent when the user explicitly chooses light mode. */
+html[data-color-mode='light'] #app .settings-page {
+  background: var(--app-shell-bg);
+}
+
+html[data-color-mode='light'] #app .settings-toolbar,
+html[data-color-mode='light'] #app .settings-content {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+html[data-color-mode='light'] #app .settings-tabs {
+  border-color: var(--border-color);
+}
+
+html[data-color-mode='light'] #app .tab-button {
+  color: var(--text-muted);
+}
+
+html[data-color-mode='light'] #app .tab-button:hover {
+  color: var(--text-primary);
+  background: var(--button-hover-bg);
+}
+
+html[data-color-mode='light'] #app .tab-button.active {
+  color: var(--brand-700);
+  background: var(--selected-bg);
+}
+
+html[data-color-mode='light'] #app .tab-button.active::after {
+  background: var(--brand-500);
+}
+
+html[data-color-mode='light'] #app .section-header,
+html[data-color-mode='light'] #app .appearance-heading-row {
+  border-color: var(--border-color);
+}
+
+html[data-color-mode='light'] #app .section-header h3,
+html[data-color-mode='light'] #app .general-settings-tab .form-section > h3,
+html[data-color-mode='light'] #app .general-settings-tab h3 {
+  color: var(--text-primary);
+}
+
+html[data-color-mode='light'] #app .general-settings-tab .form-section .form-body,
+html[data-color-mode='light'] #app .checkbox-group label,
+html[data-color-mode='light'] #app .checkbox-card {
+  color: var(--text-color);
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  box-shadow: var(--app-card-shadow);
+}
+
+html[data-color-mode='light'] #app .checkbox-group label strong,
+html[data-color-mode='light'] #app .checkbox-card strong,
+html[data-color-mode='light'] #app .form-row label {
+  color: var(--text-primary);
+}
+
+html[data-color-mode='light'] #app .tabs-scroll-btn {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+}
+
+html[data-color-mode] input,
+html[data-color-mode] select,
+html[data-color-mode] textarea {
+  color: var(--text-color);
+  background-color: var(--input-bg);
+  border-color: var(--border-color);
+}
+
+html[data-color-mode='light'] #app .form-input:not(:placeholder-shown),
+html[data-color-mode='light'] #app textarea.form-input:not(:placeholder-shown) {
+  color: var(--text-color);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html[data-color-mode] body,
+  html[data-color-mode] #app,
+  html[data-color-mode] #app .top-nav,
+  html[data-color-mode] #app .sidebar,
+  html[data-color-mode] #app .main-content {
+    transition:
+      background-color 180ms ease,
+      color 180ms ease,
+      border-color 180ms ease;
+  }
+}

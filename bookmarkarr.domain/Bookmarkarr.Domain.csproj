@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);artifacts\**;.tmp\**;obj2\**</DefaultItemExcludes>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+</Project>

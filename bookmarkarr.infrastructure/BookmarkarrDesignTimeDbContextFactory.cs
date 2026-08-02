@@ -1,0 +1,101 @@
+/*
+ * Bookmarkarr - Audiobook Management System
+ * Copyright (C) 2024-2026 Bookmarkarr Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+using Bookmarkarr.Infrastructure.Persistence.Repositories;
+using Bookmarkarr.Infrastructure.Persistence;
+
+namespace Bookmarkarr.Infrastructure
+{
+    /// <summary>
+    /// Design-time factory used by EF tools to create BookmarkarrDbContext without relying on the application's DI.
+    /// Uses a local SQLite file under the repo (bookmarkarr.api/config/database/bookmarkarr.db) by default.
+    /// </summary>
+    public class BookmarkarrDesignTimeDbContextFactory : IDesignTimeDbContextFactory<BookmarkarrDbContext>
+    {
+        public BookmarkarrDbContext CreateDbContext(string[] args)
+        {
+            var optionsBuilder = new DbContextOptionsBuilder<BookmarkarrDbContext>();
+
+            // Prefer explicit environment variable if set (helps CI or custom paths)
+            var dbPath = Environment.GetEnvironmentVariable("BOOKMARKARR_SQLITE_PATH");
+            if (string.IsNullOrWhiteSpace(dbPath))
+            {
+                // Try to resolve repo root deterministically by walking up from the
+                // assembly base directory (AppContext.BaseDirectory). This is more
+                // reliable than Directory.GetCurrentDirectory() which depends on
+                // how the process was launched.
+                string? repoRoot = FindRepoRoot();
+                if (repoRoot != null)
+                {
+                    var relativeDbPath = Path.Join(".env", "development", "config", "database", "bookmarkarr.db");
+                    var candidate = Path.Join(repoRoot, relativeDbPath);
+                    dbPath = Path.GetFullPath(candidate);
+                }
+                else
+                {
+                    // Last-resort: fall back to current directory behavior to remain compatible
+                    var relativePart = Path.Join("..", "bookmarkarr.api", "config", "database", "bookmarkarr.db");
+                    var cwdCandidate = Path.Join(Directory.GetCurrentDirectory(), relativePart);
+                    dbPath = Path.GetFullPath(cwdCandidate);
+                }
+            }
+
+            var migrationsAssembly = typeof(QualityProfileRepository).Assembly.GetName().Name;
+
+            optionsBuilder.UseSqlite($"Data Source={dbPath}", sqliteOptions =>
+            {
+                sqliteOptions.MigrationsAssembly(migrationsAssembly);
+            });
+
+            return new BookmarkarrDbContext(optionsBuilder.Options);
+        }
+
+        private static string? FindRepoRoot()
+        {
+            try
+            {
+                var dir = new DirectoryInfo(AppContext.BaseDirectory);
+                while (dir != null)
+                {
+                    // Look for solution file or bookmarkarr.api folder as sentinel
+                    const string slnxName = "bookmarkarr.slnx";
+                    const string slnName = "bookmarkarr.sln";
+                    const string apiFolderName = "bookmarkarr.api";
+
+                    var slnx = Path.Join(dir.FullName, slnxName);
+                    var sln = Path.Join(dir.FullName, slnName);
+                    var apiFolder = Path.Join(dir.FullName, apiFolderName);
+
+                    if (File.Exists(slnx) || File.Exists(sln) || Directory.Exists(apiFolder))
+                    {
+                        return dir.FullName;
+                    }
+
+                    dir = dir.Parent;
+                }
+            }
+            catch (Exception caughtEx_1) when (caughtEx_1 is not OperationCanceledException && caughtEx_1 is not OutOfMemoryException && caughtEx_1 is not StackOverflowException)
+            { /* ignore and return null */
+                global::System.Diagnostics.Debug.WriteLine("Suppressed non-fatal exception in catch block.");
+            }
+
+            return null;
+        }
+    }
+}

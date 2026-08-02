@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+set -e
+
+# Some Windows Git clients launch hooks with a reduced PATH that omits Node.
+if ! command -v node >/dev/null 2>&1 && [ -d "/c/Program Files/nodejs" ]; then
+  export PATH="/c/Program Files/nodejs:$PATH"
+fi
+
+echo "Running staged lint and format checks..."
+node scripts/lint-staged.mjs
+
+echo "Checking layering rules and async void..."
+VIOLATIONS=0
+if git grep -n --no-color "bookmarkarr.infrastructure" -- "bookmarkarr.api/**/*.cs" ":(exclude)bookmarkarr.api/Program.cs" || git grep -n --no-color "Bookmarkarr.Infrastructure" -- "bookmarkarr.api/**/*.cs" ":(exclude)bookmarkarr.api/Program.cs"; then
+  echo "Layering violation: bookmarkarr.api references bookmarkarr.infrastructure." >&2
+  VIOLATIONS=$((VIOLATIONS + 1))
+fi
+if git grep -n --no-color "bookmarkarr.infrastructure" -- "bookmarkarr.application/**/*.cs" || git grep -n --no-color "Bookmarkarr.Infrastructure" -- "bookmarkarr.application/**/*.cs"; then
+  echo "Layering violation: bookmarkarr.application references bookmarkarr.infrastructure." >&2
+  VIOLATIONS=$((VIOLATIONS + 1))
+fi
+if git grep -n --no-color "async void" -- "bookmarkarr.api/**/*.cs" "bookmarkarr.application/**/*.cs" "bookmarkarr.infrastructure/**/*.cs" "bookmarkarr.domain/**/*.cs"; then
+  echo "async void found in production code — use async Task instead." >&2
+  VIOLATIONS=$((VIOLATIONS + 1))
+fi
+if [ "$VIOLATIONS" -gt 0 ]; then
+  echo "$VIOLATIONS enforcement check(s) failed." >&2
+  exit 1
+fi

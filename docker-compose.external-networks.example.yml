@@ -1,0 +1,18 @@
+services:
+  bookmarkarr:
+    networks:
+      - default
+      - prowlarr
+      - nzbget
+      - rdtclient
+
+networks:
+  prowlarr:
+    external: true
+    name: ${PROWLARR_DOCKER_NETWORK:?Set PROWLARR_DOCKER_NETWORK in .env}
+  nzbget:
+    external: true
+    name: ${NZBGET_DOCKER_NETWORK:?Set NZBGET_DOCKER_NETWORK in .env}
+  rdtclient:
+    external: true
+    name: ${RDTCLIENT_DOCKER_NETWORK:?Set RDTCLIENT_DOCKER_NETWORK in .env}

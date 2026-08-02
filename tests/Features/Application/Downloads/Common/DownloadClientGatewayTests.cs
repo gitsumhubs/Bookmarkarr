@@ -1,0 +1,411 @@
+using Bookmarkarr.Domain.Downloads.Exceptions;
+using Bookmarkarr.Tests.Builders;
+using Bookmarkarr.Tests.Common;
+using Bookmarkarr.Tests.Mocks;
+
+namespace Bookmarkarr.Tests.Features.Application.Downloads.Common
+{
+    [Trait("Name", "DownloadClientGatewayTests")]
+    [Trait("Category", "DownloadClientGateway")]
+    public class DownloadClientGatewayTests : BaseTests
+    {
+        private readonly string localMapping = FileUtils.GetAbsolutePath("mnt", "wdelements", "downloads");
+        private readonly string localPath = null!;
+
+        private IDownloadClientGateway downloadClientGateway = null!;
+        private DownloadClientConfiguration client = null!;
+
+        public DownloadClientGatewayTests()
+        {
+            localPath = Path.Join(localMapping, "complete", "audiobooks");
+        }
+
+        public override async Task InitializeAsync()
+        {
+            downloadClientGateway = _provider.GetRequiredService<IDownloadClientGateway>();
+
+            client = new DownloadClientConfigurationBuilder()
+                .WithType("mock")
+                .Build();
+
+            await _remotePathMappingRepository.SaveAsync(new RemotePathMappingBuilder()
+                .WithDownloadClientConfiguration(client)
+                .WithRemotePath(FileUtils.GetAbsolutePath("downloads"))
+                .WithLocalPath(localMapping)
+                .Build());
+        }
+
+        private async Task IsValid(QueueItem item)
+        {
+            Assert.StartsWith(DownloadCLientAdapterMock.RemotePath, item.RemotePath);
+            Assert.StartsWith(localPath, item.LocalPath);
+
+            foreach (string path in item.SourceFiles)
+            {
+                Assert.StartsWith(localPath, path);
+            }
+        }
+
+        [Fact]
+        [Trait("Method", "GetQueueItemAsync")]
+        [Trait("Scenario", "Make sure GetQueueItemAsync returns a list of items with path mapped")]
+        public async Task GetQueueItemAsync()
+        {
+            var item = await downloadClientGateway.GetQueueItemAsync(client, new DownloadBuilder().Build(), new QueueItem());
+            await IsValid(item);
+        }
+
+        [Fact]
+        [Trait("Method", "GetQueueAsync")]
+        [Trait("Scenario", "Make sure GetQueueAsync returns the full queue snapshot with path mapped")]
+        public async Task GetQueueAsync()
+        {
+            await _downloadRepository.AddAsync(new DownloadBuilder()
+                .WithDownloadClientConfiguration(client)
+                .WithExternalId("1")
+                .Build());
+
+            var downloadClientAdapterMock = (DownloadCLientAdapterMock)((DownloadClientGateway)downloadClientGateway).ResolveAdapter(client);
+
+            var items = await downloadClientGateway.GetQueueAsync(client);
+            Assert.Equal(2, items.Count);
+            Assert.True(downloadClientAdapterMock.LastQueueRequestWasFullSnapshot);
+            Assert.Null(downloadClientAdapterMock.LastRequestedQueueIds);
+            Assert.Contains(items, item => item.Id == "1");
+            Assert.Contains(items, item => item.Id == "2");
+
+            foreach (QueueItem item in items)
+            {
+                await IsValid(item);
+            }
+        }
+
+        [Fact]
+        [Trait("Method", "TestConnectionAsync")]
+        [Trait("Scenario", "Check that the selected mock is the right one and also TestConnectionAsync")]
+        public async Task TestConnectionAsync()
+        {
+            var (success, message) = await downloadClientGateway.TestConnectionAsync(client);
+            Assert.True(success);
+            Assert.Equal("mock", message);
+        }
+
+        [Fact]
+        [Trait("Method", "FetchDownloadsAsync")]
+        [Trait("Scenario", "Check FetchDownloadsAsync requests only tracked IDs and path maps the matching download")]
+        public async Task FetchDownloadsAsync()
+        {
+            var newDownload = await _downloadRepository.AddAsync(new DownloadBuilder()
+                .WithExternalId("1")
+                .Build());
+            var downloadClientAdapterMock = (DownloadCLientAdapterMock)((DownloadClientGateway)downloadClientGateway).ResolveAdapter(client);
+
+            var downloads = await downloadClientGateway.FetchDownloadsAsync(client, [newDownload]);
+            Assert.NotEmpty(downloads);
+            Assert.Single(downloads);
+            Assert.False(downloadClientAdapterMock.LastQueueRequestWasFullSnapshot);
+            Assert.Equal(["1"], downloadClientAdapterMock.LastRequestedQueueIds);
+
+            var download = downloads.First();
+            Assert.NotNull(download);
+            Assert.StartsWith(localPath, download.DownloadPath);
+        }
+
+        [Fact]
+        [Trait("Method", "FetchDownloadsAsync")]
+        [Trait("Scenario", "Check returned queue item IDs match tracked external IDs case-insensitively")]
+        public async Task FetchDownloadsAsync_MatchesReturnedQueueItemIdsCaseInsensitively()
+        {
+            var newDownload = await _downloadRepository.AddAsync(new DownloadBuilder()
+                .WithExternalId("ABC123")
+                .Build());
+            var downloadClientAdapterMock = (DownloadCLientAdapterMock)((DownloadClientGateway)downloadClientGateway).ResolveAdapter(client);
+            var path = FileUtils.GetAbsolutePath(DownloadCLientAdapterMock.RemotePath, "case-insensitive-id");
+            downloadClientAdapterMock.QueueItemsMock =
+            [
+                new QueueItemBuilder()
+                    .WithId("abc123")
+                    .WithRemotePath(path)
+                    .WithContentPath(path)
+                    .WithSourceFile(Path.Join(path, "chapter1.mp3"))
+                    .WithStatus("downloading")
+                    .Build()
+            ];
+
+            var downloads = await downloadClientGateway.FetchDownloadsAsync(client, [newDownload]);
+
+            Assert.Single(downloads);
+            Assert.Equal(["ABC123"], downloadClientAdapterMock.LastRequestedQueueIds);
+            Assert.StartsWith(localPath, downloads[0].DownloadPath);
+        }
+
+        [Fact]
+        [Trait("Method", "FetchDownloadsAsync")]
+        [Trait("Scenario", "Check monitor polling exceptions are propagated for caller-owned backoff")]
+        public async Task FetchDownloadsAsync_PropagatesPollingException()
+        {
+            var newDownload = await _downloadRepository.AddAsync(new DownloadBuilder()
+                .WithExternalId("1")
+                .Build());
+            var downloadClientAdapterMock = (DownloadCLientAdapterMock)((DownloadClientGateway)downloadClientGateway).ResolveAdapter(client);
+            var expected = new DownloadClientAdapterPollingException("client unavailable");
+            downloadClientAdapterMock.FilteredQueueException = expected;
+
+            var actual = await Assert.ThrowsAsync<DownloadClientAdapterPollingException>(
+                () => downloadClientGateway.FetchDownloadsAsync(client, [newDownload]));
+
+            Assert.Same(expected, actual);
+            Assert.False(downloadClientAdapterMock.LastQueueRequestWasFullSnapshot);
+            Assert.Equal(["1"], downloadClientAdapterMock.LastRequestedQueueIds);
+        }
+
+        [Fact]
+        [Trait("Method", "FetchDownloadsAsync")]
+        [Trait("Scenario", "Check unexpected adapter exceptions are normalized for monitor backoff")]
+        public async Task FetchDownloadsAsync_WrapsUnexpectedAdapterException()
+        {
+            var newDownload = await _downloadRepository.AddAsync(new DownloadBuilder()
+                .WithExternalId("1")
+                .Build());
+            var downloadClientAdapterMock = (DownloadCLientAdapterMock)((DownloadClientGateway)downloadClientGateway).ResolveAdapter(client);
+            var expectedInner = new InvalidOperationException("unexpected adapter failure");
+            downloadClientAdapterMock.FilteredQueueException = expectedInner;
+
+            var actual = await Assert.ThrowsAsync<DownloadClientAdapterPollingException>(
+                () => downloadClientGateway.FetchDownloadsAsync(client, [newDownload]));
+
+            Assert.Same(expectedInner, actual.InnerException);
+            Assert.False(downloadClientAdapterMock.LastQueueRequestWasFullSnapshot);
+            Assert.Equal(["1"], downloadClientAdapterMock.LastRequestedQueueIds);
+        }
+
+        [Fact]
+        [Trait("Method", "GetQueueItemAsync")]
+        [Trait("Scenario", "Check SourceFiles is empty when adapter gives null for both source files and content path")]
+        public async Task GetQueueItemAsync_EmptyResults()
+        {
+            var downloadCLientAdapterMock = (DownloadCLientAdapterMock)((DownloadClientGateway)downloadClientGateway).ResolveAdapter(client);
+            downloadCLientAdapterMock.QueueItemMock = new QueueItemBuilder()
+                .Build();
+
+            var item = await downloadClientGateway.GetQueueItemAsync(client, new DownloadBuilder().Build(), new QueueItem());
+
+            Assert.NotNull(item);
+            Assert.NotNull(item.SourceFiles);
+            Assert.Empty(item.SourceFiles);
+        }
+
+        [Fact]
+        [Trait("Method", "GetQueueItemAsync")]
+        [Trait("Scenario", "Check empty ContentPath is treated as missing instead of scanned")]
+        public async Task GetQueueItemAsync_EmptyContentPath_DoesNotScanFilesystem()
+        {
+            var downloadCLientAdapterMock = (DownloadCLientAdapterMock)((DownloadClientGateway)downloadClientGateway).ResolveAdapter(client);
+            downloadCLientAdapterMock.QueueItemMock = new QueueItemBuilder()
+                .WithContentPath(string.Empty)
+                .WithStatus("downloading")
+                .Build();
+
+            var item = await downloadClientGateway.GetQueueItemAsync(client, new DownloadBuilder().Build(), new QueueItem());
+
+            Assert.NotNull(item);
+            Assert.NotNull(item.SourceFiles);
+            Assert.Empty(item.SourceFiles);
+        }
+
+        [Fact]
+        public void TranslateQueueItemPaths_FailedItemWithoutContentPath_DoesNotLogMissingSourceWarning()
+        {
+            Assert.False(DownloadClientGateway.IsImportSourceExpectedStatus("failed"));
+        }
+
+        [Fact]
+        public void TranslateQueueItemPaths_CompletedItemWithoutContentPath_LogsMissingSourceWarning()
+        {
+            Assert.True(DownloadClientGateway.IsImportSourceExpectedStatus("completed"));
+        }
+
+        [Fact]
+        public void TranslateQueueItemPaths_DownloadingItemWithoutContentPath_DoesNotLogMissingSourceWarning()
+        {
+            Assert.False(DownloadClientGateway.IsImportSourceExpectedStatus("downloading"));
+        }
+
+        [Fact]
+        [Trait("Method", "GetQueueItemAsync")]
+        [Trait("Scenario", "Check SourceFiles is filled using content path file")]
+        public async Task GetQueueItemAsync_UseContentPath_File()
+        {
+            var sourceDirectory = FileService.GetTempDirectory("source");
+            var file = await FileService.GetFileAsync(sourceDirectory, "file1.mp3");
+
+            var downloadCLientAdapterMock = (DownloadCLientAdapterMock)((DownloadClientGateway)downloadClientGateway).ResolveAdapter(client);
+            downloadCLientAdapterMock.QueueItemMock = new QueueItemBuilder()
+                .WithContentPath(file)
+                .Build();
+
+            var item = await downloadClientGateway.GetQueueItemAsync(client, new DownloadBuilder().Build(), new QueueItem());
+
+            Assert.NotNull(item);
+            Assert.NotNull(item.SourceFiles);
+            Assert.Single(item.SourceFiles);
+            Assert.Contains(file, item.SourceFiles);
+        }
+
+        [Fact]
+        [Trait("Method", "GetQueueItemAsync")]
+        [Trait("Scenario", "Check SourceFiles is filled using content path directory")]
+        public async Task GetQueueItemAsync_UseContentPath_Directory()
+        {
+            var sourceDirectory = FileService.GetTempDirectory("source");
+            var file1 = await FileService.GetFileAsync(sourceDirectory, "file1.mp3");
+            var file2 = await FileService.GetFileAsync(sourceDirectory, "file2.mp3");
+
+            var downloadCLientAdapterMock = (DownloadCLientAdapterMock)((DownloadClientGateway)downloadClientGateway).ResolveAdapter(client);
+            downloadCLientAdapterMock.QueueItemMock = new QueueItemBuilder()
+                .WithContentPath(sourceDirectory)
+                .Build();
+
+            var item = await downloadClientGateway.GetQueueItemAsync(client, new DownloadBuilder().Build(), new QueueItem());
+
+            Assert.NotNull(item);
+            Assert.NotNull(item.SourceFiles);
+            Assert.Equal(2, item.SourceFiles.Count);
+            Assert.Contains(file1, item.SourceFiles);
+            Assert.Contains(file2, item.SourceFiles);
+        }
+
+        [Fact]
+        [Trait("Method", "GetQueueItemAsync")]
+        [Trait("Scenario", "Check SourceFiles is empty with empty directory")]
+        public async Task GetQueueItemAsync_UseContentPath_Directory_Empty()
+        {
+            var sourceDirectory = FileService.GetTempDirectory("source");
+
+            var downloadCLientAdapterMock = (DownloadCLientAdapterMock)((DownloadClientGateway)downloadClientGateway).ResolveAdapter(client);
+            downloadCLientAdapterMock.QueueItemMock = new QueueItemBuilder()
+                .WithContentPath(sourceDirectory)
+                .Build();
+
+            var item = await downloadClientGateway.GetQueueItemAsync(client, new DownloadBuilder().Build(), new QueueItem());
+
+            Assert.NotNull(item);
+            Assert.NotNull(item.SourceFiles);
+            Assert.Empty(item.SourceFiles);
+        }
+
+        [Fact]
+        [Trait("Method", "GetQueueItemAsync")]
+        [Trait("Scenario", "Resolve qBittorrent single-file directory with the same media filename")]
+        public async Task GetQueueItemAsync_ExtensionShapedSourceDirectory_ResolvesExactNestedAudiobookOnly()
+        {
+            const string releaseName = "Example Book.m4b";
+            var localDownloadDirectory = Path.Join(localPath, releaseName);
+            var exactNestedFile = Path.Join(localDownloadDirectory, releaseName);
+            var unrelatedAudioFile = Path.Join(localDownloadDirectory, "Unrelated Book.m4b");
+            Directory.CreateDirectory(localDownloadDirectory);
+            await File.WriteAllTextAsync(exactNestedFile, "audio");
+            await File.WriteAllTextAsync(unrelatedAudioFile, "unrelated");
+
+            try
+            {
+                var remoteDownloadDirectory = Path.Join(DownloadCLientAdapterMock.RemotePath, releaseName);
+                var downloadClientAdapterMock = (DownloadCLientAdapterMock)((DownloadClientGateway)downloadClientGateway).ResolveAdapter(client);
+                downloadClientAdapterMock.QueueItemMock = new QueueItemBuilder()
+                    .WithContentPath(remoteDownloadDirectory)
+                    .WithSourceFile(remoteDownloadDirectory)
+                    .WithStatus("completed")
+                    .Build();
+
+                var item = await downloadClientGateway.GetQueueItemAsync(
+                    client,
+                    new DownloadBuilder().Build(),
+                    new QueueItem());
+
+                var resolvedFile = Assert.Single(item.SourceFiles);
+                Assert.Equal(FileUtils.NormalizeStoredPath(exactNestedFile), resolvedFile);
+                Assert.DoesNotContain(unrelatedAudioFile, item.SourceFiles);
+                Assert.True(File.Exists(resolvedFile));
+            }
+            finally
+            {
+                Directory.Delete(localDownloadDirectory, true);
+            }
+        }
+
+        [Fact]
+        [Trait("Method", "GetQueueItemAsync")]
+        [Trait("Scenario", "Resolve ebook single-file content directory without recursive sibling selection")]
+        public async Task GetQueueItemAsync_ExtensionShapedContentDirectory_ResolvesExactNestedEbookOnly()
+        {
+            const string releaseName = "A Wizard's Guide to Defensive Baking.epub";
+            var localDownloadDirectory = Path.Join(localPath, releaseName);
+            var exactNestedFile = Path.Join(localDownloadDirectory, releaseName);
+            var unrelatedEbookFile = Path.Join(localDownloadDirectory, "Unrelated Book.epub");
+            Directory.CreateDirectory(localDownloadDirectory);
+            await File.WriteAllTextAsync(exactNestedFile, "ebook");
+            await File.WriteAllTextAsync(unrelatedEbookFile, "unrelated");
+
+            try
+            {
+                var remoteDownloadDirectory = Path.Join(DownloadCLientAdapterMock.RemotePath, releaseName);
+                var downloadClientAdapterMock = (DownloadCLientAdapterMock)((DownloadClientGateway)downloadClientGateway).ResolveAdapter(client);
+                downloadClientAdapterMock.QueueItemMock = new QueueItemBuilder()
+                    .WithContentPath(remoteDownloadDirectory)
+                    .WithStatus("completed")
+                    .Build();
+
+                var item = await downloadClientGateway.GetQueueItemAsync(
+                    client,
+                    new DownloadBuilder().Build(),
+                    new QueueItem());
+
+                var resolvedFile = Assert.Single(item.SourceFiles);
+                Assert.Equal(FileUtils.NormalizeStoredPath(exactNestedFile), resolvedFile);
+                Assert.DoesNotContain(unrelatedEbookFile, item.SourceFiles);
+            }
+            finally
+            {
+                Directory.Delete(localDownloadDirectory, true);
+            }
+        }
+
+        [Fact]
+        [Trait("Method", "GetQueueItemAsync")]
+        [Trait("Scenario", "Reject nested single-file symlink escape")]
+        public async Task GetQueueItemAsync_ExtensionShapedContentDirectory_RejectsReparsePointEscape()
+        {
+            const string releaseName = "Escaping Book.m4b";
+            var localDownloadDirectory = Path.Join(localPath, releaseName);
+            var exactNestedFile = Path.Join(localDownloadDirectory, releaseName);
+            var outsideFile = Path.Join(localPath, "outside-escaping-book.m4b");
+            Directory.CreateDirectory(localDownloadDirectory);
+            Directory.CreateDirectory(localPath);
+            await File.WriteAllTextAsync(outsideFile, "outside");
+            File.CreateSymbolicLink(exactNestedFile, outsideFile);
+
+            try
+            {
+                var remoteDownloadDirectory = Path.Join(DownloadCLientAdapterMock.RemotePath, releaseName);
+                var downloadClientAdapterMock = (DownloadCLientAdapterMock)((DownloadClientGateway)downloadClientGateway).ResolveAdapter(client);
+                downloadClientAdapterMock.QueueItemMock = new QueueItemBuilder()
+                    .WithContentPath(remoteDownloadDirectory)
+                    .WithStatus("completed")
+                    .Build();
+
+                var item = await downloadClientGateway.GetQueueItemAsync(
+                    client,
+                    new DownloadBuilder().Build(),
+                    new QueueItem());
+
+                Assert.Empty(item.SourceFiles);
+                Assert.DoesNotContain(outsideFile, item.SourceFiles);
+            }
+            finally
+            {
+                Directory.Delete(localDownloadDirectory, true);
+                File.Delete(outsideFile);
+            }
+        }
+    }
+}

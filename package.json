@@ -1,0 +1,44 @@
+{
+  "name": "bookmarkarr",
+  "version": "1.2.2",
+  "private": true,
+  "description": "Bookmarkarr - Edition-aware audiobook and ebook automation",
+  "engines": {
+    "node": "^24.15.0"
+  },
+  "scripts": {
+    "version:sync": "node scripts/sync-fe-version-from-csproj.mjs",
+    "predev": "npm run version:sync",
+    "prebuild": "npm run version:sync",
+    "pretest": "npm run version:sync",
+    "dev": "concurrently \"npm run dev:api\" \"wait-on http-get://localhost:4545/api/v1/system/ready -t 120000 -i 1000 --httpTimeout 3000 && cd fe && npm run dev\" --names \"API,WEB\" --prefix-colors \"blue,green\"",
+    "dev:api": "cd bookmarkarr.api && dotnet run",
+    "dev:web": "cd fe && npm run dev",
+    "build": "npm run build:api && npm run build:web",
+    "build:api": "cd bookmarkarr.api && dotnet build -c Release",
+    "build:web": "cd fe && npm run build",
+    "start": "npm run dev",
+    "install:all": "cd fe && npm install",
+    "lint": "npm run lint:frontend",
+    "lint:frontend": "cd fe && npm run lint:check",
+    "lint:staged": "node scripts/lint-staged.mjs",
+    "lint:fix": "cd fe && npm run lint:fix",
+    "format": "npm run format:backend && npm run format:frontend",
+    "format:backend": "dotnet format bookmarkarr.slnx --no-restore --verbosity minimal",
+    "format:backend:check": "dotnet format bookmarkarr.slnx --no-restore --verify-no-changes --verbosity minimal",
+    "format:frontend": "cd fe && npm run format",
+    "format:frontend:check": "cd fe && npm run format:check",
+    "format:check": "npm run format:backend:check && npm run format:frontend:check",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "dotnet test",
+    "test:frontend": "cd fe && npm run test:unit",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "concurrently": "^10.0.3",
+    "wait-on": "^9.0.10"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

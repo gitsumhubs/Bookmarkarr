@@ -1,0 +1,6 @@
+services:
+  bookmarkarr:
+    image: ${BOOKMARKARR_DEV_IMAGE:-bookmarkarr:local}
+    build:
+      context: .
+      dockerfile: Dockerfile

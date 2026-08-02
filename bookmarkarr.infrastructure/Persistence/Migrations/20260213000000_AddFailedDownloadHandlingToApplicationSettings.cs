@@ -1,0 +1,60 @@
+/*
+ * Bookmarkarr - Audiobook Management System
+ * Copyright (C) 2024-2026 Bookmarkarr Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace Bookmarkarr.Infrastructure.Persistence.Migrations
+{
+    /// <inheritdoc />
+    [DbContext(typeof(BookmarkarrDbContext))]
+    [Migration("20260213000000_AddFailedDownloadHandlingToApplicationSettings")]
+    public partial class AddFailedDownloadHandlingToApplicationSettings : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.AddColumn<bool>(
+                name: "FailedDownloadHandlingEnabled",
+                table: "ApplicationSettings",
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: true);
+
+            migrationBuilder.AddColumn<bool>(
+                name: "FailedDownloadAutoSearch",
+                table: "ApplicationSettings",
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: false);
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "FailedDownloadAutoSearch",
+                table: "ApplicationSettings");
+
+            migrationBuilder.DropColumn(
+                name: "FailedDownloadHandlingEnabled",
+                table: "ApplicationSettings");
+        }
+    }
+}

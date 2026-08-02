@@ -1,0 +1,133 @@
+/*
+ * Bookmarkarr - Audiobook Management System
+ * Copyright (C) 2024-2026 Bookmarkarr Contributors
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+import { ref } from 'vue'
+import { useLibraryStore } from '@/stores/library'
+import { logger } from '@/utils/logger'
+
+export function useLibraryCheck() {
+  const libraryStore = useLibraryStore()
+
+  // Library tracking
+  const addedAsins = ref(new Set<string>())
+  const addedOpenLibraryIds = ref(new Set<string>())
+
+  const checkExistingInLibrary = async () => {
+    logger.debug('Checking existing audiobooks in library...')
+
+    // Ensure library is loaded
+    if (!libraryStore.audiobooks || libraryStore.audiobooks.length === 0) {
+      logger.debug('Loading library...')
+      await libraryStore.fetchLibrary()
+    }
+
+    logger.debug('Library has', libraryStore.audiobooks.length, 'audiobooks')
+    markExistingResults()
+  }
+
+  const markExistingResults = () => {
+    logger.debug('Marking existing results...')
+
+    const libraryAsins = new Set(
+      libraryStore.audiobooks.map((book) => book.asin).filter((asin): asin is string => !!asin),
+    )
+
+    // Also collect stored OpenLibrary IDs from the library (if any)
+    const libraryOlIds = new Set(
+      libraryStore.audiobooks
+        .map((book) => book.openLibraryId)
+        .filter((id: unknown): id is string => !!id),
+    )
+
+    logger.debug('Library ASINs:', Array.from(libraryAsins))
+
+    // Clean up addedAsins: remove ASINs that are no longer in the library
+    const currentAddedAsins = Array.from(addedAsins.value)
+    for (const asin of currentAddedAsins) {
+      if (!libraryAsins.has(asin)) {
+        logger.debug('Removing ASIN from addedAsins (no longer in library):', asin)
+        addedAsins.value.delete(asin)
+      }
+    }
+
+    // Clean up OpenLibrary IDs previously marked as added
+    const currentAddedOl = Array.from(addedOpenLibraryIds.value)
+    for (const olid of currentAddedOl) {
+      if (!libraryOlIds.has(olid)) {
+        logger.debug('Removing OLID from addedOpenLibraryIds (no longer in library):', olid)
+        addedOpenLibraryIds.value.delete(olid)
+      }
+    }
+
+    // Mark current library items as added so existing books show as "Added" in the Add New UI
+    for (const asin of Array.from(libraryAsins)) {
+      if (!addedAsins.value.has(asin)) {
+        logger.debug('Marking ASIN as present in library:', asin)
+        addedAsins.value.add(asin)
+      }
+    }
+
+    for (const olid of Array.from(libraryOlIds)) {
+      if (!addedOpenLibraryIds.value.has(olid)) {
+        logger.debug('Marking OpenLibrary ID as present in library:', olid)
+        addedOpenLibraryIds.value.add(olid)
+      }
+    }
+
+    logger.debug('Added ASINs after cleanup and marking:', Array.from(addedAsins.value))
+  }
+
+  type AudibleResult = { asin?: string; openLibraryId?: string } | null | undefined
+  const isAudibleAdded = (audibleResult: AudibleResult): boolean => {
+    if (!audibleResult) return false
+    if (audibleResult.asin && addedAsins.value.has(audibleResult.asin)) return true
+    if (audibleResult.openLibraryId && addedOpenLibraryIds.value.has(audibleResult.openLibraryId))
+      return true
+    return false
+  }
+
+  type TitleResultLike = {
+    searchResult?: { asin?: string; id?: string } | undefined
+    asin?: string
+  }
+  const isTitleResultAdded = (book: TitleResultLike): boolean => {
+    const asin = book.searchResult?.asin || book.asin
+    const olid = book.searchResult?.id
+    if (asin && addedAsins.value.has(asin)) return true
+    if (!asin && olid && addedOpenLibraryIds.value.has(olid)) return true
+    return false
+  }
+
+  const markAsinAdded = (asin: string) => {
+    addedAsins.value.add(asin)
+  }
+
+  const markOpenLibraryIdAdded = (olid: string) => {
+    addedOpenLibraryIds.value.add(olid)
+  }
+
+  return {
+    addedAsins,
+    addedOpenLibraryIds,
+    checkExistingInLibrary,
+    markExistingResults,
+    isAudibleAdded,
+    isTitleResultAdded,
+    markAsinAdded,
+    markOpenLibraryIdAdded,
+  }
+}

@@ -1,0 +1,25 @@
+Bookmarkarr
+Copyright (C) 2026 Bookmarkarr contributors
+
+Bookmarkarr is free software licensed under the GNU Affero General Public
+License, version 3 or (at your option) any later version. The complete license
+text is in LICENSE.
+
+Upstream attribution
+--------------------
+
+Bookmarkarr is a modified full-source fork of Listenarr 1.2.2, upstream commit
+4555ad2183d0ea8ad673022233217432428dbff4, originally published at:
+
+    https://github.com/Listenarrs/Listenarr
+
+The upstream work was distributed under the GNU Affero General Public License
+version 3 or later and carried copyright notices for Listenarr contributors.
+Those copyrights and license rights remain in effect. The Bookmarkarr name,
+edition model, Goodreads importer, migration utility, deployment/release work,
+and visual assets are modifications and additions; this notice does not imply
+endorsement by upstream Listenarr contributors.
+
+The repository history retains the upstream commits. The six operational fixes
+carried from the improved local Listenarr deployment are documented in
+docs/ARCHITECTURE.md and remain AGPL-covered source.

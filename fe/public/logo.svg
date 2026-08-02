@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Bookmarkarr original logo; project licensed under GNU AGPL v3 or later. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">Bookmarkarr</title>
+  <desc id="description">An open book with a bookmark, audio waveform, and headphone arc.</desc>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M92 255V192c0-91 73-164 164-164s164 73 164 164v63" stroke="#071f49" stroke-width="30"/>
+    <path d="M91 238H68c-18 0-32 15-32 33v71c0 19 14 34 32 34h23zM421 238h23c18 0 32 15 32 33v71c0 19-14 34-32 34h-23z" fill="#11b8aa" stroke="#071f49" stroke-width="14"/>
+    <path d="M108 230c56-7 102 7 148 43 46-36 92-50 148-43v190c-58-6-106 9-148 51-42-42-90-57-148-51z" fill="#fff" stroke="#071f49" stroke-width="20"/>
+    <path d="M256 273v198" stroke="#071f49" stroke-width="10"/>
+    <path d="M222 263h68v137l-34-27-34 27z" fill="#ff5b42"/>
+    <path d="M166 171v31M196 149v53M226 125v77M256 105v97M286 125v77M316 149v53M346 171v31" stroke="#11b8aa" stroke-width="13"/>
+  </g>
+</svg>
