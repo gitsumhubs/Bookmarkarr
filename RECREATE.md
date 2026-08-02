@@ -4,6 +4,8 @@
 
 Bookmarkarr is a standalone full-source Listenarr 1.2.2 fork for managing audiobook and ebook editions independently under a unified book. It uses external indexers and download clients and ships as one application container. The current bulk library-import workflow is audiobook-focused; a Radarr-style scan, match-review, and import workflow for existing ebook files remains planned future work.
 
+Normal operators deploy from the public `ghcr.io/gitsumhubs/bookmarkarr:latest` image with the standalone root `docker-compose.yml`. The file contains no build configuration and requires neither a source checkout nor `.env`; environment-variable overrides and external Docker networks remain optional.
+
 Appearance preferences are frontend-only and stored per browser in local storage. The canonical polished mark is `fe/public/bookmarkarr-logo.png`; the Bookmarkarr, Ocean, Forest, and Plum palettes and System/Light/Dark modes are implemented in `fe/src/services/appearance.ts` and `fe/src/styles/appearance.css`.
 
 ## Tech Stack
@@ -15,9 +17,8 @@ Appearance preferences are frontend-only and stored per browser in local storage
 
 ## Prerequisites
 
-- Git
 - Docker Engine and Docker Compose v2
-- For source builds: .NET 10 SDK, Node.js 24, npm, Python 3.11+
+- For source recreation: Git, .NET 10 SDK, Node.js 24, npm, Python 3.11+
 - `portctl` when assigning a host port on the managed host
 - Optional externally deployed Prowlarr, NZBGet/SABnzbd, qBittorrent, or RDT Client
 
@@ -25,8 +26,6 @@ Appearance preferences are frontend-only and stored per browser in local storage
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| BOOKMARKARR_IMAGE | Normal deployment image | ghcr.io/owner/bookmarkarr:latest |
-| BOOKMARKARR_CONTAINER_NAME | Compose container name | bookmarkarr |
 | BOOKMARKARR_PORT | Host web port | 3018 |
 | BOOKMARKARR_PUBLIC_URL | Public browser URL | https://books.example.test |
 | BOOKMARKARR_AUTHENTICATION_REQUIRED | Require interactive authentication | true |
@@ -37,11 +36,6 @@ Appearance preferences are frontend-only and stored per browser in local storage
 | BOOKMARKARR_DOWNLOADS_PATH | Host download mount | ./data/downloads |
 | BOOKMARKARR_AUDIOBOOK_CATEGORY | Download category | audiobooks |
 | BOOKMARKARR_EBOOK_CATEGORY | Download category | ebooks |
-| BOOKMARKARR_PROWLARR_URL | External Prowlarr URL | http://prowlarr:9696 |
-| BOOKMARKARR_NZBGET_URL | External NZBGet URL | http://nzbget:6789 |
-| BOOKMARKARR_SABNZBD_URL | External SABnzbd URL | http://sabnzbd:8080 |
-| BOOKMARKARR_QBITTORRENT_URL | External qBittorrent URL | http://qbittorrent:8080 |
-| BOOKMARKARR_RDTCLIENT_URL | External RDT Client URL | http://rdtclient:6500 |
 | PROWLARR_DOCKER_NETWORK | Optional existing Prowlarr network | replace_with_prowlarr_network |
 | NZBGET_DOCKER_NETWORK | Optional existing NZBGet network | replace_with_nzbget_network |
 | RDTCLIENT_DOCKER_NETWORK | Optional existing RDT Client network | replace_with_rdtclient_network |
@@ -71,20 +65,25 @@ portctl status
 
 ## Setup Instructions
 
+### Image-Only Deployment
+
 ```bash
-git clone <bookmarkarr-repository-url> bookmarkarr
+mkdir -p bookmarkarr/data/config bookmarkarr/data/audiobooks bookmarkarr/data/ebooks bookmarkarr/data/downloads
 cd bookmarkarr
-cp .env.example .env
-mkdir -p data/config data/audiobooks data/ebooks data/downloads
+curl -fsSLO https://raw.githubusercontent.com/gitsumhubs/Bookmarkarr/main/docker-compose.yml
 docker compose pull
 docker compose up -d
 docker compose ps
 curl --fail http://localhost:3018/api/v1/system/ready
 ```
 
-For a local developer image:
+The downloaded file is runnable without `.env`. Edit its host volume paths, identity, timezone, or port directly; alternatively create `.env` using the optional variable names in `.env.example`.
+
+### Source Recreation
 
 ```bash
+git clone https://github.com/gitsumhubs/Bookmarkarr.git bookmarkarr-source
+cd bookmarkarr-source
 docker compose -f docker-compose.yml -f docker-compose.dev.yml build
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
@@ -109,7 +108,7 @@ data/                        ignored local runtime mounts
 
 ## Configuration Files
 
-- `docker-compose.yml`: portable one-service pull-based deployment
+- `docker-compose.yml`: standalone one-service deployment fixed to the public GHCR image; no build section or source checkout required
 - `docker-compose.dev.yml`: optional source-build override
 - `docker-compose.external-networks.example.yml`: sanitized template for attaching Bookmarkarr to externally managed service networks
 - A deployment may add its own ignored Compose override for host-specific external networks, mounts, or routing
@@ -121,7 +120,7 @@ data/                        ignored local runtime mounts
 - `.github/workflows/ci.yml`: test/build checks
 - `.github/workflows/publish-ghcr.yml`: semantic tag multi-architecture publication
 
-The public repository is `gitsumhubs/Bookmarkarr`. Enable GitHub Actions, push a semantic version tag, and make the resulting GHCR package public if anonymous Compose pulls are desired.
+The public repository is `gitsumhubs/Bookmarkarr`, and its package is public for anonymous Compose pulls. Semantic version tags publish `linux/amd64` and `linux/arm64` images plus `latest`.
 
 Public examples and comments must not use credential-shaped placeholder values; GitHub push protection should pass without bypasses.
 
@@ -142,7 +141,7 @@ docker compose logs -f bookmarkarr
 docker compose down
 ```
 
-For Docker-name connectivity to separately managed Prowlarr, NZBGet, or RDT Client, copy `docker-compose.external-networks.example.yml` without the `.example` suffix, set the existing network names in `.env`, remove unused networks, and set `COMPOSE_FILE=docker-compose.yml:docker-compose.external-networks.yml` before validating with `docker compose config`.
+For Docker-name connectivity to separately managed Prowlarr, NZBGet, or RDT Client, add the relevant pre-existing external networks directly to the deployment's `docker-compose.yml`. The checked-in `docker-compose.external-networks.example.yml` remains an optional source-checkout template for operators who prefer multiple Compose files.
 
 ## Database and Migration
 

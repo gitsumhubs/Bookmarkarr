@@ -19,84 +19,75 @@ Bookmarkarr is a self-hosted manager for unified books with independently manage
 
 For source development, use the .NET 10 SDK, Node.js 24, npm, Python 3.11+, and Docker.
 
-## Setup
+## Docker Compose Deployment
 
-### 1. Choose an image
+A normal installation needs only Docker Compose and one `docker-compose.yml`. It pulls the public multi-architecture image from GHCR; cloning this repository, building source, and creating an `.env` file are not required.
 
-Clone the repository and create a local deployment file:
+Create a deployment directory and download the ready-to-run Compose file:
 
 ```bash
-git clone https://github.com/gitsumhubs/Bookmarkarr.git
+mkdir -p bookmarkarr/data/config bookmarkarr/data/audiobooks bookmarkarr/data/ebooks bookmarkarr/data/downloads
 cd bookmarkarr
-cp .env.example .env
-```
-
-For a normal deployment, use the public `ghcr.io/gitsumhubs/bookmarkarr` image configured in `.env`. To build locally instead, use the source-build command in step 4.
-
-If you own a new fork and no image exists yet, enable GitHub Actions and push a semantic version tag:
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-The release workflow publishes `ghcr.io/<repository-owner>/bookmarkarr`. Make the package public for anonymous Compose pulls, or authenticate Docker to GHCR before pulling a private package. See [Releases and GHCR](docs/RELEASES.md).
-
-### 2. Configure storage and identity
-
-Review these values in `.env`:
-
-- `BOOKMARKARR_PORT` and `BOOKMARKARR_PUBLIC_URL`
-- `PUID`, `PGID`, `UMASK`, and `TZ`
-- `BOOKMARKARR_CONFIG_PATH`, `BOOKMARKARR_AUDIOBOOKS_PATH`, `BOOKMARKARR_EBOOKS_PATH`, and `BOOKMARKARR_DOWNLOADS_PATH`
-
-The host paths are configurable; the corresponding paths inside Bookmarkarr are always `/app/config`, `/audiobooks`, `/ebooks`, and `/downloads`. Create the default local directories with:
-
-```bash
-mkdir -p data/config data/audiobooks data/ebooks data/downloads
-```
-
-The configured `PUID:PGID` must be able to write to all four host paths. Never reuse another application's config/database directory.
-
-### 3. Connect external services
-
-Bookmarkarr does not bundle Prowlarr, indexers, or download clients. Their URLs must be reachable from inside the Bookmarkarr container.
-
-- If those services expose LAN or reverse-proxy URLs that containers can reach, use those URLs and no Compose override is required.
-- If they are addressed by Docker service name, attach Bookmarkarr to their existing external networks. Copy the sanitized template, set the real network names in `.env`, and enable the override:
-
-```bash
-docker network ls
-cp docker-compose.external-networks.example.yml docker-compose.external-networks.yml
-```
-
-Then uncomment this line in `.env`:
-
-```dotenv
-COMPOSE_FILE=docker-compose.yml:docker-compose.external-networks.yml
-```
-
-Remove unused services and networks from the copied override. Every declared external network must already exist. Do not commit the local override or `.env`.
-
-### 4. Start Bookmarkarr
-
-For the published image:
-
-```bash
-docker compose config
+curl -fsSLO https://raw.githubusercontent.com/gitsumhubs/Bookmarkarr/main/docker-compose.yml
 docker compose pull
 docker compose up -d
 docker compose ps
-curl --fail http://localhost:3018/api/v1/system/ready
 ```
 
-For a local source build, include the development override and any optional external-network override:
+The essential service definition is a conventional image-only Compose service:
+
+```yaml
+---
+services:
+  bookmarkarr:
+    image: ghcr.io/gitsumhubs/bookmarkarr:latest
+    container_name: bookmarkarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - UMASK=022
+      - TZ=Etc/UTC
+    volumes:
+      - ./data/config:/app/config
+      - ./data/audiobooks:/audiobooks
+      - ./data/ebooks:/ebooks
+      - ./data/downloads:/downloads
+    ports:
+      - 3018:4545
+    restart: unless-stopped
+```
+
+Open `http://localhost:3018` after the health status becomes `healthy`. Edit the host side of the volume mappings if your libraries or download staging directory live elsewhere. The selected `PUID:PGID` must be able to write to all four host paths; never reuse another application's config/database directory.
+
+The checked-in Compose file has the same image-only service plus a health check, bounded Docker log rotation, and optional `${VARIABLE:-default}` overrides. It works unchanged without `.env`; copy [.env.example](.env.example) to `.env` only when you want to override those defaults without editing YAML.
+
+### Connect external services
+
+Bookmarkarr does not bundle Prowlarr, indexers, or download clients. Their URLs must be reachable from inside the Bookmarkarr container.
+
+- If those services expose LAN or reverse-proxy URLs that containers can reach, use those URLs and leave the Compose file unchanged.
+- If they are addressed by Docker service name, add their existing Docker network to the same `docker-compose.yml`:
+
+```yaml
+services:
+  bookmarkarr:
+    networks:
+      - default
+      - media-services
+
+networks:
+  media-services:
+    external: true
+    name: existing-download-stack-network
+```
+
+Find the real network name with:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+docker network ls
 ```
 
-The default host endpoint is `http://localhost:3018`; the container listens on port `4545`.
+Every declared external network must already exist. Multiple services can share one existing network, or you can add one entry per external Compose project. See [Docker deployment](docs/DOCKER.md) for more examples.
 
 ## First-Run Configuration
 

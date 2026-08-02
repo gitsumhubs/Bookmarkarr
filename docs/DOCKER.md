@@ -2,42 +2,47 @@
 
 ## Normal Deployment
 
-Normal Compose pulls a configurable GHCR image and runs one service. No integration containers are bundled.
+Normal deployment pulls the public GHCR image and runs one service. The repository and source toolchain are not required, no image build occurs, and no integration containers are bundled.
 
 ```bash
-cp .env.example .env
-mkdir -p data/config data/audiobooks data/ebooks data/downloads
+mkdir -p bookmarkarr/data/config bookmarkarr/data/audiobooks bookmarkarr/data/ebooks bookmarkarr/data/downloads
+cd bookmarkarr
+curl -fsSLO https://raw.githubusercontent.com/gitsumhubs/Bookmarkarr/main/docker-compose.yml
 docker compose pull
 docker compose up -d
+docker compose ps
 ```
 
-The four mounts isolate mutable configuration/database, audiobook media, ebook media, and download staging. Relative defaults make the template portable; production operators may replace them in the untracked `.env`.
+The downloaded `docker-compose.yml` contains `image: ghcr.io/gitsumhubs/bookmarkarr:latest` and no `build:` configuration. The four mounts isolate mutable configuration/database, audiobook media, ebook media, and download staging. Relative defaults make the file runnable as-is. Edit the host side of those volume entries for existing libraries, or use an optional `.env` file to override the checked-in defaults.
 
 ## External Docker Networks
 
 Services in separate Compose projects normally occupy separate default networks. A hostname such as `prowlarr` or `rdtclient` resolves from Bookmarkarr only when the containers share a Docker network.
 
-If the external services are already reachable through LAN or reverse-proxy URLs, no network override is needed. Otherwise:
+If the external services are already reachable through LAN or reverse-proxy URLs, no Compose change is needed. Otherwise, add each existing network to the same `docker-compose.yml`. For one shared external network:
+
+```yaml
+services:
+  bookmarkarr:
+    networks:
+      - default
+      - media-services
+
+networks:
+  media-services:
+    external: true
+    name: existing-download-stack-network
+```
+
+Find the real network name and validate the edited file before starting:
 
 ```bash
 docker network ls
-cp docker-compose.external-networks.example.yml docker-compose.external-networks.yml
-```
-
-Set `PROWLARR_DOCKER_NETWORK`, `NZBGET_DOCKER_NETWORK`, and `RDTCLIENT_DOCKER_NETWORK` in `.env` to the existing network names. Remove unused network entries from the copied override, then enable it with:
-
-```dotenv
-COMPOSE_FILE=docker-compose.yml:docker-compose.external-networks.yml
-```
-
-Validate the merged configuration before starting:
-
-```bash
 docker compose config
 docker compose up -d
 ```
 
-The copied override is ignored by Git. The `.example.yml` file contains no server-specific network names, addresses, or credentials.
+Add more external network entries when Prowlarr and download clients live in different Compose projects. A source checkout also includes `docker-compose.external-networks.example.yml` as an optional multi-file template, but it is not required for normal deployment.
 
 ## Local Developer Build
 
@@ -45,7 +50,7 @@ The copied override is ignored by Git. The `.example.yml` file contains no serve
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 ```
 
-The override changes only the image source/build configuration. Runtime behavior and mounts remain identical.
+This source-development override is not used by normal deployments. Runtime behavior and mounts remain identical.
 
 ## Identity, Permissions, and Time
 
@@ -53,7 +58,7 @@ The override changes only the image source/build configuration. Runtime behavior
 
 ## Authentication and Public URL
 
-Set `BOOKMARKARR_AUTHENTICATION_REQUIRED=true` for authenticated deployments. `BOOKMARKARR_PUBLIC_URL` is used for external links and notifications. A fixed `BOOKMARKARR_API_KEY` is optional; leaving it empty permits normal runtime configuration. Protect `.env` and never commit it.
+Set `BOOKMARKARR_AUTHENTICATION_REQUIRED=true` for authenticated deployments. `BOOKMARKARR_PUBLIC_URL` is used for external links and notifications. A fixed `BOOKMARKARR_API_KEY` is optional; leaving it empty permits normal runtime configuration. Put overrides directly in Compose or in an optional `.env`; protect `.env` and never commit it.
 
 ## Health and Logs
 
