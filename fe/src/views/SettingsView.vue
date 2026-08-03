@@ -2191,15 +2191,18 @@ onMounted(async () => {
 }
 
 .form-group input::placeholder {
-  color: #999;
+  color: var(--text-muted);
   opacity: 1;
 }
 
+/* Chrome paints its own background on autofilled inputs, and the only way to
+   override it is this inset shadow. It has to track the theme, or an autofilled
+   field shows a dark block with white text on a light form. */
 .form-group input:-webkit-autofill,
 .form-group input:-webkit-autofill:hover,
 .form-group input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 1000px #1a1a1a inset !important;
-  -webkit-text-fill-color: #fff !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--input-bg) inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
   border: 1px solid var(--border-color) !important;
 }
 
