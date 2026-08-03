@@ -39,30 +39,38 @@ services:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
-    # ── Talking to NZBGet / Prowlarr / your torrent client ──────────────────
-    # Running them in their OWN compose files (a folder each)? Then Docker puts
-    # them on separate networks and http://nzbget:6789 will NOT resolve until
-    # you uncomment this AND the networks: block at the bottom.
+    # ── Connecting to NZBGet / Prowlarr / your torrent client ───────────────
+    # Run them in their own compose files? Then they're on separate Docker
+    # networks and http://nzbget:6789 will NOT resolve until you join them.
     #
-    # Find the real network names first:   docker network ls
-    # They're usually <foldername>_default
+    #   1. docker network ls          ← get your real network names
+    #   2. Uncomment this block and the networks: section below
+    #   3. Swap in those names, and delete anything you don't run
     #
     # networks:
     #   - default
     #   - nzbget
     #   - prowlarr
+    #   - torrent
 
 # networks:
 #   nzbget:
 #     external: true
-#     name: nzbget_default        # ← replace with YOUR name from `docker network ls`
+#     name: nzbget_default
 #   prowlarr:
 #     external: true
 #     name: prowlarr_default
+#   torrent:
+#     external: true
+#     name: rdtclient_default    # or qbittorrent_default, transmission_default
 ```
 
-> **Skip the networks part if** everything is in one compose file, or your services run on
-> the host — use their LAN URL like `http://192.168.1.50:6789` instead.
+> **Network names come from the folder** the other compose file lives in, not the service
+> name — a Prowlarr in a folder called `prowlarr-abb` creates `prowlarr-abb_default`. Always
+> copy them from `docker network ls` rather than guessing.
+>
+> **Skip this entirely if** everything is in one compose file, or your services run on the
+> host — then just use their LAN URL like `http://192.168.1.50:6789`.
 
 Then start it:
 
