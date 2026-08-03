@@ -74,8 +74,13 @@ namespace Bookmarkarr.Infrastructure.Persistence.Repositories
 
         public async Task<RootFolder?> GetDefaultAsync()
         {
+            return await GetDefaultAsync(EditionMediaType.Audiobook);
+        }
+
+        public async Task<RootFolder?> GetDefaultAsync(EditionMediaType mediaType)
+        {
             await using var ctx = await _dbFactory.CreateDbContextAsync();
-            return await ctx.RootFolders.FirstOrDefaultAsync(r => r.IsDefault);
+            return await ctx.RootFolders.FirstOrDefaultAsync(r => r.IsDefault && r.MediaType == mediaType);
         }
 
         public async Task ClearDefaultExceptAsync(int? excludeId, CancellationToken ct = default)

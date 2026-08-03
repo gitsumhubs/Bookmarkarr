@@ -25,7 +25,11 @@ public enum EditionWantedStatus
     Queued = 2,
     Downloading = 3,
     Imported = 4,
-    UpgradeAvailable = 5
+    UpgradeAvailable = 5,
+    /// <summary>Files arrived but could not be imported; needs user attention, not a re-grab.</summary>
+    ImportBlocked = 6,
+    /// <summary>The grab failed or was cancelled with nothing imported; eligible for retry.</summary>
+    Failed = 7
 }
 
 /// <summary>
@@ -53,8 +57,16 @@ public sealed class BookEdition
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public List<EditionFile> Files { get; set; } = [];
 
+    // Work that is in flight, blocked, or failed all still belongs in Wanted: the user
+    // needs to see it there to watch it land, unblock it, or retry it.
     [NotMapped]
-    public bool IsWanted => Monitored && Status is EditionWantedStatus.Missing or EditionWantedStatus.UpgradeAvailable;
+    public bool IsWanted => Monitored && Status is
+        EditionWantedStatus.Missing or
+        EditionWantedStatus.Queued or
+        EditionWantedStatus.Downloading or
+        EditionWantedStatus.UpgradeAvailable or
+        EditionWantedStatus.ImportBlocked or
+        EditionWantedStatus.Failed;
 
     public static BookEdition Create(int bookId, EditionMediaType mediaType, bool monitored = true) => new()
     {

@@ -18,7 +18,6 @@
 
 using System.ComponentModel.DataAnnotations;
 using Bookmarkarr.Domain.Common;
-using Bookmarkarr.Domain.Books;
 
 namespace Bookmarkarr.Domain.Audiobooks
 {

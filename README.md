@@ -130,7 +130,7 @@ Common causes are a Docker network that Bookmarkarr has not joined, an unreachab
 - Independent monitoring, quality profile, root, download category, search, import, upgrade, and wanted state per edition
 - Server-derived strict release filtering: audio and legitimate audio bundles for audiobooks; recognized ebook releases only for ebooks
 - Separate file registries; mixed audio bundles route recognized ebook sidecars to the ebook edition when present
-- Goodreads CSV upload, preview, match resolution, format selection, and idempotent additive commit without automatic searches
+- Goodreads CSV upload, preview, match resolution, format selection, and idempotent additive commit with best-effort audiobook auto-download
 - External Prowlarr including AudiobookBay, direct Newznab/Torznab, NZBGet, SABnzbd, qBittorrent, and RDT Client
 - Stable download job IDs, `pausedUP` completion support, resilient sidecar handling and bounded/manual retries, and AudiobookBay magnet support
 - Safe recovery of qBittorrent/RDT single-file layouts whose outer directory repeats the media filename (for example `Book.m4b/Book.m4b`)

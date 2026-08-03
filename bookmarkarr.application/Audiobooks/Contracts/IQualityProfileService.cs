@@ -6,6 +6,7 @@ namespace Bookmarkarr.Application.Audiobooks.Contracts
         Task<List<QualityProfile>> GetAllAsync();
         Task<QualityProfile?> GetByIdAsync(int id);
         Task<QualityProfile?> GetDefaultAsync();
+        Task<QualityProfile?> GetDefaultAsync(EditionMediaType mediaType);
         Task<QualityProfile> CreateAsync(QualityProfile profile);
         Task<QualityProfile> UpdateAsync(QualityProfile profile);
         Task<bool> DeleteAsync(int id);

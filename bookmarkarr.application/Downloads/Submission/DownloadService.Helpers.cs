@@ -5,6 +5,21 @@ namespace Bookmarkarr.Application.Downloads.Submission;
 
 public partial class DownloadService
 {
+    // Server-side mirror of the download state. The Wanted UI prefers live download
+    // records; this is the fallback that survives a reload before those records arrive.
+    private static EditionWantedStatus? ToEditionStatus(DownloadStatus status) => status switch
+    {
+        DownloadStatus.Queued => EditionWantedStatus.Queued,
+        DownloadStatus.Downloading => EditionWantedStatus.Downloading,
+        DownloadStatus.Paused => EditionWantedStatus.Downloading,
+        DownloadStatus.Processing => EditionWantedStatus.Downloading,
+        DownloadStatus.Ready => EditionWantedStatus.Downloading,
+        DownloadStatus.ImportPending => EditionWantedStatus.Downloading,
+        DownloadStatus.ImportBlocked => EditionWantedStatus.ImportBlocked,
+        DownloadStatus.Failed => EditionWantedStatus.Failed,
+        _ => null
+    };
+
     private static SearchResult ToSearchResult(
         TrustedDownloadCandidate candidate,
         PreparedDownloadSubmission prepared) => new()
@@ -44,6 +59,7 @@ public partial class DownloadService
         }
 
         await downloadRepository.UpdateAsync(download);
+        await SyncEditionStatusAsync(download);
         switch (previous.Status, download.Status)
         {
             case var (old, next) when old == next:
@@ -56,5 +72,53 @@ public partial class DownloadService
                 await notificationService.OnDownloadFailedAsync(download);
                 return;
         }
+    }
+
+    private async Task SyncEditionStatusAsync(Download download)
+    {
+        if (download.AudiobookId is not int audiobookId || audiobookId <= 0)
+        {
+            return;
+        }
+
+        var targetStatus = ToEditionStatus(download.Status);
+        if (targetStatus is null)
+        {
+            return;
+        }
+
+        var audiobook = await audiobookRepository.GetByIdAsync(audiobookId);
+        if (audiobook?.Editions == null || audiobook.Editions.Count == 0)
+        {
+            return;
+        }
+
+        BookEdition? edition;
+        if (download.EditionId.HasValue)
+        {
+            edition = audiobook.Editions.FirstOrDefault(item => item.Id == download.EditionId.Value);
+        }
+        else
+        {
+            // Untargeted record: only attribute it when there is exactly one audiobook
+            // edition it could belong to. Guessing would mark the wrong edition.
+            var audiobookEditions = audiobook.Editions
+                .Where(item => item.MediaType == EditionMediaType.Audiobook)
+                .ToList();
+            edition = audiobookEditions.Count == 1 ? audiobookEditions[0] : null;
+        }
+
+        if (edition == null)
+        {
+            return;
+        }
+
+        // A completed import wins over a late failure notice: if files already landed the
+        // edition is genuinely available, whatever the download record ended up saying.
+        edition.Status = download.Status is DownloadStatus.Failed or DownloadStatus.ImportBlocked
+            ? edition.Files.Count > 0 ? EditionWantedStatus.Imported : targetStatus.Value
+            : targetStatus.Value;
+        edition.UpdatedAt = DateTime.UtcNow;
+        await audiobookRepository.SaveChangesAsync();
     }
 }

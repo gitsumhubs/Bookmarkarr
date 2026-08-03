@@ -72,6 +72,39 @@ namespace Bookmarkarr.Domain.Common
             return !string.IsNullOrEmpty(ext) && EbookExtensions.Contains(ext);
         }
 
+        /// <summary>
+        /// Returns true when the file is importable for the given media type, honouring
+        /// the configured per-media extension list.
+        /// </summary>
+        /// <remarks>
+        /// Audiobook and ebook lists are kept separate and selected by media type, so a
+        /// format allowed for ebooks can never sneak into an audiobook import path.
+        /// An empty or null list falls back to the built-in set rather than accepting
+        /// everything, so a blank setting cannot silently disable the filter.
+        /// Extension matching is case-insensitive.
+        /// </remarks>
+        public static bool IsImportableFor(
+            string filePath,
+            EditionMediaType mediaType,
+            IEnumerable<string>? allowedExtensions)
+        {
+            var extension = Path.GetExtension(filePath);
+            if (string.IsNullOrEmpty(extension))
+            {
+                return false;
+            }
+
+            var configured = NormalizeExtensions(allowedExtensions);
+            if (configured.Count > 0)
+            {
+                return configured.Contains(extension);
+            }
+
+            return mediaType == EditionMediaType.Ebook
+                ? EbookExtensions.Contains(extension)
+                : AudioExtensions.Contains(extension);
+        }
+
         public static bool IsPathInvalidForCurrentOs(string? path)
         {
             return IsPathInvalidForOs(path, OperatingSystem.IsWindows());

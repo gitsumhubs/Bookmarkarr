@@ -1,6 +1,5 @@
 /* Bookmarkarr is licensed under the GNU AGPL v3 or later. */
 using System.Text.Json;
-using System.Text;
 using Bookmarkarr.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +12,9 @@ namespace Bookmarkarr.Api.Features.CatalogImports;
 public sealed class GoodreadsCatalogImportsController(
     BookmarkarrDbContext db,
     IHistoryRepository history,
+    GoodreadsCatalogImportAutoDownloadWorkflow autoDownloadWorkflow,
+    IQualityProfileService qualityProfileService,
+    IRootFolderService rootFolderService,
     ILogger<GoodreadsCatalogImportsController> logger) : ControllerBase
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
@@ -28,7 +30,7 @@ public sealed class GoodreadsCatalogImportsController(
 
         List<Dictionary<string, string>> csvRows;
         try { await using var stream = file.OpenReadStream(); csvRows = await GoodreadsCsvParser.ParseAsync(stream, ct); }
-        catch (DecoderFallbackException) { return BadRequest(new { error = "The CSV must be valid UTF-8." }); }
+        catch (System.Text.DecoderFallbackException) { return BadRequest(new { error = "The CSV must be valid UTF-8." }); }
         catch (FormatException ex) { return BadRequest(new { error = ex.Message }); }
 
         var books = await db.Audiobooks.AsNoTracking().Include(b => b.ExternalIdentifiers).Include(b => b.Editions).ToListAsync(ct);
@@ -68,6 +70,21 @@ public sealed class GoodreadsCatalogImportsController(
         var createdBooks = 0;
         var createdEditions = 0;
         var unchanged = 0;
+        var audiobookIdsToAutoDownload = new HashSet<int>();
+
+        // Resolved per media type: an audiobook profile scores codecs and bitrates that
+        // are meaningless for ebooks, so the two must never be shared. A media type with
+        // no configured default simply gets no profile rather than borrowing the other's.
+        var defaultProfiles = new Dictionary<EditionMediaType, QualityProfile?>
+        {
+            [EditionMediaType.Audiobook] = await qualityProfileService.GetDefaultAsync(EditionMediaType.Audiobook),
+            [EditionMediaType.Ebook] = await qualityProfileService.GetDefaultAsync(EditionMediaType.Ebook)
+        };
+        var defaultRoots = new Dictionary<EditionMediaType, RootFolder?>
+        {
+            [EditionMediaType.Audiobook] = await rootFolderService.GetDefaultAsync(EditionMediaType.Audiobook),
+            [EditionMediaType.Ebook] = await rootFolderService.GetDefaultAsync(EditionMediaType.Ebook)
+        };
 
         foreach (var row in storedRows)
         {
@@ -89,6 +106,9 @@ public sealed class GoodreadsCatalogImportsController(
                     Isbn = string.IsNullOrWhiteSpace(row.Isbn) ? [] : [row.Isbn],
                     GoodreadsId = row.GoodreadsId,
                     Monitored = media.Contains(EditionMediaType.Audiobook),
+                    QualityProfileId = media.Contains(EditionMediaType.Audiobook)
+                        ? defaultProfiles[EditionMediaType.Audiobook]?.Id
+                        : null,
                     ExternalIdentifiers = []
                 };
                 if (!string.IsNullOrWhiteSpace(row.GoodreadsId)) book.ExternalIdentifiers.Add(NewIdentifier(book, AudiobookExternalIdentifierType.GoodreadsId, row.GoodreadsId));
@@ -104,9 +124,21 @@ public sealed class GoodreadsCatalogImportsController(
             {
                 if (book.Editions.Any(e => e.MediaType == mediaType)) continue;
                 var edition = BookEdition.Create(book.Id, mediaType);
-                edition.RootPath = mediaType == EditionMediaType.Audiobook
-                    ? Environment.GetEnvironmentVariable("BOOKMARKARR_AUDIOBOOK_ROOT") ?? "/audiobooks"
-                    : Environment.GetEnvironmentVariable("BOOKMARKARR_EBOOK_ROOT") ?? "/ebooks";
+                edition.QualityProfileId = mediaType == EditionMediaType.Audiobook
+                    ? book.QualityProfileId ?? defaultProfiles[mediaType]?.Id
+                    : defaultProfiles[mediaType]?.Id;
+                // Prefer the configured root for this media type; fall back to the
+                // conventional container path only when none is registered yet.
+                edition.RootFolderId = defaultRoots[mediaType]?.Id;
+                edition.RootPath = defaultRoots[mediaType]?.Path
+                    ?? (mediaType == EditionMediaType.Audiobook
+                        ? Environment.GetEnvironmentVariable("BOOKMARKARR_AUDIOBOOK_ROOT") ?? "/audiobooks"
+                        : Environment.GetEnvironmentVariable("BOOKMARKARR_EBOOK_ROOT") ?? "/ebooks");
+                if (mediaType == EditionMediaType.Audiobook)
+                {
+                    book.Monitored = true;
+                    book.QualityProfileId ??= edition.QualityProfileId;
+                }
                 db.BookEditions.Add(edition);
                 book.Editions.Add(edition);
                 createdEditions++;
@@ -121,21 +153,38 @@ public sealed class GoodreadsCatalogImportsController(
                     MediaType = mediaType.ToString().ToLowerInvariant(),
                     EventType = "CatalogImportEditionAdded",
                     Source = "Goodreads",
-                    Message = $"Added and monitored {mediaType.ToString().ToLowerInvariant()} edition from Goodreads CSV; automatic search was not started.",
+                    Message = mediaType == EditionMediaType.Audiobook && request.SearchAfterImport
+                        ? $"Added and monitored {mediaType.ToString().ToLowerInvariant()} edition from Goodreads CSV; a search was scheduled."
+                        : $"Added and monitored {mediaType.ToString().ToLowerInvariant()} edition from Goodreads CSV; automatic search was not started.",
                     Data = JsonSerializer.Serialize(new { batchId, row.RowNumber, row.GoodreadsId, row.Isbn }, JsonOptions)
                 }, ct);
+
+                if (mediaType == EditionMediaType.Audiobook && request.SearchAfterImport)
+                {
+                    audiobookIdsToAutoDownload.Add(book.Id);
+                }
             }
             if (addedForBook == 0) unchanged++;
         }
 
         await db.SaveChangesAsync(ct);
-        var summary = new GoodreadsCommitSummary(batch.Id, createdBooks, createdEditions, unchanged, DateTime.UtcNow);
+
+        var summary = new GoodreadsCommitSummary(
+            batch.Id, createdBooks, createdEditions, unchanged, DateTime.UtcNow,
+            audiobookIdsToAutoDownload.Count);
         batch.Status = CatalogImportBatchStatus.Committed;
         batch.CommittedAt = summary.CommittedAt;
         batch.CommitSummaryJson = JsonSerializer.Serialize(summary, JsonOptions);
         batch.NormalizedRowsJson = "[]";
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
+
+        // Scheduled only after the transaction commits, so a background search can never
+        // observe a half-written batch. Schedule() returns immediately; it does not hold
+        // the response open for however many books were imported. The set is empty unless
+        // the caller opted in, so a plain import stays additive.
+        autoDownloadWorkflow.Schedule(audiobookIdsToAutoDownload);
+
         return Ok(summary);
     }
 
@@ -194,5 +243,18 @@ public sealed record GoodreadsPreviewRow(string RowId, int RowNumber, string Goo
     bool Eligible, string? IneligibleReason, bool Selected, List<EditionMediaType> MediaFormats, string MatchStatus,
     int? MatchedBookId, string? MatchMethod, List<GoodreadsMatchCandidate> MatchCandidates);
 public sealed record GoodreadsCommitRow(string RowId, bool Selected, List<EditionMediaType>? MediaFormats, int? ResolvedBookId);
-public sealed record GoodreadsCommitRequest(List<GoodreadsCommitRow>? Rows);
-public sealed record GoodreadsCommitSummary(string BatchId, int CreatedBooks, int CreatedEditions, int UnchangedRows, DateTime CommittedAt);
+
+/// <param name="Rows">Per-row selections captured from the preview step.</param>
+/// <param name="SearchAfterImport">
+/// Opt-in. When false (the default) the import is purely additive: books and editions are
+/// created with the correct roots and profiles, and nothing is searched or grabbed until
+/// the user presses Search themselves.
+/// </param>
+public sealed record GoodreadsCommitRequest(List<GoodreadsCommitRow>? Rows, bool SearchAfterImport = false);
+public sealed record GoodreadsCommitSummary(
+    string BatchId,
+    int CreatedBooks,
+    int CreatedEditions,
+    int UnchangedRows,
+    DateTime CommittedAt,
+    int SearchesScheduled = 0);

@@ -40,7 +40,12 @@ namespace Bookmarkarr.Infrastructure.Persistence.Repositories
 
         public async Task<QualityProfile?> GetDefaultAsync()
         {
-            return await _db.QualityProfiles.FirstOrDefaultAsync(p => p.IsDefault);
+            return await GetDefaultAsync(EditionMediaType.Audiobook);
+        }
+
+        public async Task<QualityProfile?> GetDefaultAsync(EditionMediaType mediaType)
+        {
+            return await _db.QualityProfiles.FirstOrDefaultAsync(p => p.IsDefault && p.MediaType == mediaType);
         }
 
         public async Task<QualityProfile> AddAsync(QualityProfile profile)

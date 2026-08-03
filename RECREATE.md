@@ -4,9 +4,9 @@
 
 Bookmarkarr is a standalone full-source Listenarr 1.2.2 fork for managing audiobook and ebook editions independently under a unified book. It uses external indexers and download clients and ships as one application container. The current bulk library-import workflow is audiobook-focused; a Radarr-style scan, match-review, and import workflow for existing ebook files remains planned future work.
 
-Normal operators deploy from the public `ghcr.io/gitsumhubs/bookmarkarr:latest` image with the standalone root `docker-compose.yml`. The file contains no build configuration and requires neither a source checkout nor `.env`; environment-variable overrides and external Docker networks remain optional.
+Normal operators deploy from the public `ghcr.io/gitsumhubs/bookmarkarr:latest` image with the standalone root `docker-compose.yml`. The file contains no build configuration and requires neither a source checkout nor `.env`; environment-variable overrides and external Docker networks remain optional. This private working tree preserves the existing `BOOKMARKARR_IMAGE` override used by the hosted local-image instance, while the exported public Compose pins GHCR directly.
 
-Library adds require either a configured root folder or an explicit destination. Empty and legacy application-directory output paths are never used for media storage. Download-client API compatibility maps a top-level category into `SettingsJson`, exposes category/download path on reads, accepts both POST upsert and `PUT /download-clients/{id}`, and preserves stored credentials when redacted placeholders are submitted. Concurrent client queue polls resolve an isolated scoped gateway per client so EF Core contexts are not shared across parallel work.
+Library adds require either a configured root folder or an explicit destination. Empty and legacy application-directory output paths are never used for media storage. Download-client API compatibility maps a top-level category into `SettingsJson`, exposes category/download path on reads, accepts both POST upsert and `PUT /download-clients/{id}`, and preserves stored credentials when redacted placeholders are submitted. Goodreads commits now auto-queue audiobook downloads after the commit transaction when a default quality profile is available, and the Wanted view keeps active downloads visible through queued/downloading edition status plus queue-snapshot edition identity. Concurrent client queue polls resolve an isolated scoped gateway per client so EF Core contexts are not shared across parallel work.
 
 Appearance preferences are frontend-only and stored per browser in local storage. The canonical polished mark is `fe/public/bookmarkarr-logo.png`; the Bookmarkarr, Ocean, Forest, and Plum palettes and System/Light/Dark modes are implemented in `fe/src/services/appearance.ts` and `fe/src/styles/appearance.css`.
 
@@ -28,6 +28,7 @@ Appearance preferences are frontend-only and stored per browser in local storage
 
 | Variable | Description | Example |
 |----------|-------------|---------|
+| BOOKMARKARR_IMAGE | Private/source-tree image override; public Compose pins GHCR | ghcr.io/gitsumhubs/bookmarkarr:latest |
 | BOOKMARKARR_PORT | Host web port | 3018 |
 | BOOKMARKARR_PUBLIC_URL | Public browser URL | https://books.example.test |
 | BOOKMARKARR_AUTHENTICATION_REQUIRED | Require interactive authentication | true |
@@ -110,7 +111,7 @@ data/                        ignored local runtime mounts
 
 ## Configuration Files
 
-- `docker-compose.yml`: standalone one-service deployment fixed to the public GHCR image; no build section or source checkout required; includes Linux host-gateway resolution for `host.docker.internal`
+- `docker-compose.yml`: standalone one-service deployment using the public GHCR image; no build section or source checkout required; includes Linux host-gateway resolution for `host.docker.internal`
 - `docker-compose.dev.yml`: optional source-build override
 - `docker-compose.external-networks.example.yml`: sanitized template for attaching Bookmarkarr to externally managed service networks
 - A deployment may add its own ignored Compose override for host-specific external networks, mounts, or routing
@@ -166,7 +167,7 @@ curl --fail http://localhost:3018/api/v1/system/ready
 
 Filesystem-mutating tests create unique paths below the operating system temporary directory. They must never require write access to a host-root media or mount path in local or CI runs.
 
-The download-client/root/add/queue regression group covers top-level category normalization, PUT upsert, download-path responses, rejection without a root, cleanup of persisted application-directory output, non-cyclic add DTOs, selected-root containment, and independent scopes for concurrent client polls.
+The download-client/root/add/queue regression group covers top-level category normalization, PUT upsert, download-path responses, rejection without a root, cleanup of persisted application-directory output, non-cyclic add DTOs, selected-root containment, Goodreads audiobook auto-download handoff, Wanted active-download state, and independent scopes for concurrent client polls.
 
 ## Troubleshooting
 

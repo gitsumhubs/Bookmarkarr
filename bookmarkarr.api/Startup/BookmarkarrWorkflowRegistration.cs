@@ -19,6 +19,7 @@
 using Bookmarkarr.Application.Common;
 using Bookmarkarr.Application.Search.Filters;
 using Bookmarkarr.Application.Search.Strategies;
+using Bookmarkarr.Api.Features.CatalogImports;
 
 namespace Bookmarkarr.Api.Startup;
 
@@ -96,6 +97,8 @@ public static class BookmarkarrWorkflowRegistration
         services.AddScoped<SearchByTitleWorkflow>();
         services.AddScoped<ManualImportPathPlanner>();
         services.AddScoped<ManualImportCompanionImporter>();
+        // Singleton: it outlives the request that schedules it and creates its own scopes.
+        services.AddSingleton<GoodreadsCatalogImportAutoDownloadWorkflow>();
         return services;
     }
 }

@@ -37,6 +37,11 @@ namespace Bookmarkarr.Application.Audiobooks.RootFolders
             return await _repo.GetDefaultAsync();
         }
 
+        public async Task<RootFolder?> GetDefaultAsync(EditionMediaType mediaType)
+        {
+            return await _repo.GetDefaultAsync(mediaType);
+        }
+
         public async Task<RootFolder> CreateAsync(RootFolder root)
         {
             root.Path = root.Path?.Trim() ?? string.Empty;

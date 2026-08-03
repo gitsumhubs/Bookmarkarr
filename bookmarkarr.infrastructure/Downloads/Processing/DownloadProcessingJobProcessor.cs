@@ -159,6 +159,19 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
             }
 
             var isEbook = DownloadContentTypes.IsEbook(download);
+            var importMediaType = isEbook ? EditionMediaType.Ebook : EditionMediaType.Audiobook;
+
+            // Extensions are configured per media type; an unset list falls back to the
+            // built-in set for that media type rather than accepting anything.
+            var importSettings = await scope.ServiceProvider
+                .GetRequiredService<IConfigurationService>()
+                .GetApplicationSettingsAsync();
+            var allowedImportExtensions = isEbook
+                ? importSettings?.AllowedEbookFileExtensions
+                : importSettings?.AllowedFileExtensions;
+
+            bool IsImportablePrimaryFile(string path) =>
+                FileUtils.IsImportableFor(path, importMediaType, allowedImportExtensions);
 
             if (download.Status == DownloadStatus.Moved)
             {
@@ -262,10 +275,10 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
                         .ToList();
                     var archiveExtractor = scope.ServiceProvider.GetRequiredService<IArchiveExtractor>();
                     var missingPrimaryFiles = missingFiles
-                        .Where(path => (isEbook ? FileUtils.IsEbookFile(path) : FileUtils.IsAudioFile(path)) || archiveExtractor.IsArchive(path))
+                        .Where(path => IsImportablePrimaryFile(path) || archiveExtractor.IsArchive(path))
                         .ToList();
                     var hasPrimaryFile = files.Any(path =>
-                        (isEbook ? FileUtils.IsEbookFile(path) : FileUtils.IsAudioFile(path)) || archiveExtractor.IsArchive(path));
+                        IsImportablePrimaryFile(path) || archiveExtractor.IsArchive(path));
 
                     if (missingFiles.Count > 0 && missingPrimaryFiles.Count == 0 && hasPrimaryFile)
                     {

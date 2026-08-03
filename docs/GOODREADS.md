@@ -4,7 +4,7 @@
 
 Open Library → Import → Goodreads, select an exported Goodreads CSV, and choose Preview. Every eligible row starts selected with both audiobook and ebook requested. Use select all/none, the bulk format selector, or row checkboxes to change the plan. Resolve every selected ambiguous match before Commit.
 
-Commit adds and monitors books and missing requested editions. It never starts an automatic search. Existing edition settings are never overwritten, and a later CSV never removes or unmonitors books absent from that file.
+Commit adds and monitors books and missing requested editions. When a commit adds a monitored audiobook edition, Bookmarkarr immediately runs the normal automatic search-and-download path for that book after the database transaction commits. Ebook editions are still added and monitored only. Existing edition settings are never overwritten, and a later CSV never removes or unmonitors books absent from that file.
 
 ## Matching Order
 

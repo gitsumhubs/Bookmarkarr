@@ -27,6 +27,7 @@ namespace Bookmarkarr.Application.Audiobooks.Contracts.Repositories
         Task UpdateAsync(RootFolder root);
         Task RemoveAsync(int id);
         Task<RootFolder?> GetDefaultAsync();
+        Task<RootFolder?> GetDefaultAsync(EditionMediaType mediaType);
         Task ClearDefaultExceptAsync(int? excludeId, CancellationToken ct = default);
         Task<bool> HasAudiobooksUnderPathAsync(string rootPath, CancellationToken ct = default);
         Task<List<Audiobook>> GetAudiobooksUnderPathAsync(string rootPath, CancellationToken ct = default);

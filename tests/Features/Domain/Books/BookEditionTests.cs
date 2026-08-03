@@ -34,4 +34,19 @@ public sealed class BookEditionTests
         Assert.NotEqual(audiobook.QualityProfileId, ebook.QualityProfileId);
         Assert.NotEqual(audiobook.RootPath, ebook.RootPath);
     }
+
+    [Theory]
+    [InlineData(EditionWantedStatus.Missing, true)]
+    [InlineData(EditionWantedStatus.Queued, true)]
+    [InlineData(EditionWantedStatus.Downloading, true)]
+    [InlineData(EditionWantedStatus.UpgradeAvailable, true)]
+    [InlineData(EditionWantedStatus.Imported, false)]
+    [InlineData(EditionWantedStatus.Unmonitored, false)]
+    public void Wanted_state_includes_active_download_statuses(EditionWantedStatus status, bool expected)
+    {
+        var edition = BookEdition.Create(42, EditionMediaType.Audiobook);
+        edition.Status = status;
+
+        Assert.Equal(expected, edition.IsWanted);
+    }
 }

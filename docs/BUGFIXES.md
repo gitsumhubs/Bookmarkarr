@@ -85,6 +85,15 @@ This append-only ledger tracks inherited and production regressions. Resolved en
 - 2026-08-02: reported download-client/root-folder/add-response/queue-polling regression group passed 60/60 in .NET 10; architecture-inclusive follow-up passed 78/78.
 - 2026-08-02: final current-source backend suite passed 1,247/1,247; Vue TypeScript checking passed; Vitest passed 397/397 tests across 76 files (1 file intentionally skipped).
 - 2026-08-03: redacted download-client credential regression run passed 9/9; final backend suite passed 1,249/1,249.
+- 2026-08-03: Goodreads auto-download regression run passed 15/15; full backend suite passed 1,255/1,255; Vue TypeScript check passed; Vitest passed 399/399 tests across 76 files (1 file intentionally skipped); migration safety suite passed 4/4.
+
+## BF-013 — Goodreads auto-download handoff and Wanted active-download status
+
+- Status: Resolved and validated
+- Root cause: Goodreads commits added monitored editions but explicitly never started automatic downloads, and Wanted depended on download-store snapshots that could miss audiobook/edition identity or never load on first entry, leaving active items labeled as `Missing`.
+- Implementation: `GoodreadsCatalogImportsController.cs` now assigns the default quality profile to newly created audiobook editions when available and hands post-commit audiobook auto-grabs to `GoodreadsCatalogImportAutoDownloadWorkflow.cs`; `BookEdition.IsWanted` now treats queued/downloading editions as wanted; `DownloadService.Helpers.cs` syncs edition wanted status from tracked download state; `fe/src/stores/downloads.ts` preserves `audiobookId` and `editionId` from queue snapshots; `fe/src/views/content/WantedView.vue` loads downloads on mount and falls back to server edition status when needed.
+- Regression tests: `GoodreadsCatalogImportsApiTests.PreviewAndCommit_DefaultBothEditions_IsAdditiveIdempotentAndQueuesAudiobookAutoDownload`, `BookEditionTests.Wanted_state_includes_active_download_statuses`, `WantedView.spec.ts`, and `downloads.store.spec.ts`.
+- Validation: 2026-08-03, focused Goodreads/backend regression run passed 15/15; full backend suite passed 1,255/1,255; frontend Vue TypeScript check passed; Vitest passed 399/399 tests across 76 files with 1 intentionally skipped file.
 
 ## BF-009 — Fresh-start application-settings initialization race
 

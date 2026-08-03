@@ -125,6 +125,16 @@
             </div>
           </div>
         </div>
+        <button
+          class="nav-btn theme-toggle-btn"
+          type="button"
+          @click="toggleColorMode"
+          :title="colorModeToggleLabel"
+          :aria-label="colorModeToggleLabel"
+        >
+          <PhSun v-if="resolvedColorMode === 'dark'" class="theme-toggle-icon" />
+          <PhMoon v-else class="theme-toggle-icon" />
+        </button>
         <div class="notification-wrapper" ref="notificationRef">
           <button
             class="nav-btn"
@@ -552,6 +562,8 @@ import {
   PhCheckCircle,
   PhList,
   PhFolderOpen,
+  PhSun,
+  PhMoon,
 } from '@phosphor-icons/vue'
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useEventListener } from '@vueuse/core'
@@ -566,6 +578,7 @@ import { useDownloadsStore } from '@/stores/downloads'
 import { useLibraryStore } from '@/stores/library'
 import { useAuthStore } from '@/stores/auth'
 import { apiService } from '@/services/api'
+import { useAppearance } from '@/services/appearance'
 import { getStartupConfigCached } from '@/services/startupConfigCache'
 import { handleImageError } from '@/utils/imageFallback'
 import { Pill } from '@/components/base'
@@ -700,6 +713,19 @@ useEventListener(document, 'click', (e: MouseEvent) => {
     hoverNav.value = null
   }
 })
+
+// Quick light/dark switch in the top bar. This flips between explicit light and
+// dark only; the three-way preference including "System" stays in Settings, and
+// whichever the user picks here is persisted by the appearance service.
+const { resolvedColorMode, setColorMode } = useAppearance()
+
+const colorModeToggleLabel = computed(() =>
+  resolvedColorMode.value === 'dark' ? 'Switch to light theme' : 'Switch to dark theme',
+)
+
+function toggleColorMode() {
+  setColorMode(resolvedColorMode.value === 'dark' ? 'light' : 'dark')
+}
 
 // Version from API
 const version = ref('')
@@ -1648,6 +1674,20 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 .nav-btn:hover {
   background-color: #3a3a3a;
   color: white;
+}
+
+/* The top bar keeps its own dark treatment in both modes, so the toggle inherits
+   the nav text colour rather than the page text colour. */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--app-nav-text, #ccc);
+}
+
+.theme-toggle-icon {
+  width: 20px;
+  height: 20px;
 }
 
 /* SignalR indicator styles */

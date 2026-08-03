@@ -28,6 +28,10 @@ import { normalizeQueueSnapshot } from '@/utils/queueSnapshot'
 export const useDownloadsStore = defineStore('downloads', () => {
   const downloads = shallowRef<Download[]>([])
   const isLoading = ref(false)
+  // True once the download list has been fetched at least once. Consumers use this to
+  // tell "no active download" apart from "we do not know yet", so a persisted status is
+  // only trusted before the authoritative list arrives.
+  const hasLoaded = ref(false)
   const queueOnlyIds = new Set<string>()
   let unsubscribeUpdate: (() => void) | null = null
   let unsubscribeList: (() => void) | null = null
@@ -165,6 +169,8 @@ export const useDownloadsStore = defineStore('downloads', () => {
           errorMessage: queueItem.errorMessage,
           downloadClientId: queueItem.downloadClientId,
           metadata: {},
+          audiobookId: queueItem.audiobookId,
+          editionId: queueItem.editionId,
         }
 
         if (existingIndex !== -1) {
@@ -246,6 +252,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
       const downloadList = await apiService.getDownloads()
       downloads.value = downloadList
       queueOnlyIds.clear()
+      hasLoaded.value = true
       triggerRef(downloads)
     } catch (error) {
       errorTracking.captureException(error as Error, {
@@ -306,6 +313,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
   return {
     downloads,
     isLoading,
+    hasLoaded,
     activeDownloads,
     completedDownloads,
     failedDownloads,

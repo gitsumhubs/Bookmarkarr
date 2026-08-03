@@ -7,6 +7,7 @@ using System.Text.Json;
 using Bookmarkarr.Domain.Books;
 using Bookmarkarr.Tests.Mocks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Bookmarkarr.Tests.Features.Api.CatalogImports;
 
@@ -19,7 +20,15 @@ public sealed class GoodreadsCatalogImportsApiTests : IClassFixture<BookmarkarrW
     [Fact]
     public async Task PreviewAndCommit_DefaultBothEditions_IsAdditiveIdempotentAndDoesNotSearch()
     {
-        using var client = _factory.CreateClient();
+        var downloadServiceMock = new Mock<IDownloadService>(MockBehavior.Strict);
+
+        using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IDownloadService>();
+                services.AddSingleton(downloadServiceMock.Object);
+            }));
+        using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add("X-XSRF-TOKEN", await GetAntiforgeryTokenAsync(client));
         const string csv = "Book Id,Title,Author,ISBN13\r\n990001,API Import Book,API Author,=\"9781234567890\"\r\n";
 
@@ -48,16 +57,40 @@ public sealed class GoodreadsCatalogImportsApiTests : IClassFixture<BookmarkarrW
             });
         Assert.Equal(HttpStatusCode.OK, firstCommit.StatusCode);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var firstSummary = JsonDocument.Parse(await firstCommit.Content.ReadAsStringAsync()))
+        {
+            // A plain import is additive: nothing is searched or grabbed until the user asks.
+            Assert.Equal(0, firstSummary.RootElement.GetProperty("searchesScheduled").GetInt32());
+        }
+
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<BookmarkarrDbContext>();
             var imported = await db.Audiobooks.Include(book => book.Editions)
                 .SingleAsync(book => book.GoodreadsId == "990001");
-            Assert.True(imported.Editions.Single(edition => edition.MediaType == EditionMediaType.Audiobook).Monitored);
-            Assert.True(imported.Editions.Single(edition => edition.MediaType == EditionMediaType.Ebook).Monitored);
+            var audiobookEdition = imported.Editions.Single(edition => edition.MediaType == EditionMediaType.Audiobook);
+            var ebookEdition = imported.Editions.Single(edition => edition.MediaType == EditionMediaType.Ebook);
+            Assert.True(audiobookEdition.Monitored);
+            Assert.True(ebookEdition.Monitored);
             Assert.Equal(2, imported.Editions.Count);
             Assert.Equal(0, await db.Downloads.CountAsync(download => download.AudiobookId == imported.Id));
+
+            // An audiobook profile scores codecs and bitrates that mean nothing for an
+            // ebook, so the ebook edition must never inherit the audiobook default.
+            var audiobookDefault = await db.QualityProfiles
+                .FirstOrDefaultAsync(profile => profile.IsDefault && profile.MediaType == EditionMediaType.Audiobook);
+            if (audiobookDefault is not null)
+            {
+                Assert.NotEqual(audiobookDefault.Id, ebookEdition.QualityProfileId);
+            }
+
+            var ebookDefault = await db.QualityProfiles
+                .FirstOrDefaultAsync(profile => profile.IsDefault && profile.MediaType == EditionMediaType.Ebook);
+            Assert.Equal(ebookDefault?.Id, ebookEdition.QualityProfileId);
         }
+
+        // Strict mock with no setup: any search attempt would have thrown.
+        downloadServiceMock.Verify(service => service.SearchAndDownloadAsync(It.IsAny<int>()), Times.Never);
 
         var secondPreview = await PreviewAsync(client, csv);
         var secondRow = secondPreview.RootElement.GetProperty("rows")[0];
@@ -101,11 +134,78 @@ public sealed class GoodreadsCatalogImportsApiTests : IClassFixture<BookmarkarrW
             });
         Assert.Equal(HttpStatusCode.OK, absentCommit.StatusCode);
 
-        using var verificationScope = _factory.Services.CreateScope();
+        using var verificationScope = factory.Services.CreateScope();
         var verificationDb = verificationScope.ServiceProvider.GetRequiredService<BookmarkarrDbContext>();
         var original = await verificationDb.Audiobooks.Include(book => book.Editions)
             .SingleAsync(book => book.GoodreadsId == "990001");
         Assert.All(original.Editions, edition => Assert.True(edition.Monitored));
+        downloadServiceMock.Verify(service => service.SearchAndDownloadAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Commit_WithSearchAfterImportOptIn_SchedulesSearchesForAudiobookEditionsOnly()
+    {
+        var searched = new System.Collections.Concurrent.ConcurrentBag<int>();
+        var firstSearch = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var downloadServiceMock = new Mock<IDownloadService>();
+        downloadServiceMock
+            .Setup(service => service.SearchAndDownloadAsync(It.IsAny<int>()))
+            .Callback<int>(audiobookId =>
+            {
+                searched.Add(audiobookId);
+                firstSearch.TrySetResult();
+            })
+            .ReturnsAsync(new SearchAndDownloadResult
+            {
+                Success = true,
+                Message = "Queued",
+                DownloadId = "gd-optin-1",
+                IndexerUsed = "Search"
+            });
+
+        using var factory = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IDownloadService>();
+                services.AddSingleton(downloadServiceMock.Object);
+            }));
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-XSRF-TOKEN", await GetAntiforgeryTokenAsync(client));
+        const string csv = "Book Id,Title,Author\r\n990101,Opt In Book,Opt In Author\r\n";
+
+        var preview = await PreviewAsync(client, csv);
+        var row = preview.RootElement.GetProperty("rows")[0];
+        var commit = await client.PostAsJsonAsync(
+            $"/api/v1/catalog-imports/goodreads/{preview.RootElement.GetProperty("batchId").GetString()}/commit",
+            new
+            {
+                rows = new[]
+                {
+                    new
+                    {
+                        rowId = row.GetProperty("rowId").GetString(),
+                        selected = true,
+                        mediaFormats = new[] { "Audiobook", "Ebook" },
+                        resolvedBookId = (int?)null
+                    }
+                },
+                searchAfterImport = true
+            });
+
+        Assert.Equal(HttpStatusCode.OK, commit.StatusCode);
+        using var summary = JsonDocument.Parse(await commit.Content.ReadAsStringAsync());
+
+        // Only the audiobook edition is searchable, so a both-formats row schedules one book.
+        Assert.Equal(1, summary.RootElement.GetProperty("searchesScheduled").GetInt32());
+
+        // Scheduling is deliberately off the request thread, so wait for it to land.
+        var completed = await Task.WhenAny(firstSearch.Task, Task.Delay(TimeSpan.FromSeconds(10)));
+        Assert.Same(firstSearch.Task, completed);
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BookmarkarrDbContext>();
+        var imported = await db.Audiobooks.SingleAsync(book => book.GoodreadsId == "990101");
+        Assert.Equal([imported.Id], searched.Distinct().ToArray());
     }
 
     [Fact]

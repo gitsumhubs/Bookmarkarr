@@ -92,6 +92,7 @@ public static class InfrastructureStartupCompositionExtensions
         }
 
         services.AddHostedService<StartupDbNormalizer>();
+        services.AddHostedService<MediaDefaultsSeeder>();
         return services;
     }
 

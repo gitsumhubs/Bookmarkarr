@@ -312,6 +312,10 @@ onMounted(async () => {
     window.addEventListener('resize', handleViewportResize, { passive: true })
   }
 
+  if (downloadsStore.downloads.length === 0) {
+    await downloadsStore.loadDownloads()
+  }
+
   if (libraryStore.audiobooks.length === 0) {
     await libraryStore.fetchLibrary()
   }
@@ -398,14 +402,41 @@ watch(
   { flush: 'post' },
 )
 
-// Map audiobook IDs to active downloads
-const activeDownloadsByAudiobook = computed(() => {
-  const map = new Map<string, Download>()
-  const terminalStates = ['Completed', 'Failed', 'Ready', 'Moved', 'ImportBlocked']
+// Work is finished for these; the row should fall through to its library state.
+const TERMINAL_DOWNLOAD_STATES = ['Completed', 'Moved']
 
+// Still in flight from the user's point of view, including the post-transfer stages.
+const ACTIVE_DOWNLOAD_STATES = [
+  'Queued',
+  'Downloading',
+  'Paused',
+  'Processing',
+  'Ready',
+  'ImportPending',
+]
+
+// Downloads are indexed by both keys because a queue-only or legacy record can arrive
+// with just an audiobookId. Matching on edition alone is what previously left rows
+// showing "Missing" while a download was plainly running.
+const downloadsByEdition = computed(() => {
+  const map = new Map<number, Download>()
   downloadsStore.downloads.forEach((download) => {
-    if (download.audiobookId && !terminalStates.includes(download.status)) {
-      map.set(download.editionId ? `edition-${download.editionId}` : `book-${download.audiobookId}`, download)
+    if (download.editionId && !TERMINAL_DOWNLOAD_STATES.includes(download.status)) {
+      map.set(download.editionId, download)
+    }
+  })
+  return map
+})
+
+const downloadsByBook = computed(() => {
+  const map = new Map<number, Download>()
+  downloadsStore.downloads.forEach((download) => {
+    if (download.audiobookId && !TERMINAL_DOWNLOAD_STATES.includes(download.status)) {
+      // Prefer a record that still carries an edition id if several share a book.
+      const existing = map.get(download.audiobookId)
+      if (!existing || (!existing.editionId && download.editionId)) {
+        map.set(download.audiobookId, download)
+      }
     }
   })
   return map
@@ -415,16 +446,50 @@ function itemKey(item: Pick<WantedItem, 'id'> & Partial<Pick<WantedItem, 'wanted
   return item.wantedKey ?? `book-${item.id}`
 }
 
+/**
+ * Resolves the download record backing a Wanted row.
+ *
+ * Stable edition ids win; a book-level record is only borrowed when it cannot belong to
+ * a different edition of the same book, so an audiobook grab never lights up the ebook row.
+ */
+function getDownloadForItem(item: WantedItem): Download | undefined {
+  const editionId = item.wantedEdition?.id
+  if (editionId) {
+    const byEdition = downloadsByEdition.value.get(editionId)
+    if (byEdition) return byEdition
+  }
+
+  const byBook = downloadsByBook.value.get(item.id)
+  if (!byBook || byBook.editionId) {
+    // A record that names a different edition is not ours to claim.
+    return undefined
+  }
+
+  // Untargeted record: attribute it to the only wanted edition, else the audiobook one,
+  // which is what pre-edition downloads always were.
+  const siblings = wantedAudiobooks.value.filter((candidate) => candidate.id === item.id)
+  if (siblings.length === 1) return byBook
+  return item.wantedEdition?.mediaType === 'Audiobook' ? byBook : undefined
+}
+
 function hasActiveDownload(item: WantedItem): boolean {
-  return activeDownloadsByAudiobook.value.has(itemKey(item))
+  const download = getDownloadForItem(item)
+  return !!download && ACTIVE_DOWNLOAD_STATES.includes(download.status)
 }
 
 function getActiveDownload(item: WantedItem): Download | undefined {
-  return activeDownloadsByAudiobook.value.get(itemKey(item))
+  const download = getDownloadForItem(item)
+  return download && ACTIVE_DOWNLOAD_STATES.includes(download.status) ? download : undefined
 }
 
 function getStatusClass(item: WantedItem): string {
-  if (hasActiveDownload(item)) {
+  const download = getDownloadForItem(item)
+  if (download) {
+    if (ACTIVE_DOWNLOAD_STATES.includes(download.status)) return 'downloading'
+    if (download.status === 'ImportBlocked') return 'blocked'
+    if (download.status === 'Failed') return 'failed'
+  }
+  if (usePersistedActiveStatus(item)) {
     return 'downloading'
   }
   if (searching.value[itemKey(item)]) {
@@ -437,12 +502,20 @@ function getStatusClass(item: WantedItem): string {
 }
 
 function getStatusText(item: WantedItem): string {
-  const download = getActiveDownload(item)
+  const download = getDownloadForItem(item)
   if (download) {
     if (download.status === 'Downloading') {
       return `Downloading (${download.progress.toFixed(0)}%)`
     }
-    return download.status
+    if (download.status === 'ImportBlocked') return 'Import Blocked'
+    if (download.status === 'ImportPending') return 'Import Pending'
+    if (ACTIVE_DOWNLOAD_STATES.includes(download.status) || download.status === 'Failed') {
+      return download.status
+    }
+  }
+  const persisted = usePersistedActiveStatus(item)
+  if (persisted) {
+    return persisted
   }
   if (searching.value[itemKey(item)]) {
     return 'Searching'
@@ -451,6 +524,18 @@ function getStatusText(item: WantedItem): string {
     return 'Failed'
   }
   return 'Missing'
+}
+
+/**
+ * Server-side fallback for the window before the download list has loaded.
+ *
+ * Once the authoritative list is in hand it always wins, so a cancelled grab or a
+ * cleaned-up queue entry cannot leave a row stuck on Queued/Downloading forever.
+ */
+function usePersistedActiveStatus(item: WantedItem): string | undefined {
+  if (downloadsStore.hasLoaded) return undefined
+  const status = item.wantedEdition?.status
+  return status === 'Queued' || status === 'Downloading' ? status : undefined
 }
 
 const searchMissing = async () => {
@@ -904,6 +989,13 @@ const markAsSkipped = async (item: WantedItem) => {
 .status-badge.failed {
   background-color: rgba(134, 142, 150, 0.15);
   color: #868e96;
+}
+
+/* Import blocked needs to read as "needs attention", distinct from both an active
+   transfer and a plain miss, so the user knows the file arrived but did not import. */
+.status-badge.blocked {
+  background-color: rgba(250, 176, 5, 0.15);
+  color: #fab005;
 }
 
 .search-info {

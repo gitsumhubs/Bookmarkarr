@@ -28,6 +28,7 @@ Swagger/OpenAPI metadata is served by the application and is branded Bookmarkarr
 | POST | `/api/v1/catalog-imports/goodreads/{batchId}/commit` | Transactionally commit selected/resolved rows |
 
 Preview is `multipart/form-data` with a `file` part. Commit contains `rows`, each with `rowId`, `selected`, `mediaFormats`, and optional `resolvedBookId`. See [GOODREADS.md](GOODREADS.md).
+When a commit adds a monitored audiobook edition, Bookmarkarr immediately runs the existing automatic search-and-download path for that book as a best-effort follow-up after the transaction commits.
 
 ## Edition-Aware Operational Data
 

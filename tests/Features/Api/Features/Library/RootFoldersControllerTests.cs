@@ -46,6 +46,9 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Library
 
             public Task<RootFolder?> GetDefaultAsync() => Task.FromResult(Store.Count > 0 ? Store.First() : null);
 
+            public Task<RootFolder?> GetDefaultAsync(Bookmarkarr.Domain.Books.EditionMediaType mediaType) =>
+                Task.FromResult(Store.FirstOrDefault(r => r.MediaType == mediaType));
+
             public Task<List<RootFolder>> GetAllAsync() => Task.FromResult(new List<RootFolder>(Store));
 
             public Task<RootFolder?> GetByIdAsync(int id)

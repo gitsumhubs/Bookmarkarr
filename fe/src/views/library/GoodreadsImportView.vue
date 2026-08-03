@@ -7,6 +7,32 @@
       <p>Preview and choose editions before committing. Imports add missing editions only and never start searches.</p>
     </header>
 
+    <section class="card how-to-card">
+      <h2>How to export your CSV from Goodreads</h2>
+      <ol class="how-to-steps">
+        <li>
+          Go to
+          <a
+            href="https://www.goodreads.com/review/import"
+            target="_blank"
+            rel="noopener noreferrer"
+            >goodreads.com/review/import</a
+          >
+          (sign in to Goodreads first).
+        </li>
+        <li>Click <strong>Export Library</strong> near the top of the page.</li>
+        <li>
+          Wait a few seconds, then click the <strong>Your export from …</strong> link that
+          appears to download the <code>.csv</code> file.
+        </li>
+        <li>Upload that file below.</li>
+      </ol>
+      <p class="hint">
+        Large libraries can take a minute to generate. If no download link appears, refresh
+        the page and check the top of the import screen again.
+      </p>
+    </section>
+
     <section class="card upload-card">
       <label class="file-picker">
         <span>Goodreads CSV</span>
@@ -138,5 +164,5 @@ async function commit() {
 </script>
 
 <style scoped>
-.goodreads-import{max-width:1180px;margin:0 auto;padding:2rem}.eyebrow{color:#11b8aa;font-weight:700;text-transform:uppercase;letter-spacing:.08em}.goodreads-import h1{margin:.2rem 0}.card{margin-top:1.5rem;padding:1.25rem;border:1px solid var(--border-color,#30405b);border-radius:14px;background:var(--card-bg,#102442)}.upload-card,.toolbar,.actions,footer{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}.file-picker{display:flex;flex-direction:column;gap:.35rem}.hint,.toolbar span,td span,td small,footer span{display:block;color:var(--text-secondary,#9fb0c8)}button,select,input[type=file]{font:inherit}.primary{background:#11b8aa;color:#031a2e;border:0;border-radius:8px;padding:.65rem 1rem;font-weight:700}.primary:disabled{opacity:.5}.actions{margin-left:auto}.actions button,.actions select,td select{background:transparent;color:inherit;border:1px solid #53647c;border-radius:7px;padding:.45rem}.table-wrap{overflow:auto;margin-top:1rem}table{width:100%;border-collapse:collapse;min-width:780px}th,td{text-align:left;padding:.8rem;border-bottom:1px solid #30405b;vertical-align:top}.formats label{display:block;margin-bottom:.4rem}.match{display:inline-block;border-radius:999px;padding:.2rem .55rem;font-size:.8rem;background:#314158}.match.matched{background:#174d45;color:#7ef0dc}.match.ambiguous{background:#674b16;color:#ffd47a}.ineligible{opacity:.55}.error{color:#ff8977}.success{border-color:#11b8aa}footer{justify-content:space-between;margin-top:1rem}@media(max-width:700px){.goodreads-import{padding:1rem}.actions{margin-left:0}}
+.goodreads-import{max-width:1180px;margin:0 auto;padding:2rem}.eyebrow{color:#11b8aa;font-weight:700;text-transform:uppercase;letter-spacing:.08em}.goodreads-import h1{margin:.2rem 0}.card{margin-top:1.5rem;padding:1.25rem;border:1px solid var(--border-color,#30405b);border-radius:14px;background:var(--card-bg,#102442)}.upload-card,.toolbar,.actions,footer{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}.file-picker{display:flex;flex-direction:column;gap:.35rem}.hint,.toolbar span,td span,td small,footer span{display:block;color:var(--text-secondary,#9fb0c8)}button,select,input[type=file]{font:inherit}.primary{background:#11b8aa;color:#031a2e;border:0;border-radius:8px;padding:.65rem 1rem;font-weight:700}.primary:disabled{opacity:.5}.actions{margin-left:auto}.actions button,.actions select,td select{background:transparent;color:inherit;border:1px solid #53647c;border-radius:7px;padding:.45rem}.table-wrap{overflow:auto;margin-top:1rem}table{width:100%;border-collapse:collapse;min-width:780px}th,td{text-align:left;padding:.8rem;border-bottom:1px solid #30405b;vertical-align:top}.formats label{display:block;margin-bottom:.4rem}.match{display:inline-block;border-radius:999px;padding:.2rem .55rem;font-size:.8rem;background:#314158}.match.matched{background:#174d45;color:#7ef0dc}.match.ambiguous{background:#674b16;color:#ffd47a}.ineligible{opacity:.55}.error{color:#ff8977}.success{border-color:#11b8aa}footer{justify-content:space-between;margin-top:1rem}.how-to-card h2{margin:0 0 .6rem;font-size:1.05rem}.how-to-steps{margin:0;padding-left:1.25rem;line-height:1.7}.how-to-steps li{margin-bottom:.25rem}.how-to-steps a{color:var(--brand-400,#50d8cf);text-decoration:underline}.how-to-steps code{background:var(--muted-bg,#1c2734);padding:.1rem .35rem;border-radius:4px}@media(max-width:700px){.goodreads-import{padding:1rem}.actions{margin-left:0}}
 </style>

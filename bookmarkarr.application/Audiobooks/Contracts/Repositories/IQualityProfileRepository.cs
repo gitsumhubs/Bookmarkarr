@@ -23,6 +23,7 @@ namespace Bookmarkarr.Application.Audiobooks.Contracts.Repositories
         Task<List<QualityProfile>> GetAllAsync();
         Task<QualityProfile?> FindByIdAsync(int id);
         Task<QualityProfile?> GetDefaultAsync();
+        Task<QualityProfile?> GetDefaultAsync(EditionMediaType mediaType);
         Task<QualityProfile> AddAsync(QualityProfile profile);
         Task<QualityProfile> UpdateAsync(QualityProfile profile);
         Task<bool> DeleteAsync(int id);

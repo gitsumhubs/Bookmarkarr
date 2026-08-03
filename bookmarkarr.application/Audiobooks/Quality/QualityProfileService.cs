@@ -59,7 +59,12 @@ namespace Bookmarkarr.Application.Audiobooks.Quality
 
         public async Task<QualityProfile?> GetDefaultAsync()
         {
-            var profile = await _repository.GetDefaultAsync();
+            return await GetDefaultAsync(EditionMediaType.Audiobook);
+        }
+
+        public async Task<QualityProfile?> GetDefaultAsync(EditionMediaType mediaType)
+        {
+            var profile = await _repository.GetDefaultAsync(mediaType);
 
             if (profile != null)
             {
@@ -70,6 +75,13 @@ namespace Bookmarkarr.Application.Audiobooks.Quality
 
         private async Task EnsureProfileHasRequiredQualitiesAsync(QualityProfile profile)
         {
+            // Audio codec/bitrate rungs are meaningless for ebook profiles and would
+            // corrupt their scoring, so only audiobook profiles are backfilled.
+            if (profile.MediaType != EditionMediaType.Audiobook)
+            {
+                return;
+            }
+
             var requiredQualities = new Dictionary<string, int>
             {
                 { "AAC 320kbps", 0 },
@@ -112,10 +124,10 @@ namespace Bookmarkarr.Application.Audiobooks.Quality
 
         public async Task<QualityProfile> CreateAsync(QualityProfile profile)
         {
-            // If this is set as default, unset other defaults
+            // If this is set as default, unset other defaults for the same media type
             if (profile.IsDefault)
             {
-                await UnsetAllDefaultsAsync();
+                await UnsetAllDefaultsAsync(profile.MediaType);
             }
 
             profile.CreatedAt = DateTime.UtcNow;
@@ -134,10 +146,10 @@ namespace Bookmarkarr.Application.Audiobooks.Quality
                 throw new InvalidOperationException($"Quality profile with ID {profile.Id} not found");
             }
 
-            // If this is set as default, unset other defaults
+            // If this is set as default, unset other defaults for the same media type
             if (profile.IsDefault && !existing.IsDefault)
             {
-                await UnsetAllDefaultsAsync();
+                await UnsetAllDefaultsAsync(profile.MediaType);
             }
 
             profile.UpdatedAt = DateTime.UtcNow;
@@ -180,9 +192,11 @@ namespace Bookmarkarr.Application.Audiobooks.Quality
             return deleted;
         }
 
-        private async Task UnsetAllDefaultsAsync()
+        private async Task UnsetAllDefaultsAsync(EditionMediaType mediaType)
         {
-            var defaults = (await _repository.GetAllAsync()).Where(p => p.IsDefault).ToList();
+            var defaults = (await _repository.GetAllAsync())
+                .Where(p => p.IsDefault && p.MediaType == mediaType)
+                .ToList();
             foreach (var profile in defaults)
             {
                 profile.IsDefault = false;

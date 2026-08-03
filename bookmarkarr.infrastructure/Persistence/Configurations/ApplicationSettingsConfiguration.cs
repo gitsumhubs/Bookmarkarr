@@ -54,6 +54,15 @@ namespace Bookmarkarr.Infrastructure.Persistence.Configurations
             builder.Property(e => e.AllowedFileExtensions)
                 .Metadata.SetValueComparer(StringListComparer());
 
+            // AllowedEbookFileExtensions stored as pipe-delimited list
+            builder.Property(e => e.AllowedEbookFileExtensions)
+                .HasConversion(
+                    v => string.Join("|", v ?? new List<string>()),
+                    v => string.IsNullOrWhiteSpace(v) ? new List<string>() : v.Split('|', System.StringSplitOptions.RemoveEmptyEntries).ToList()
+                );
+            builder.Property(e => e.AllowedEbookFileExtensions)
+                .Metadata.SetValueComparer(StringListComparer());
+
             builder.Property(e => e.ImportBlacklistExtensions)
                 .HasConversion(
                     v => string.Join("|", v ?? new List<string>()),

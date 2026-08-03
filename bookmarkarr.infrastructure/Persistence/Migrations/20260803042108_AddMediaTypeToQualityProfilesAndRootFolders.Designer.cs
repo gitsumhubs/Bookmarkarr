@@ -3,6 +3,7 @@ using System;
 using Bookmarkarr.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bookmarkarr.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(BookmarkarrDbContext))]
-    partial class BookmarkarrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260803042108_AddMediaTypeToQualityProfilesAndRootFolders")]
+    partial class AddMediaTypeToQualityProfilesAndRootFolders
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.8");
@@ -1058,10 +1061,6 @@ namespace Bookmarkarr.Infrastructure.Persistence.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("AllowedEbookFileExtensions")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
 
                     b.Property<string>("AllowedFileExtensions")
                         .IsRequired()

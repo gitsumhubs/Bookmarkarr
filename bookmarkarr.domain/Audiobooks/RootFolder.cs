@@ -32,6 +32,16 @@ namespace Bookmarkarr.Domain.Audiobooks
         [MaxLength(1000)]
         public string Path { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Media type stored under this root. Audiobook and ebook libraries are
+        /// kept separate so imports never write one media type into the other's tree.
+        /// </summary>
+        public EditionMediaType MediaType { get; set; } = EditionMediaType.Audiobook;
+
+        /// <summary>
+        /// Whether this is the default root for new editions of <see cref="MediaType"/>.
+        /// Defaults are tracked per media type, not globally.
+        /// </summary>
         public bool IsDefault { get; set; } = false;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

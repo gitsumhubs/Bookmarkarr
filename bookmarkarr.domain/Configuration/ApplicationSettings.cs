@@ -73,6 +73,15 @@ namespace Bookmarkarr.Domain.Configuration
         public int MaxConcurrentDownloads { get; set; } = 3;
         public int PollingIntervalSeconds { get; set; } = 30;
         public bool EnableNotifications { get; set; } = false;
+        /// <summary>
+        /// Extensions accepted when importing into an <b>audiobook</b> edition.
+        /// Empty falls back to the built-in audio set.
+        /// </summary>
+        /// <remarks>
+        /// Audiobook and ebook extensions are configured separately and applied by
+        /// media type, so adding an ebook format here would not let ebooks through an
+        /// audiobook import path - it would only risk accepting the wrong media.
+        /// </remarks>
         public List<string> AllowedFileExtensions
         {
             get
@@ -81,6 +90,19 @@ namespace Bookmarkarr.Domain.Configuration
             }
             set;
         } = [".mp3", ".flac", ".m4a", ".m4b", ".ogg"];
+
+        /// <summary>
+        /// Extensions accepted when importing into an <b>ebook</b> edition.
+        /// Empty falls back to the built-in ebook set.
+        /// </summary>
+        public List<string> AllowedEbookFileExtensions
+        {
+            get
+            {
+                return [.. FileUtils.NormalizeExtensions(field)];
+            }
+            set;
+        } = [".epub", ".azw3", ".mobi", ".pdf"];
 
         // Number of seconds a download must be observed in the client as "complete" before
         // the system will finalize it (stability window). Keeping a short default (10s)

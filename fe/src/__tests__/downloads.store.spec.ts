@@ -134,4 +134,60 @@ describe('downloads store queue snapshot reconciliation', () => {
       ),
     ).toBe(false)
   })
+
+  it('preserves audiobook and edition ids from queue snapshots for wanted-view matching', async () => {
+    let queueUpdateCallback: ((payload: unknown) => void) | null = null
+
+    vi.doMock('@/services/signalr', () => ({
+      signalRService: {
+        onDownloadUpdate: vi.fn(() => () => undefined),
+        onDownloadsList: vi.fn(() => () => undefined),
+        onQueueUpdate: vi.fn((cb: (payload: unknown) => void) => {
+          queueUpdateCallback = cb
+          return () => undefined
+        }),
+        onAudiobookUpdate: vi.fn(() => () => undefined),
+      },
+    }))
+
+    vi.doMock('@/services/api', () => ({
+      apiService: {
+        getDownloads: vi.fn(async () => []),
+      },
+    }))
+
+    const { useDownloadsStore } = await import('@/stores/downloads')
+    const store = useDownloadsStore()
+
+    queueUpdateCallback?.({
+      items: [
+        {
+          id: 'tracked-dune',
+          title: 'Dune',
+          audiobookId: 44,
+          editionId: 12,
+          status: 'downloading',
+          progress: 15,
+          size: 1000,
+          downloaded: 150,
+          downloadSpeed: 50,
+          quality: 'Unknown',
+          downloadClient: 'QBIT',
+          downloadClientId: 'qb-1',
+          downloadClientType: 'qbittorrent',
+          addedAt: '2026-08-03T10:00:00Z',
+          canPause: true,
+          canRemove: true,
+        },
+      ],
+      clients: [],
+      generatedAt: '2026-08-03T10:01:00Z',
+      hasStaleData: false,
+      hasUnavailableClients: false,
+    })
+
+    expect(store.downloads).toHaveLength(1)
+    expect(store.downloads[0]?.audiobookId).toBe(44)
+    expect(store.downloads[0]?.editionId).toBe(12)
+  })
 })

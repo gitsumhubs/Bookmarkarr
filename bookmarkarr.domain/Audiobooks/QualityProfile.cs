@@ -90,7 +90,14 @@ namespace Bookmarkarr.Domain.Audiobooks
         public int MinimumScore { get; set; } = 0;
 
         /// <summary>
-        /// Whether this is the default profile for new audiobooks
+        /// Media type this profile applies to. Audiobook and ebook profiles are
+        /// scored by different rules, so a profile is never shared across them.
+        /// </summary>
+        public EditionMediaType MediaType { get; set; } = EditionMediaType.Audiobook;
+
+        /// <summary>
+        /// Whether this is the default profile for new editions of <see cref="MediaType"/>.
+        /// Defaults are tracked per media type, not globally.
         /// </summary>
         public bool IsDefault { get; set; } = false;
 

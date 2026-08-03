@@ -21,6 +21,7 @@ namespace Bookmarkarr.Application.Audiobooks.Contracts
     public interface IRootFolderService
     {
         Task<RootFolder?> GetDefaultAsync();
+        Task<RootFolder?> GetDefaultAsync(EditionMediaType mediaType);
         Task<List<RootFolder>> GetAllAsync();
         Task<RootFolder?> GetByIdAsync(int id);
         Task<RootFolder> CreateAsync(RootFolder root);
