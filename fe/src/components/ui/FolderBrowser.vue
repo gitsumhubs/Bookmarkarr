@@ -469,7 +469,7 @@ watch(
 .browser-input {
   flex: 1;
   padding: 0.6rem 0.75rem;
-  background: #1a1a1a; /* match modal form inputs */
+  background: var(--bg-primary); /* match modal form inputs */
   border: 1px solid var(--border-color);
   border-radius: 6px;
   color: var(--text-primary);
@@ -479,8 +479,8 @@ watch(
 /* Compact browse button to sit next to the input */
 
 .browser-content {
-  background: #2a2a2a; /* modal-content background */
-  border: 1px solid #444; /* modal border */
+  background: var(--card-bg); /* modal-content background */
+  border: 1px solid var(--border-color); /* modal border */
   border-radius: 8px;
   width: 100%;
   overflow: hidden;

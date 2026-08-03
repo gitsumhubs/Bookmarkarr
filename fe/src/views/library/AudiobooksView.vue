@@ -2639,7 +2639,7 @@ defineExpose({
   }
 }
 .toolbar-select {
-  background-color: #2a2a2a; /* match CustomSelect trigger */
+  background-color: var(--card-bg); /* match CustomSelect trigger */
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
   padding: 8px 10px;

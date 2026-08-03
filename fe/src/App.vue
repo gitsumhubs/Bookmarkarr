@@ -2136,7 +2136,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   width: 48px;
   height: 48px;
   font-size: 32px;
-  color: #c7cfd6; /* slightly brighter than default */
+  color: var(--text-secondary); /* slightly brighter than default */
   border-radius: 6px;
 }
 

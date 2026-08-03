@@ -458,7 +458,7 @@ function formatGroupedFileLabel(sourceFile: string): string {
     padding: 0.85rem;
     border: 1px solid var(--border-color);
     border-radius: 16px;
-    background: linear-gradient(180deg, var(--bg-primary) 0%, #121212 100%);
+    background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-primary) 100%);
     box-shadow: 0 14px 32px rgba(0, 0, 0, 0.18);
   }
 

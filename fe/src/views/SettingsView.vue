@@ -2207,7 +2207,7 @@ onMounted(async () => {
 .form-group select:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  background-color: #0d0d0d;
+  background-color: var(--bg-primary);
 }
 
 .form-group select option:hover,

@@ -140,10 +140,10 @@ function onChange(e: Event) {
   padding: 0.75rem 1rem;
   height: 40px;
   box-sizing: border-box;
-  background-color: #1a1a1a; /* match input background */
+  background-color: var(--bg-primary); /* match input background */
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: white;
+  color: var(--text-primary);
   font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.2s;

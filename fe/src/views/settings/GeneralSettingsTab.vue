@@ -245,7 +245,7 @@ const validationErrors = computed(() => {
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.03);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
-  background: #0b0b0b; /* darker card background */
+  background: var(--bg-primary); /* darker card background */
 }
 
 /* Checkbox-related styles have been moved to component-scoped styles in the individual settings components */
