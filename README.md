@@ -22,22 +22,49 @@ services:
     image: ghcr.io/gitsumhubs/bookmarkarr:latest
     container_name: bookmarkarr
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=1000          # `id -u` — must be able to write the folders below
+      - PGID=1000          # `id -g`
       - UMASK=022
-      - TZ=Etc/UTC
+      - TZ=Etc/UTC         # e.g. America/New_York
     volumes:
       # Left side = folders on YOUR machine. Point these wherever your files live.
-      - ./data/config:/app/config
+      - ./data/config:/app/config          # database + settings — BACK THIS UP
       - ./data/audiobooks:/audiobooks
       - ./data/ebooks:/ebooks
+      # Your download client must see this same folder, ideally at the same path.
       - ./data/downloads:/downloads
     ports:
-      - 3018:4545
+      - 3018:4545          # change 3018 if it's taken; leave 4545 alone
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
+
+    # ── Talking to NZBGet / Prowlarr / your torrent client ──────────────────
+    # Running them in their OWN compose files (a folder each)? Then Docker puts
+    # them on separate networks and http://nzbget:6789 will NOT resolve until
+    # you uncomment this AND the networks: block at the bottom.
+    #
+    # Find the real network names first:   docker network ls
+    # They're usually <foldername>_default
+    #
+    # networks:
+    #   - default
+    #   - nzbget
+    #   - prowlarr
+
+# networks:
+#   nzbget:
+#     external: true
+#     name: nzbget_default        # ← replace with YOUR name from `docker network ls`
+#   prowlarr:
+#     external: true
+#     name: prowlarr_default
 ```
+
+> **Skip the networks part if** everything is in one compose file (Docker already connects
+> them), or your services run on the host / another machine — then just use their LAN URL
+> like `http://192.168.1.50:6789`. Container names are only needed to talk container-to-container,
+> and they're worth it because names survive restarts while container IPs don't.
 
 Then start it:
 
@@ -80,54 +107,25 @@ clear warning and keeps running rather than failing to start, so check
 
 ## Setting it up
 
-### 1. Let Bookmarkarr reach your other containers
+### 1. Check Bookmarkarr can reach your other containers
 
-Do this first — the steps below won't connect until it's done.
-
-If you run NZBGet, Prowlarr, or your torrent client in **their own compose files** (one
-folder per service, the usual setup), Docker puts each on its own network. Bookmarkarr
-can't resolve `nzbget` or `prowlarr` by name until it joins those networks.
-
-Find the network names:
+If you uncommented the `networks:` block in Quick Start, confirm it took effect:
 
 ```bash
-docker network ls
+docker inspect bookmarkarr --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}'
 ```
 
-They're usually `<foldername>_default` — so `nzbget_default`, `prowlarr_default`. Then add
-them to your `docker-compose.yml`:
+You should see the networks you added. If one is missing, the name in your compose doesn't
+match `docker network ls`.
 
-```yaml
-services:
-  bookmarkarr:
-    # ... your existing config ...
-    networks:
-      - default
-      - nzbget
-      - prowlarr
-      - torrent
+Quick sanity check that a hostname resolves:
 
-networks:
-  nzbget:
-    external: true
-    name: nzbget_default        # ← the real names from `docker network ls`
-  prowlarr:
-    external: true
-    name: prowlarr_default
-  torrent:
-    external: true
-    name: qbittorrent_default
+```bash
+docker exec bookmarkarr getent hosts nzbget
 ```
 
-Then `docker compose up -d`. Now `http://nzbget:6789` and `http://prowlarr:9696` work.
-
-> **Other setups.** If everything is in **one** compose file, skip this — Compose already
-> puts them on a shared network. If your services run on the host or another machine, skip
-> it too and just use their LAN URLs (`http://192.168.1.50:6789`); `host.docker.internal`
-> is available for host-published ports.
-
-Why bother instead of using IP addresses? Container IPs change when containers are
-recreated. Names don't.
+No output means Bookmarkarr can't see it — revisit the `networks:` block, or just use the
+LAN URL (`http://192.168.1.50:6789`) in the next step instead.
 
 ### 2. Download clients
 
