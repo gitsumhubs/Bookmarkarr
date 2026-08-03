@@ -182,17 +182,17 @@ export default defineComponent({
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
 }
 
 .login-card {
   width: 100%;
   max-width: 420px;
-  background-color: #2a2a2a;
-  border: 1px solid #3a3a3a;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 2rem;
-  color: white;
+  color: var(--text-primary);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
@@ -255,16 +255,16 @@ export default defineComponent({
 
 .form-label {
   margin-bottom: 0;
-  color: #ccc;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
 .form-input {
   padding: 0.75rem;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: #1a1a1a;
-  color: white;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   font-size: 1rem;
 }
 
@@ -278,7 +278,7 @@ export default defineComponent({
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #ccc;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
@@ -290,9 +290,9 @@ export default defineComponent({
   padding: 0;
   appearance: auto; /* allow native look unless accent-color supported */
   accent-color: var(--brand-500); /* modern browsers: sets the checked color */
-  border: 1px solid #3a3a3a;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
   display: inline-block;
 }
 

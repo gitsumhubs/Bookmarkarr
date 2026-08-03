@@ -70,8 +70,8 @@
 
 /* Ensure selects use the same appearance as modal selects by default when using .form-select */
 .form-select {
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
 }
 
 .form-select:focus {

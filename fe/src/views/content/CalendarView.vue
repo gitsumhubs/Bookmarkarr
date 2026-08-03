@@ -736,7 +736,7 @@ const allItemsSorted = computed(() => {
   top: 100%;
   left: 0;
   margin-top: 0.5rem;
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   padding: 1rem;
@@ -778,10 +778,10 @@ const allItemsSorted = computed(() => {
 .picker-select {
   width: 100%;
   padding: 0.75rem;
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
-  color: #e6eef8;
+  color: var(--text-primary);
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -792,7 +792,7 @@ const allItemsSorted = computed(() => {
 
 .picker-select:hover {
   border-color: rgba(255, 255, 255, 0.12);
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
 }
 
 .picker-select:focus {
@@ -802,8 +802,8 @@ const allItemsSorted = computed(() => {
 }
 
 .picker-select option {
-  background: #2a2a2a;
-  color: #e6eef8;
+  background: var(--card-bg);
+  color: var(--text-primary);
 }
 
 .picker-actions {
@@ -879,7 +879,7 @@ const allItemsSorted = computed(() => {
   padding: 0.625rem;
   border-right: 1px solid rgba(255, 255, 255, 0.05);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   transition: background-color 0.2s;
   min-width: 0;
   overflow: hidden;
@@ -887,7 +887,7 @@ const allItemsSorted = computed(() => {
 }
 
 .calendar-day:hover {
-  background-color: #2f2f2f;
+  background-color: var(--bg-tertiary);
 }
 
 .calendar-day.other-month {
@@ -976,7 +976,7 @@ const allItemsSorted = computed(() => {
 }
 
 .sidebar-card {
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 6px;
   overflow: hidden;
@@ -1016,7 +1016,7 @@ const allItemsSorted = computed(() => {
 }
 
 .upcoming-item:hover {
-  background-color: #2f2f2f;
+  background-color: var(--bg-tertiary);
   border-color: rgba(77, 171, 247, 0.3);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   transform: translateX(2px);
@@ -1058,7 +1058,7 @@ const allItemsSorted = computed(() => {
 }
 
 .calendar-panel {
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 6px;
   overflow: hidden;
@@ -1190,7 +1190,7 @@ const allItemsSorted = computed(() => {
 }
 
 .forecast-item:hover {
-  background-color: #2f2f2f;
+  background-color: var(--bg-tertiary);
   border-color: rgba(77, 171, 247, 0.3);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   transform: translateX(4px);
@@ -1273,7 +1273,7 @@ const allItemsSorted = computed(() => {
 }
 
 .day-list-item:hover {
-  background-color: #2f2f2f;
+  background-color: var(--bg-tertiary);
   border-color: rgba(77, 171, 247, 0.3);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
@@ -1333,7 +1333,7 @@ const allItemsSorted = computed(() => {
 }
 
 .agenda-item:hover {
-  background-color: #2f2f2f;
+  background-color: var(--bg-tertiary);
   border-color: rgba(77, 171, 247, 0.3);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   transform: translateX(2px);

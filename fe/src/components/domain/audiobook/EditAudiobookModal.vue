@@ -2043,11 +2043,11 @@ function close() {
 }
 
 .modal-body::-webkit-scrollbar-track {
-  background: #1e1e1e;
+  background: var(--bg-primary);
 }
 
 .modal-body::-webkit-scrollbar-thumb {
-  background: #555;
+  background: var(--bg-surface);
   border-radius: 6px;
 }
 
@@ -2100,7 +2100,7 @@ function close() {
 .field-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #d4d4d4;
+  color: var(--text-secondary);
 }
 
 .form-group {
@@ -2142,7 +2142,7 @@ function close() {
   align-items: center;
   gap: 0.35rem;
   font-size: 0.85rem;
-  color: #d4d4d4;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -2153,9 +2153,9 @@ function close() {
   min-width: 4.5rem;
   padding: 0.2rem 0.45rem;
   border-radius: 999px;
-  border: 1px solid #3b3b3b;
-  background: #222;
-  color: #bfbfbf;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
   font-size: 0.75rem;
   text-transform: uppercase;
 }
@@ -2195,8 +2195,8 @@ function close() {
   gap: 0.75rem;
   align-items: flex-start;
   padding: 0.85rem;
-  background: #1e1e1e;
-  border: 1px solid #3a3a3a;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
 }
 
@@ -2225,7 +2225,7 @@ function close() {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  color: #d4d4d4;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   white-space: nowrap;
 }
@@ -2257,9 +2257,9 @@ function close() {
     grid-template-columns: 1fr;
     gap: 0.4rem;
     padding: 0.5rem;
-    border: 1px solid #333;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
-    background: #202020;
+    background: var(--bg-primary);
   }
 
   .identifier-region--spacer {
@@ -2339,7 +2339,7 @@ function close() {
 
 .confirm-description p {
   margin: 0;
-  color: #cccccc;
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
@@ -2347,10 +2347,10 @@ function close() {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  background: #252526;
+  background: var(--bg-secondary);
   border-radius: 8px;
   padding: 1rem;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
 }
 
 .path-section {
@@ -2375,13 +2375,13 @@ function close() {
 }
 
 .path-display {
-  background: #1e1e1e;
-  border: 1px solid #333;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 0.75rem;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 0.85rem;
-  color: #cccccc;
+  color: var(--text-secondary);
   word-break: break-all;
   line-height: 1.4;
 }
@@ -2405,14 +2405,14 @@ function close() {
   align-items: flex-start;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: #252526;
+  background: var(--bg-secondary);
   border-radius: 8px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   transition: all 0.2s ease;
 }
 
 .checkbox-row:hover {
-  background: #2d2d30;
+  background: var(--bg-tertiary);
   border-color: var(--brand-focus);
 }
 
@@ -2454,7 +2454,7 @@ function close() {
   display: flex;
   gap: 0.75rem;
   padding: 1rem 1.5rem 1.5rem;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--border-color);
   justify-content: flex-end;
   flex-wrap: wrap;
 }
@@ -2543,10 +2543,10 @@ function close() {
 
 .form-select {
   padding: 0.75rem 1rem;
-  background-color: #1a1a1a;
-  border: 1px solid #3a3a3a;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: white;
+  color: var(--text-primary);
   font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -2554,7 +2554,7 @@ function close() {
 }
 
 .form-select:hover {
-  border-color: #555;
+  border-color: var(--border-color);
 }
 
 .form-select:focus {
@@ -2621,8 +2621,8 @@ function close() {
   flex-wrap: wrap;
   gap: 0.5rem;
   padding: 0.75rem;
-  background-color: #1e1e1e;
-  border: 1px solid #3a3a3a;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   min-height: 3rem;
   align-items: flex-start;
@@ -2634,19 +2634,19 @@ function close() {
   align-items: center;
   gap: 0.5rem;
   padding: 0.35rem 0.6rem;
-  background-color: #2a2a2a;
-  color: #e0e0e0;
+  background-color: var(--card-bg);
+  color: var(--text-secondary);
   border-radius: 6px;
   font-size: 0.85rem;
   font-weight: 500;
-  border: 1px solid #3a3a3a;
+  border: 1px solid var(--border-color);
   transition: all 0.2s ease;
 }
 
 .tag-item:hover {
-  background-color: #333;
+  background-color: var(--bg-tertiary);
   border-color: var(--brand-focus);
-  color: white;
+  color: var(--text-primary);
 }
 
 .tag-item:hover::before {
@@ -2666,7 +2666,7 @@ function close() {
 .tag-remove {
   background: rgba(0, 0, 0, 0.2);
   border: none;
-  color: #ccc;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 0.25rem;
   display: flex;
@@ -2695,22 +2695,22 @@ function close() {
 .tag-input {
   flex: 1;
   padding: 0.75rem 1rem;
-  background-color: #1a1a1a;
-  border: 1px solid #3a3a3a;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: white;
+  color: var(--text-primary);
   font-size: 0.95rem;
   transition: all 0.2s ease;
 }
 
 .tag-input:hover {
-  border-color: #555;
+  border-color: var(--border-color);
 }
 
 .tag-input:focus {
   outline: none;
   border-color: var(--brand-focus);
-  background-color: #2d2d2d;
+  background-color: var(--bg-tertiary);
   box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.1);
 }
 
@@ -2759,7 +2759,7 @@ function close() {
 /* Visual card wrapper for checkbox rows is provided globally via .modal-content .checkbox-group .input-checkbox
    Keep checkbox-inner label minimal here to avoid double-card appearance */
 .checkbox-label {
-  color: #ccc;
+  color: var(--text-secondary);
   font-size: 0.95rem;
   text-align: left;
 }
@@ -2787,7 +2787,7 @@ function close() {
 }
 
 .checkbox-title {
-  color: #ccc;
+  color: var(--text-secondary);
   font-weight: 500;
   font-size: 0.95rem;
   transition: color 0.2s;
@@ -2819,14 +2819,14 @@ function close() {
   gap: 0.75rem;
   align-items: stretch;
   padding: 0.5rem;
-  background-color: #2a2a2a;
-  border: 1px solid #3a3a3a;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
 }
 
 .readonly-input {
   flex: 1;
-  color: #ccc !important;
+  color: var(--text-secondary) !important;
   cursor: default;
   padding: 0.6rem 0.75rem;
 }
@@ -2838,9 +2838,9 @@ function close() {
   min-height: 40px;
   border-radius: 6px;
   /* Default *fallback* styling for non-primary use (kept for backwards compatibility) */
-  background-color: #333;
-  border: 1px solid #555;
-  color: #ccc;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
   display: inline-flex;
@@ -2894,8 +2894,8 @@ function close() {
   /* Increased gap for better separation */
   padding: 1rem;
   /* Increased padding */
-  background-color: #1e1e1e;
-  border: 1px solid #333;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
 }
 
@@ -2909,9 +2909,9 @@ function close() {
   width: 100%;
   padding: 0.6rem 0.75rem;
   border-radius: 6px;
-  border: 1px solid #3a3a3a;
-  background-color: #1a1a1a;
-  color: #fff;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
@@ -2941,8 +2941,8 @@ function close() {
   height: 42px;
   /* Slightly taller for better touch targets */
   box-sizing: border-box;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 0.75rem 1rem;
   min-width: 140px;
@@ -3013,9 +3013,9 @@ function close() {
   flex-direction: column;
   gap: 0.75rem;
   padding: 0.75rem;
-  background-color: #252525;
+  background-color: var(--bg-secondary);
   border-radius: 6px;
-  border: 1px solid #404040;
+  border: 1px solid var(--border-color);
 }
 
 .path-preview {
@@ -3027,17 +3027,17 @@ function close() {
 .preview-label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .preview-path {
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 0.875rem;
-  color: #fff;
-  background-color: #1a1a1a;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
   padding: 0.5rem 0.75rem;
   border-radius: 4px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   word-break: break-all;
 }
 

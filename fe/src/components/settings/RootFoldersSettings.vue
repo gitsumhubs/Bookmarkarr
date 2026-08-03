@@ -330,7 +330,7 @@ defineExpose({
 }
 
 .folder-card {
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   transition: all 0.2s ease;
@@ -398,13 +398,13 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #ccc;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   padding: 1.5rem;
 }
 
 .folder-path code {
-  background: #1a1a1a;
+  background: var(--bg-primary);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   font-family: monospace;
@@ -443,8 +443,8 @@ defineExpose({
 /* Modal styles are centralized in `modals.css` */
 
 .modal-close:hover {
-  background: #333;
-  color: #fff;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .modal-body {

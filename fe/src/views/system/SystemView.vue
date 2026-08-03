@@ -506,7 +506,7 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 1.25rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .card-title {
@@ -569,7 +569,7 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   padding: 0.5rem;
-  background: #252525;
+  background: var(--bg-secondary);
   border-radius: 6px;
 }
 
@@ -597,7 +597,7 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: #252525;
+  background: var(--bg-secondary);
   border-radius: 6px;
   margin-bottom: 0.5rem;
 }
@@ -651,7 +651,7 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   padding: 1rem;
-  background: #252525;
+  background: var(--bg-secondary);
   border-radius: 6px;
   color: #999;
   font-style: italic;
@@ -672,8 +672,8 @@ onMounted(() => {
 }
 
 .section {
-  background: #232323;
-  border: 1px solid #333;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
@@ -685,7 +685,7 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .section-header h2 {
@@ -771,8 +771,8 @@ onMounted(() => {
 .logs-container {
   max-height: 400px;
   overflow-y: auto;
-  background: #252525;
-  border: 1px solid #333;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
 }
 
@@ -781,7 +781,7 @@ onMounted(() => {
   grid-template-columns: auto auto auto 1fr;
   gap: 1rem;
   padding: 0.85rem 1rem;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border-color);
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 0.85rem;
   align-items: center;
@@ -791,7 +791,7 @@ onMounted(() => {
 }
 
 .log-entry:hover {
-  background: #2a2a2a;
+  background: var(--card-bg);
 }
 
 .log-entry:last-child {
@@ -890,7 +890,7 @@ onMounted(() => {
 }
 
 .log-message {
-  color: #ccc;
+  color: var(--text-secondary);
   /* Prevent long unbroken strings from causing horizontal scroll */
   min-width: 0;
   overflow-wrap: anywhere;
@@ -904,17 +904,17 @@ onMounted(() => {
 }
 
 .logs-container::-webkit-scrollbar-track {
-  background: #1e1e1e;
+  background: var(--bg-primary);
   border-radius: 6px;
 }
 
 .logs-container::-webkit-scrollbar-thumb {
-  background: #444;
+  background: var(--bg-surface);
   border-radius: 6px;
 }
 
 .logs-container::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--bg-surface);
 }
 
 /* Animations */

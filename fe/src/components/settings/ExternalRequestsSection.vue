@@ -48,9 +48,9 @@ h3 {
 .form-body {
   padding: 1.25rem;
   border-radius: 6px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
-  background-color: #232323;
+  background-color: var(--bg-secondary);
 }
 
 .info-inline {
@@ -73,10 +73,10 @@ h3 {
 .form-group input[type='number'] {
   width: 100%;
   padding: 0.9rem 0.85rem;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: #1a1a1a;
-  color: #fff;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .form-group input:focus {

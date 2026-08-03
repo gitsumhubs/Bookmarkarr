@@ -82,7 +82,7 @@
 .global-toast .toast-error {
   background-color: var(--toast-error-bg, #e74c3c) !important;
   border-left: 4px solid var(--toast-error-accent, #c0392b) !important;
-  color: var(--toast-error-color, #fff1f0) !important;
+  color: var(--toast-error-color, var(--text-primary)) !important;
 }
 
 /* simple transition */

@@ -126,10 +126,10 @@ async function onRegenerate() {
 .api-key-field {
   padding: 0.75rem;
   padding-right: 7.5rem; /* Make room for three icons */
-  border: 1px solid #3a3a3a;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: #1a1a1a;
-  color: white;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   font-size: 1rem;
   width: 100%;
   box-sizing: border-box;

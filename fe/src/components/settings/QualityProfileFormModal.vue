@@ -1233,7 +1233,7 @@ const handleSubmit = () => {
 }
 
 .modal-content {
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border-radius: 6px;
   max-width: 800px;
   width: 100%;
@@ -1252,7 +1252,7 @@ const handleSubmit = () => {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
@@ -1293,7 +1293,7 @@ const handleSubmit = () => {
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #ddd;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -1304,10 +1304,10 @@ const handleSubmit = () => {
 .form-group select {
   width: 100%;
   padding: 0.75rem;
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1rem;
 }
 
@@ -1326,7 +1326,7 @@ const handleSubmit = () => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  color: #ddd;
+  color: var(--text-secondary);
   cursor: pointer;
   user-select: none;
   padding: 0.5rem 0;
@@ -1341,8 +1341,8 @@ const handleSubmit = () => {
   flex-shrink: 0;
   -webkit-appearance: none;
   appearance: none;
-  background-color: #1a1a1a;
-  border: 2px solid #555;
+  background-color: var(--bg-primary);
+  border: 2px solid var(--border-color);
   border-radius: 6px;
   position: relative;
   transition: all 0.2s ease;
@@ -1414,7 +1414,7 @@ const handleSubmit = () => {
 .codec-selection {
   margin-bottom: 2rem;
   padding-bottom: 2rem;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .codec-grid {
@@ -1429,8 +1429,8 @@ const handleSubmit = () => {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background-color: #1a1a1a;
-  border: 2px solid #444;
+  background-color: var(--bg-primary);
+  border: 2px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
@@ -1438,7 +1438,7 @@ const handleSubmit = () => {
 
 .codec-checkbox:hover {
   border-color: var(--brand-500);
-  background-color: #222;
+  background-color: var(--bg-secondary);
 }
 
 .codec-checkbox input[type='checkbox'] {
@@ -1471,7 +1471,7 @@ const handleSubmit = () => {
 .quality-groups-container {
   margin-bottom: 2rem;
   padding-bottom: 2rem;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .quality-groups {
@@ -1482,8 +1482,8 @@ const handleSubmit = () => {
 }
 
 .quality-group {
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -1493,8 +1493,8 @@ const handleSubmit = () => {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background-color: #252525;
-  border-bottom: 1px solid #333;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .group-icon {
@@ -1517,10 +1517,10 @@ const handleSubmit = () => {
   font-size: 0.95rem;
   font-weight: 600;
   padding: 0.25rem 0.5rem;
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
   border: 1px solid var(--brand-500);
   border-radius: 4px;
-  color: #fff;
+  color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -1562,10 +1562,10 @@ const handleSubmit = () => {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border-color);
   cursor: move;
   transition: all 0.2s;
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
 }
 
 .quality-item:last-child {
@@ -1573,7 +1573,7 @@ const handleSubmit = () => {
 }
 
 .quality-item:hover {
-  background-color: #222;
+  background-color: var(--bg-secondary);
 }
 
 .quality-item:active {
@@ -1618,10 +1618,10 @@ const handleSubmit = () => {
 .cutoff-selection select {
   width: 100%;
   padding: 0.75rem;
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
   cursor: pointer;
 }
@@ -1648,7 +1648,7 @@ const handleSubmit = () => {
   letter-spacing: 0.5px;
   padding: 0 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .quality-controls {
@@ -1661,24 +1661,24 @@ const handleSubmit = () => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #ddd;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
 .priority-input {
   width: 70px;
   padding: 0.4rem;
-  background-color: #2a2a2a;
-  border: 1px solid #555;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .radio-label {
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  color: #ddd;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   cursor: pointer;
   padding: 0.25rem 0.5rem;
@@ -1789,10 +1789,10 @@ const handleSubmit = () => {
 .tag-input input {
   flex: 1;
   padding: 0.6rem;
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .add-button {
@@ -1827,7 +1827,7 @@ const handleSubmit = () => {
   gap: 1rem;
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #444;
+  border-top: 1px solid var(--border-color);
 }
 
 /* Button styles for cancel/submit are centralized in src/assets/modals.css */

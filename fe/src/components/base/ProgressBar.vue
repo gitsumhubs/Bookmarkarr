@@ -151,11 +151,11 @@ const displaySize = computed(() => {
 
 /* Variant styles */
 .progress-container[data-variant='default'] {
-  background-color: #333;
+  background-color: var(--bg-tertiary);
 }
 
 .progress-container[data-variant='storage'] {
-  background: #333;
+  background: var(--bg-tertiary);
 }
 
 .progress-container[data-variant='download'] {

@@ -64,7 +64,7 @@ function onCancel() {
 <style scoped>
 /* Rely on centralized modal styles for layout; keep tiny confirm-specific tweaks here */
 .confirm-body p {
-  color: #ddd;
+  color: var(--text-secondary);
   margin: 0 0 0.5rem 0;
   white-space: pre-wrap;
 }

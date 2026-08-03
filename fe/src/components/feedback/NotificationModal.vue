@@ -74,7 +74,7 @@ function onClose() {
 }
 
 .notification-modal {
-  background: #2a2a2a;
+  background: var(--card-bg);
   border-radius: 6px;
   padding: 1.5rem;
   max-width: 500px;
@@ -125,7 +125,7 @@ function onClose() {
 .notification-content p {
   margin: 0;
   line-height: 1.5;
-  color: #cccccc;
+  color: var(--text-secondary);
   white-space: pre-wrap;
 }
 

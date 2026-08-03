@@ -563,7 +563,7 @@ function close() {
 }
 
 .modal-container {
-  background-color: #1e1e1e;
+  background-color: var(--bg-primary);
   border-radius: 6px;
   width: 100%;
   max-width: 600px;
@@ -578,7 +578,7 @@ function close() {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
-  border-bottom: 1px solid #3a3a3a;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
@@ -593,7 +593,7 @@ function close() {
 .btn-close {
   background: none;
   border: none;
-  color: #ccc;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 6px;
@@ -605,8 +605,8 @@ function close() {
 }
 
 .btn-close:hover {
-  background-color: #3a3a3a;
-  color: white;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .modal-body {
@@ -618,8 +618,8 @@ function close() {
 .results-section {
   margin-top: 1.5rem;
   padding: 1rem;
-  background: #141414;
-  border: 1px solid #2a2a2a;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
 }
 
@@ -632,8 +632,8 @@ function close() {
 
 .result-item {
   padding: 0.75rem;
-  background: #1a1a1a;
-  border: 1px solid #2e2e2e;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
 }
 
@@ -680,7 +680,7 @@ function close() {
 
 .info-section p {
   margin: 0;
-  color: #ccc;
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
@@ -726,16 +726,16 @@ function close() {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background-color: #2a2a2a;
-  border: 1px solid #3a3a3a;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .radio-label:hover {
-  background-color: #333;
+  background-color: var(--bg-tertiary);
   border-color: var(--brand-500);
 }
 
@@ -753,17 +753,17 @@ function close() {
 
 .form-select {
   padding: 0.75rem 1rem;
-  background-color: #2a2a2a;
-  border: 1px solid #3a3a3a;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: white;
+  color: var(--text-primary);
   font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .form-select:hover {
-  border-color: #555;
+  border-color: var(--border-color);
 }
 
 .form-select:focus {
@@ -811,14 +811,14 @@ function close() {
 }
 
 .confirm-dialog {
-  background: #2a2a2a;
+  background: var(--card-bg);
   border-radius: 6px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
   max-width: 700px; /* standardized to modal-md */
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
 }
 
 .confirm-header {
@@ -826,7 +826,7 @@ function close() {
   align-items: center;
   gap: 0.75rem;
   padding: 1.25rem 1.5rem 1rem;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-color);
   margin-bottom: 0;
 }
 .confirm-header i {
@@ -850,7 +850,7 @@ function close() {
 
 .confirm-description p {
   margin: 0;
-  color: #cccccc;
+  color: var(--text-secondary);
   line-height: 1.5;
 }
 
@@ -858,10 +858,10 @@ function close() {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  background: #252526;
+  background: var(--bg-secondary);
   border-radius: 8px;
   padding: 1rem;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
 }
 
 .path-section {
@@ -885,13 +885,13 @@ function close() {
 }
 
 .path-display {
-  background: #1e1e1e;
-  border: 1px solid #333;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 0.75rem;
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 0.85rem;
-  color: #cccccc;
+  color: var(--text-secondary);
   word-break: break-all;
   line-height: 1.4;
 }
@@ -915,14 +915,14 @@ function close() {
   align-items: flex-start;
   gap: 0.75rem;
   padding: 0.75rem;
-  background: #252526;
+  background: var(--bg-secondary);
   border-radius: 8px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   transition: all 0.2s ease;
 }
 
 .checkbox-row:hover {
-  background: #2d2d30;
+  background: var(--bg-tertiary);
   border-color: var(--brand-500);
 }
 
@@ -966,7 +966,7 @@ function close() {
   display: flex;
   gap: 0.75rem;
   padding: 1rem 1.5rem 1.5rem;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--border-color);
   justify-content: flex-end;
   flex-wrap: wrap;
 }

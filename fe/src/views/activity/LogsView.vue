@@ -377,9 +377,9 @@ onMounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.65rem 1.25rem;
-  background: #2a2a2a;
-  color: #fff;
-  border: 1px solid #444;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.95rem;
   cursor: pointer;
@@ -387,7 +387,7 @@ onMounted(() => {
 }
 
 .action-button:hover:not(:disabled) {
-  background: #333;
+  background: var(--bg-tertiary);
   border-color: var(--brand-500);
   transform: translateY(-1px);
 }
@@ -416,8 +416,8 @@ onMounted(() => {
   gap: 1rem;
   margin-bottom: 1.5rem;
   padding: 1.25rem;
-  background: #1e1e1e;
-  border: 1px solid #333;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
 }
 
@@ -439,9 +439,9 @@ onMounted(() => {
 .filter-group select,
 .filter-group input {
   padding: 0.65rem;
-  background: #252525;
-  color: #fff;
-  border: 1px solid #444;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.95rem;
   transition: all 0.2s;
@@ -451,7 +451,7 @@ onMounted(() => {
 .filter-group input:focus {
   outline: none;
   border-color: var(--brand-focus);
-  background: #2a2a2a;
+  background: var(--card-bg);
 }
 
 .search-input {
@@ -501,8 +501,8 @@ onMounted(() => {
 }
 
 .clear-button:hover {
-  color: #fff;
-  background: #333;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
 }
 
 .clear-button svg {
@@ -556,8 +556,8 @@ onMounted(() => {
 
 /* Logs Container */
 .logs-wrapper {
-  background: #1e1e1e;
-  border: 1px solid #333;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -565,7 +565,7 @@ onMounted(() => {
 .logs-container {
   max-height: calc(100vh - 400px);
   overflow-y: auto;
-  background: #252525;
+  background: var(--bg-secondary);
 }
 
 .log-entry {
@@ -573,7 +573,7 @@ onMounted(() => {
   grid-template-columns: auto auto auto 1fr;
   gap: 1rem;
   padding: 0.85rem 1rem;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border-color);
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
   font-size: 0.85rem;
   align-items: center;
@@ -581,7 +581,7 @@ onMounted(() => {
 }
 
 .log-entry:hover {
-  background: #2a2a2a;
+  background: var(--card-bg);
 }
 
 .log-entry:last-child {
@@ -659,7 +659,7 @@ onMounted(() => {
 }
 
 .log-message {
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 /* Scrollbar Styles */
@@ -668,17 +668,17 @@ onMounted(() => {
 }
 
 .logs-container::-webkit-scrollbar-track {
-  background: #1e1e1e;
+  background: var(--bg-primary);
   border-radius: 6px;
 }
 
 .logs-container::-webkit-scrollbar-thumb {
-  background: #444;
+  background: var(--bg-surface);
   border-radius: 6px;
 }
 
 .logs-container::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--bg-surface);
 }
 
 /* Pagination */
@@ -687,8 +687,8 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: #1e1e1e;
-  border-top: 1px solid #333;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
 }
 
 .pagination-info {
@@ -705,7 +705,7 @@ onMounted(() => {
   padding: 0.5rem 0.75rem;
   background: transparent;
   color: #999;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.9rem;
   cursor: pointer;
@@ -717,8 +717,8 @@ onMounted(() => {
 }
 
 .page-button:hover:not(:disabled) {
-  background: #333;
-  color: #fff;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
   border-color: var(--brand-500);
 }
 
@@ -746,9 +746,9 @@ onMounted(() => {
 
 .pagination-size select {
   padding: 0.5rem;
-  background: #1e1e1e;
-  color: #fff;
-  border: 1px solid #444;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 0.9rem;
   cursor: pointer;

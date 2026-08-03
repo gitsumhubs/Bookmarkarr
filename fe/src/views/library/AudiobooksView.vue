@@ -2390,7 +2390,7 @@ defineExpose({
 .audiobooks-view {
   --audiobooks-toolbar-height: 60px;
   --audiobooks-toolbar-offset: var(--audiobooks-toolbar-height);
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
   margin-top: var(--audiobooks-toolbar-offset); /* Space for fixed local toolbar */
   min-height: calc(100dvh - var(--app-top-offset, 60px) - var(--audiobooks-toolbar-offset));
   --legend-height: 44px;
@@ -2420,8 +2420,8 @@ defineExpose({
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  background-color: #2a2a2a;
-  border-bottom: 1px solid #333;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
   margin-bottom: 20px;
 }
 
@@ -2484,7 +2484,7 @@ defineExpose({
   background-color: transparent;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 6px;
-  color: #e6eef8;
+  color: var(--text-primary);
   font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
@@ -2609,7 +2609,7 @@ defineExpose({
 .toolbar-search {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.04);
-  color: #e6eef8;
+  color: var(--text-primary);
   padding: 8px 8px;
   border-radius: 6px;
   min-width: 180px;
@@ -2641,7 +2641,7 @@ defineExpose({
 .toolbar-select {
   background-color: #2a2a2a; /* match CustomSelect trigger */
   border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #e6eef8;
+  color: var(--text-primary);
   padding: 8px 10px;
   border-radius: 6px;
   min-height: 36px;
@@ -2665,8 +2665,8 @@ defineExpose({
   display: inline-block;
 }
 .toolbar-select option {
-  background: #2a2a2a;
-  color: #e6eef8;
+  background: var(--card-bg);
+  color: var(--text-primary);
 }
 
 .count-badge {
@@ -2725,7 +2725,7 @@ defineExpose({
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  background: #2a2a2a;
+  background: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 6px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
@@ -2809,7 +2809,7 @@ defineExpose({
 .collection-card:has(.series-covers-container) .collection-cover {
   aspect-ratio: 2/1;
   height: 192px;
-  background: #2a2a2a;
+  background: var(--card-bg);
   border-radius: 6px;
 }
 
@@ -2963,7 +2963,7 @@ defineExpose({
 
 .series-bottom-count {
   font-size: 12px; /* match grid-bottom-details .detail-line */
-  color: #bfcad6;
+  color: var(--text-secondary);
   margin: 0;
   text-align: center;
 }
@@ -3002,15 +3002,15 @@ defineExpose({
   align-items: center;
   gap: 10px 16px;
   padding: 10px 20px;
-  background: linear-gradient(180deg, rgba(26, 26, 26, 0.6) 0%, #1a1a1a 40%);
+  background: linear-gradient(180deg, rgba(26, 26, 26, 0.6) 0%, var(--bg-primary) 40%);
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   z-index: 200;
-  color: #bfcad6;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
 .legend-title {
-  color: #e6eef8;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -3338,7 +3338,7 @@ defineExpose({
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
-  background: linear-gradient(90deg, #242424 0%, #2f343a 50%, #242424 100%);
+  background: linear-gradient(90deg, var(--bg-secondary) 0%, var(--bg-tertiary) 50%, var(--bg-secondary) 100%);
   background-size: 200% 100%;
   animation: authorShimmer 1.6s ease infinite;
   color: #9aa4b2;
@@ -3377,13 +3377,13 @@ defineExpose({
 }
 
 .author-poster {
-  background: #1f1f1f;
+  background: var(--bg-primary);
 }
 
 .author-placeholder {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, #242424 0%, #2f343a 50%, #242424 100%);
+  background: linear-gradient(90deg, var(--bg-secondary) 0%, var(--bg-tertiary) 50%, var(--bg-secondary) 100%);
   background-size: 200% 100%;
   animation: authorShimmer 1.6s ease infinite;
   opacity: 1;
@@ -3483,13 +3483,13 @@ defineExpose({
 
 .audiobook-extra-details {
   margin-top: 8px;
-  color: #e6eef8;
+  color: var(--text-primary);
 }
 .audiobook-extra-details .detail-line {
   font-size: 12px;
   line-height: 1.2;
   margin: 2px 0;
-  color: #cfd8e3;
+  color: var(--text-secondary);
 }
 .audiobook-extra-details .detail-line.title {
   font-weight: 500;
@@ -3497,25 +3497,25 @@ defineExpose({
 }
 .audiobook-extra-details .detail-line.small {
   font-size: 11px;
-  color: #bfcad6;
+  color: var(--text-secondary);
 }
 .list-extra-details {
   margin-top: 6px;
-  color: #e6eef8;
+  color: var(--text-primary);
 }
 .list-extra-details .detail-line {
   font-size: 12px;
-  color: #bfcad6;
+  color: var(--text-secondary);
 }
 .grid-bottom-details {
   margin-top: 8px;
-  color: #e6eef8;
+  color: var(--text-primary);
   padding: 0 4px;
   width: 100%;
 }
 .grid-bottom-details .detail-line {
   font-size: 12px;
-  color: #bfcad6;
+  color: var(--text-secondary);
   text-align: center;
 }
 .grid-bottom-details .detail-line.title {
@@ -3538,7 +3538,7 @@ defineExpose({
 
 .audiobook-author {
   font-size: 11px;
-  color: #ccc;
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3581,7 +3581,7 @@ defineExpose({
   border-radius: 6px;
   font-size: 10px;
   font-weight: 500;
-  color: #cfcfcf;
+  color: var(--text-secondary);
   margin-top: 0.5rem;
   cursor: pointer;
   white-space: nowrap;
@@ -3704,7 +3704,7 @@ defineExpose({
   height: calc(
     100dvh - var(--app-top-offset, 60px) - var(--audiobooks-toolbar-offset) - var(--legend-height)
   );
-  color: #ccc;
+  color: var(--text-secondary);
   text-align: center;
 }
 
@@ -3853,7 +3853,7 @@ defineExpose({
 
 .list-details .audiobook-author {
   font-size: 12px;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .list-actions {

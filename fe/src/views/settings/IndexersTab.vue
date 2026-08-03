@@ -981,7 +981,7 @@ defineExpose({ openAddIndexer, openProwlarrImport: openProwlarrModal })
 
 /* Indexer Card */
 .indexer-card {
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   transition: all 0.2s ease;

@@ -3454,14 +3454,14 @@ onUnmounted(() => {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 2rem;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .tab-btn {
   padding: 1rem 1.5rem;
   background: transparent;
   border: none;
-  color: #ccc;
+  color: var(--text-secondary);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   display: flex;
@@ -3585,10 +3585,10 @@ onUnmounted(() => {
 .unified-search-bar .language-select,
 .unified-search-bar .region-select {
   padding: 6px 8px;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: #1a1a1a !important;
-  color: #ffffff !important;
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
   font-size: 0.95rem;
   font-family: inherit;
   font-weight: 500;
@@ -3619,7 +3619,7 @@ onUnmounted(() => {
 
 .unified-search-bar .language-select:hover,
 .unified-search-bar .region-select:hover {
-  border-color: #555;
+  border-color: var(--border-color);
 }
 
 .unified-search-bar .language-select:focus,
@@ -3631,8 +3631,8 @@ onUnmounted(() => {
 
 .unified-search-bar .language-select option,
 .unified-search-bar .region-select option {
-  background-color: #1a1a1a !important;
-  color: white !important;
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
   padding: 0.5rem !important;
 }
 
@@ -3646,7 +3646,7 @@ onUnmounted(() => {
 
 .language-label,
 .region-label {
-  color: #b0bec5;
+  color: var(--text-muted);
   font-size: 0.85rem;
   font-weight: 500;
   margin: 0;
@@ -4068,7 +4068,7 @@ select.form-input:focus {
   align-items: center;
   padding: 4rem 2rem;
   min-height: 300px;
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -4116,7 +4116,7 @@ select.form-input:focus {
 /* ASIN Result Card */
 .result-card {
   display: flex;
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border-radius: 6px;
   overflow: hidden;
   padding: 1.25rem;
@@ -4126,7 +4126,7 @@ select.form-input:focus {
 }
 
 .result-card:hover {
-  background-color: #2f2f2f;
+  background-color: var(--bg-tertiary);
   border-color: rgba(33, 150, 243, 0.3);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
@@ -4135,7 +4135,7 @@ select.form-input:focus {
   width: 140px;
   height: 140px;
   flex-shrink: 0;
-  background-color: #555;
+  background-color: var(--bg-surface);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   overflow: hidden;
@@ -4322,7 +4322,7 @@ select.form-input:focus {
 }
 
 .result-description {
-  color: #ccc;
+  color: var(--text-secondary);
   margin: 0.5rem 0;
   line-height: 1.5;
   flex-grow: 1;
@@ -4457,7 +4457,7 @@ select.form-input:focus {
 }
 
 .audible-pagination .page-indicator {
-  color: #b6bcc4;
+  color: var(--text-muted);
   font-size: 0.95rem;
 }
 
@@ -4471,7 +4471,7 @@ select.form-input:focus {
 
 .title-result-card {
   display: flex;
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   padding: 1.25rem;
@@ -4520,7 +4520,7 @@ select.form-input:focus {
 }
 
 .result-author {
-  color: #bfc7cc;
+  color: var(--text-muted);
   margin: 0 0 0.75rem 0;
   font-size: 1rem;
   font-weight: 500;
@@ -4532,7 +4532,7 @@ select.form-input:focus {
 .error-state {
   text-align: center;
   padding: 4rem 2rem;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .welcome-icon,
@@ -4568,7 +4568,7 @@ select.form-input:focus {
 }
 
 .help-section ul {
-  color: #ccc;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
@@ -4744,7 +4744,7 @@ select.form-input:focus {
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   position: sticky;
   top: 60px;
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
   z-index: 100;
   padding-bottom: 0.5rem;
   width: 100%;
@@ -4780,7 +4780,7 @@ select.form-input:focus {
 }
 
 .page-indicator {
-  color: #b6bcc4;
+  color: var(--text-muted);
   font-size: 0.95rem;
   white-space: nowrap;
   flex: 0 1 auto;
@@ -4833,10 +4833,10 @@ select.form-input:focus {
 
 .small-select {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: #1a1a1a !important;
-  color: white !important;
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -4860,8 +4860,8 @@ select.form-input:focus {
 }
 
 .small-select option {
-  background-color: #1a1a1a !important;
-  color: white !important;
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
   padding: 0.5rem !important;
 }
 

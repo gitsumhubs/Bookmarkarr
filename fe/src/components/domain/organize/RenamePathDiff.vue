@@ -80,8 +80,8 @@ defineProps<{
   font-family: 'Courier New', monospace;
   padding: 0.65rem 0.75rem;
   border-radius: 6px;
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
 }
 
 .rename-path-value--current {

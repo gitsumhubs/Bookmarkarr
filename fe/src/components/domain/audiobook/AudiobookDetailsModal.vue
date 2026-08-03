@@ -400,7 +400,7 @@ watch(
 .placeholder-cover {
   width: 100%;
   aspect-ratio: 2/3;
-  background-color: #333;
+  background-color: var(--bg-tertiary);
   border-radius: 6px;
   display: flex;
   flex-direction: column;
@@ -428,10 +428,10 @@ watch(
   flex: 1 1 auto;
   min-width: 0;
   padding: 0.6rem 0.75rem;
-  background: #2a2a2a;
-  border: 1px solid #444;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #eef2f8;
+  color: var(--text-primary);
   font-size: 0.95rem;
   box-shadow: none;
 }
@@ -440,7 +440,7 @@ watch(
 .destination-readonly .readonly-input:active {
   outline: none;
   box-shadow: none;
-  border-color: #444;
+  border-color: var(--border-color);
 }
 
 .destination-edit .destination-row {
@@ -459,10 +459,10 @@ watch(
   flex: 1 1 auto;
   min-width: 0;
   padding: 0.5rem 0.75rem;
-  background: #1a1a1a;
-  border: 1px solid #444;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
@@ -517,7 +517,7 @@ watch(
 }
 
 .narrators {
-  color: #ccc;
+  color: var(--text-secondary);
   font-style: italic;
   margin: 0;
 }
@@ -527,12 +527,12 @@ watch(
   color: white;
   font-size: 1.1rem;
   font-weight: 500;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.5rem;
 }
 
 .description {
-  color: #ccc;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin: 0;
   white-space: pre-wrap;
@@ -667,10 +667,10 @@ watch(
 .profile-select {
   width: 100%;
   padding: 0.75rem;
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1rem;
   cursor: pointer;
   transition: border-color 0.2s;

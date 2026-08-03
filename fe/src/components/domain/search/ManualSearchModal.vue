@@ -952,7 +952,7 @@ function getScoreClass(score: number): string {
 }
 
 .modal-container {
-  background-color: #1e1e1e;
+  background-color: var(--bg-primary);
   border-radius: 6px;
   width: 100%;
   max-height: 90vh;
@@ -966,7 +966,7 @@ function getScoreClass(score: number): string {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
-  border-bottom: 1px solid #3a3a3a;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
@@ -981,7 +981,7 @@ function getScoreClass(score: number): string {
 .btn-close {
   background: none;
   border: none;
-  color: #ccc;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 6px;
@@ -993,8 +993,8 @@ function getScoreClass(score: number): string {
 }
 
 .btn-close:hover {
-  background-color: #3a3a3a;
-  color: white;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .modal-body {
@@ -1039,9 +1039,9 @@ function getScoreClass(score: number): string {
 .content-mode-toggle {
   display: inline-flex;
   padding: 0.2rem;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: #252525;
+  background: var(--bg-secondary);
 }
 
 .content-mode-button {
@@ -1049,13 +1049,13 @@ function getScoreClass(score: number): string {
   border-radius: 4px;
   padding: 0.4rem 0.8rem;
   background: transparent;
-  color: #bbb;
+  color: var(--text-muted);
   cursor: pointer;
 }
 
 .content-mode-button:hover:not(:disabled) {
-  color: white;
-  background: #333;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
 }
 
 .content-mode-button.active {
@@ -1069,7 +1069,7 @@ function getScoreClass(score: number): string {
 }
 
 .results-count {
-  color: #ccc;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
@@ -1099,10 +1099,10 @@ function getScoreClass(score: number): string {
 .search-input {
   flex: 1;
   padding: 0.5rem 1rem 0.5rem 2.5rem;
-  background-color: #2a2a2a;
-  border: 1px solid #3a3a3a;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: white;
+  color: var(--text-primary);
   font-size: 1rem;
   transition:
     border-color 0.2s,
@@ -1142,7 +1142,7 @@ function getScoreClass(score: number): string {
 
 .no-results p {
   margin: 0.5rem 0;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .no-results .hint {
@@ -1152,7 +1152,7 @@ function getScoreClass(score: number): string {
 
 .results-table-wrapper {
   overflow-x: auto;
-  border: 1px solid #3a3a3a;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   height: calc(100vh - 360px);
 }
@@ -1164,7 +1164,7 @@ function getScoreClass(score: number): string {
 }
 
 .results-table thead {
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -1173,19 +1173,19 @@ function getScoreClass(score: number): string {
 .results-table th {
   padding: 0.75rem;
   text-align: left;
-  color: #ccc;
+  color: var(--text-secondary);
   font-weight: 500;
   text-transform: uppercase;
   font-size: 0.75rem;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid #3a3a3a;
+  border-bottom: 2px solid var(--border-color);
 }
 
 .results-table th.col-actions {
   position: sticky;
   right: 0;
   z-index: 3;
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   box-shadow:
     -1px 0 0 rgba(255, 255, 255, 0.06),
     -10px 0 20px rgba(0, 0, 0, 0.22);
@@ -1198,7 +1198,7 @@ function getScoreClass(score: number): string {
 }
 
 .sortable:hover {
-  background-color: #3a3a3a;
+  background-color: var(--bg-tertiary);
 }
 
 .header-content {
@@ -1225,7 +1225,7 @@ function getScoreClass(score: number): string {
 }
 
 .results-table tbody tr {
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border-color);
   transition:
     background-color 0.2s,
     box-shadow 0.2s;
@@ -1256,7 +1256,7 @@ function getScoreClass(score: number): string {
 
 .results-table td {
   padding: 0.75rem;
-  color: #ddd;
+  color: var(--text-secondary);
   vertical-align: middle;
 }
 
@@ -1264,7 +1264,7 @@ function getScoreClass(score: number): string {
   position: sticky;
   right: 0;
   z-index: 2;
-  background-color: #1e1e1e;
+  background-color: var(--bg-primary);
   box-shadow:
     -1px 0 0 rgba(255, 255, 255, 0.06),
     -10px 0 20px rgba(0, 0, 0, 0.22);
@@ -1326,7 +1326,7 @@ function getScoreClass(score: number): string {
 }
 
 .grabs-badge.unknown {
-  background-color: #3a3a3a;
+  background-color: var(--bg-tertiary);
   color: #666;
   border: none;
 }
@@ -1418,11 +1418,11 @@ function getScoreClass(score: number): string {
 .quality-badge {
   display: inline-block;
   padding: 0.25rem 0.5rem;
-  background-color: #3a3a3a;
+  background-color: var(--bg-tertiary);
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 500;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .quality-badge.format-only {
@@ -1499,7 +1499,7 @@ function getScoreClass(score: number): string {
 }
 
 .result-row:hover .btn-icon {
-  color: #ccc;
+  color: var(--text-secondary);
   background-color: rgba(33, 150, 243, 0.2);
 }
 

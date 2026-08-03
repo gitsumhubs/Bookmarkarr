@@ -220,8 +220,8 @@ async function confirmChange(moveFiles: boolean) {
 }
 
 .modal-close:hover {
-  background: #444;
-  color: #fff;
+  background: var(--bg-surface);
+  color: var(--text-primary);
 }
 
 .modal-body {
@@ -248,10 +248,10 @@ async function confirmChange(moveFiles: boolean) {
 .form-row input {
   width: 100%;
   padding: 0.75rem;
-  background: #1a1a1a;
-  border: 1px solid #444;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
   transition: all 0.2s ease;
 }
@@ -270,7 +270,7 @@ async function confirmChange(moveFiles: boolean) {
   display: flex;
   align-items: center;
   gap: 1rem;
-  color: #ddd;
+  color: var(--text-secondary);
   cursor: pointer;
   user-select: none;
   padding: 0.5rem 0;
@@ -285,8 +285,8 @@ async function confirmChange(moveFiles: boolean) {
   flex-shrink: 0;
   -webkit-appearance: none;
   appearance: none;
-  background-color: #1a1a1a;
-  border: 2px solid #555;
+  background-color: var(--bg-primary);
+  border: 2px solid var(--border-color);
   border-radius: 6px;
   position: relative;
   transition: all 0.2s ease;
@@ -357,13 +357,13 @@ async function confirmChange(moveFiles: boolean) {
 .modal-footer {
   justify-content: space-between;
   gap: 0.75rem;
-  background: #2a2a2a;
+  background: var(--card-bg);
 }
 
 /* Base `.btn` styles are centralized in src/assets/modals.css; avoid duplicating them here. */
 
 .btn:hover:not(:disabled) {
-  background: #444;
+  background: var(--bg-surface);
 }
 
 .btn:disabled {
@@ -392,9 +392,9 @@ async function confirmChange(moveFiles: boolean) {
 
 .confirm-body {
   padding: 1rem;
-  background: #1a1a1a;
+  background: var(--bg-primary);
   border-radius: 6px;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
 }
 
 .confirm-body p {
@@ -404,13 +404,13 @@ async function confirmChange(moveFiles: boolean) {
 }
 
 .confirm-body pre {
-  background: #2a2a2a;
+  background: var(--card-bg);
   padding: 0.75rem;
   border-radius: 4px;
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 0.85rem;
   word-break: break-all;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   margin: 0.5rem 0;
   color: #adb5bd;
   white-space: pre-wrap;
@@ -424,7 +424,7 @@ async function confirmChange(moveFiles: boolean) {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: #ddd;
+  color: var(--text-secondary);
   cursor: pointer;
   user-select: none;
   padding: 0.5rem 0;
@@ -438,8 +438,8 @@ async function confirmChange(moveFiles: boolean) {
   flex-shrink: 0;
   -webkit-appearance: none;
   appearance: none;
-  background-color: #1a1a1a;
-  border: 2px solid #555;
+  background-color: var(--bg-primary);
+  border: 2px solid var(--border-color);
   border-radius: 6px;
   position: relative;
   transition: all 0.2s ease;
@@ -475,10 +475,10 @@ async function confirmChange(moveFiles: boolean) {
 /* Form input styling to match login and other forms */
 .form-input {
   padding: 0.75rem;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: #1a1a1a;
-  color: white;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   font-size: 1rem;
   width: 100%;
   box-sizing: border-box;

@@ -720,7 +720,7 @@ const handleDelete = () => {
   font-size: 1.1rem;
   margin: 0 0 1rem 0;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .form-group {
@@ -742,10 +742,10 @@ const handleDelete = () => {
 .form-group select {
   width: 100%;
   padding: 0.75rem;
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
   transition: all 0.2s;
 }
@@ -767,7 +767,7 @@ const handleDelete = () => {
 /* Download client modal overrides */
 .checkbox-group label:hover {
   border-color: var(--brand-500);
-  background-color: #222;
+  background-color: var(--bg-secondary);
 }
 .checkbox-group label span {
   flex: 1;

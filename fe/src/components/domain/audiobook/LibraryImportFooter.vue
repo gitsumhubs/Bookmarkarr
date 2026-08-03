@@ -166,8 +166,8 @@ async function handleImport() {
 .import-footer {
   position: sticky;
   bottom: 0;
-  background: #1a1a1a;
-  border-top: 1px solid #333;
+  background: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
   padding: 0.75rem 1.5rem;
   display: flex;
   align-items: center;
@@ -197,10 +197,10 @@ async function handleImport() {
 }
 
 .mode-select {
-  background: #2a2a2a;
-  border: 1px solid #444;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
-  color: #e0e0e0;
+  color: var(--text-secondary);
   font-size: 0.82rem;
   padding: 0.4rem 0.6rem;
   height: var(--control-height, 40px);

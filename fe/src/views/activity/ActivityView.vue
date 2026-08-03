@@ -779,10 +779,10 @@ onUnmounted(() => {
 }
 
 .filter-input {
-  background: #2a2a2a;
+  background: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   padding: 0.5rem 2rem 0.5rem 2.25rem;
   font-size: 0.875rem;
   width: 220px;
@@ -863,7 +863,7 @@ onUnmounted(() => {
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 6px;
-  background: #1e1e1e;
+  background: var(--bg-primary);
 }
 
 .queue-grid-container.is-static {
@@ -885,7 +885,7 @@ onUnmounted(() => {
   position: sticky;
   top: 0;
   z-index: 2;
-  background: #252525;
+  background: var(--bg-secondary);
   padding: 0.5rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -1149,7 +1149,7 @@ onUnmounted(() => {
 }
 
 .modal-content {
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border-radius: 6px;
   width: 90%;
   max-width: 500px;
@@ -1375,13 +1375,13 @@ onUnmounted(() => {
     gap: 0.3rem 0.5rem;
     padding: 0.75rem;
     margin-bottom: 0.5rem;
-    background: #2a2a2a;
+    background: var(--card-bg);
     border-radius: 6px;
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .queue-row:hover {
-    background-color: #2f2f2f;
+    background-color: var(--bg-tertiary);
   }
 
   .queue-row > div {

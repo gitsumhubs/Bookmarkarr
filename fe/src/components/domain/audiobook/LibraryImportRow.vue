@@ -170,7 +170,7 @@ function formatGroupedFileLabel(sourceFile: string): string {
 .import-row td {
   padding: 0.55rem 0.75rem;
   vertical-align: top;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .import-row.selected td {
@@ -202,7 +202,7 @@ function formatGroupedFileLabel(sourceFile: string): string {
   display: block;
   font-family: monospace;
   font-size: 0.85rem;
-  color: #e0e0e0;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -311,7 +311,7 @@ function formatGroupedFileLabel(sourceFile: string): string {
   font-size: 0.62rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #d2d8e7;
+  color: var(--text-secondary);
   background: rgba(99, 102, 241, 0.16);
   border: 1px solid rgba(129, 140, 248, 0.24);
   border-radius: 999px;
@@ -326,7 +326,7 @@ function formatGroupedFileLabel(sourceFile: string): string {
 .format-badge {
   display: inline-block;
   font-size: 0.7rem;
-  background: #333;
+  background: var(--bg-tertiary);
   color: #aaa;
   border-radius: 999px;
   padding: 0.16rem 0.5rem;
@@ -372,7 +372,7 @@ function formatGroupedFileLabel(sourceFile: string): string {
 }
 
 .match-status.matched {
-  color: #e0e0e0;
+  color: var(--text-secondary);
 }
 
 .match-icon-ok {
@@ -431,7 +431,7 @@ function formatGroupedFileLabel(sourceFile: string): string {
 
 .btn-search-toggle {
   background: none;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   color: #888;
   cursor: pointer;
@@ -456,9 +456,9 @@ function formatGroupedFileLabel(sourceFile: string): string {
       'match match match';
     gap: 0.7rem 0.8rem;
     padding: 0.85rem;
-    border: 1px solid #2d2d2d;
+    border: 1px solid var(--border-color);
     border-radius: 16px;
-    background: linear-gradient(180deg, #171717 0%, #121212 100%);
+    background: linear-gradient(180deg, var(--bg-primary) 0%, #121212 100%);
     box-shadow: 0 14px 32px rgba(0, 0, 0, 0.18);
   }
 
@@ -544,7 +544,7 @@ function formatGroupedFileLabel(sourceFile: string): string {
     font-size: 0.66rem;
     padding: 0.22rem 0.55rem;
     background: rgba(255, 255, 255, 0.08);
-    color: #d5d7dd;
+    color: var(--text-secondary);
   }
 
   .file-count {

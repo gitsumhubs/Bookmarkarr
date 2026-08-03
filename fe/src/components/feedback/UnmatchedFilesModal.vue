@@ -682,10 +682,10 @@ async function addAllWithAsin() {
 }
 
 .dest-select {
-  background: #2a2a2a;
-  border: 1px solid #444;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 4px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.85rem;
   padding: 0.2rem 0.5rem;
   cursor: pointer;

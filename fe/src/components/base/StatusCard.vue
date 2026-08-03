@@ -66,8 +66,8 @@ withDefaults(
 
 <style scoped>
 .status-card {
-  background: #232323;
-  border: 1px solid #333;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
@@ -75,7 +75,7 @@ withDefaults(
 }
 
 .status-card:hover {
-  border-color: #444;
+  border-color: var(--border-color);
   transform: translateY(-2px);
 }
 
@@ -85,7 +85,7 @@ withDefaults(
   align-items: center;
   margin-bottom: 1.25rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .card-title {

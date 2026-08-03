@@ -1775,7 +1775,7 @@ function formatDate(dateString?: string): string {
 .audiobook-detail {
   --detail-top-nav-height: 60px;
   min-height: 100vh;
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
   padding-top: var(--detail-top-nav-height);
   /* Add padding to account for fixed local nav */
 }
@@ -1793,8 +1793,8 @@ function formatDate(dateString?: string): string {
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  background-color: #2a2a2a;
-  border-bottom: 1px solid #333;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
 }
 
 @media (max-width: 768px) {
@@ -1894,17 +1894,17 @@ function formatDate(dateString?: string): string {
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background-color: #3a3a3a;
-  border: 1px solid #555;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 13px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .nav-btn:hover {
-  background-color: #4a4a4a;
+  background-color: var(--bg-surface);
 }
 
 .nav-btn.delete-btn {
@@ -1944,8 +1944,8 @@ function formatDate(dateString?: string): string {
   top: 100%;
   right: 0;
   margin-top: 4px;
-  background-color: #2a2a2a;
-  border: 1px solid #555;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   min-width: 180px;
@@ -1962,8 +1962,8 @@ function formatDate(dateString?: string): string {
   top: calc(100% + 6px);
   right: 0;
   margin-top: 4px;
-  background-color: #2a2a2a;
-  border: 1px solid #555;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
   min-width: 200px;
@@ -2000,7 +2000,7 @@ function formatDate(dateString?: string): string {
 }
 
 .dropdown-item:hover:not(:disabled) {
-  background-color: #3a3a3a;
+  background-color: var(--bg-tertiary);
 }
 
 .dropdown-item:disabled {
@@ -2031,10 +2031,10 @@ function formatDate(dateString?: string): string {
   gap: 12px;
   width: 100%;
   padding: 14px 16px;
-  background-color: #2a2a2a;
-  border: 1px solid #555;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
@@ -2042,7 +2042,7 @@ function formatDate(dateString?: string): string {
 }
 
 .webhook-item:hover:not(:disabled) {
-  background-color: #3a3a3a;
+  background-color: var(--bg-tertiary);
   border-color: #5865f2;
   transform: translateX(4px);
 }
@@ -2151,7 +2151,7 @@ function formatDate(dateString?: string): string {
 
 .subtitle {
   font-size: 1.4rem;
-  color: #ccc;
+  color: var(--text-secondary);
   margin-bottom: 20px;
 }
 
@@ -2168,7 +2168,7 @@ function formatDate(dateString?: string): string {
   gap: 20px;
   margin-bottom: 24px;
   font-size: 15px;
-  color: #ccc;
+  color: var(--text-secondary);
   flex-wrap: wrap;
 }
 
@@ -2231,7 +2231,7 @@ function formatDate(dateString?: string): string {
 }
 
 .description {
-  color: #ccc;
+  color: var(--text-secondary);
   line-height: 1.6;
   max-width: 900px;
   position: relative;
@@ -2326,8 +2326,8 @@ function formatDate(dateString?: string): string {
 }
 
 .tabs-container {
-  background-color: #2a2a2a;
-  border-bottom: 1px solid #333;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
   padding: 0 40px;
 }
 
@@ -2504,8 +2504,8 @@ function formatDate(dateString?: string): string {
 }
 
 .detail-card {
-  background-color: #2a2a2a;
-  border: 1px solid #333;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 20px;
 }
@@ -2514,7 +2514,7 @@ function formatDate(dateString?: string): string {
   margin: 0 0 16px 0;
   color: #fff;
   font-size: 16px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 12px;
 }
 
@@ -2522,7 +2522,7 @@ function formatDate(dateString?: string): string {
   display: flex;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .detail-row:last-child {
@@ -2653,17 +2653,17 @@ a.identifier-link:hover {
   appearance: none;
   cursor: pointer;
   padding: 6px 12px;
-  background-color: #3a3a3a;
-  border: 1px solid #555;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 12px;
 }
 
 .detail-genre-tag:hover {
-  background-color: #404040;
+  background-color: var(--bg-surface);
   border-color: var(--brand-500);
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .tags-list {
@@ -2676,25 +2676,25 @@ a.identifier-link:hover {
   display: inline-flex;
   align-items: center;
   padding: 6px 12px;
-  background-color: #2a2a2a;
-  border: 1px solid #3a3a3a;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #e0e0e0;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .tag-badge:hover {
-  background-color: #333;
+  background-color: var(--bg-tertiary);
   border-color: var(--brand-500);
-  color: white;
+  color: var(--text-primary);
 }
 
 .files-content,
 .history-content {
-  background-color: #2a2a2a;
-  border: 1px solid #333;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 20px;
 }
@@ -2706,7 +2706,7 @@ a.identifier-link:hover {
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .files-header h3,
@@ -2720,17 +2720,17 @@ a.identifier-link:hover {
   align-items: center;
   gap: 6px;
   padding: 8px 12px;
-  background-color: #3a3a3a;
-  border: 1px solid #555;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 13px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .action-btn:hover {
-  background-color: #4a4a4a;
+  background-color: var(--bg-surface);
 }
 
 .file-list {
@@ -2743,13 +2743,13 @@ a.identifier-link:hover {
   display: flex;
   flex-direction: column;
   padding: 12px;
-  background-color: #333;
+  background-color: var(--bg-tertiary);
   border-radius: 6px;
   transition: all 0.2s ease;
 }
 
 .file-item.expanded {
-  background-color: #3a3a3a;
+  background-color: var(--bg-tertiary);
 }
 
 .file-header {
@@ -2800,7 +2800,7 @@ a.identifier-link:hover {
 .file-accordion {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #444;
+  border-top: 1px solid var(--border-color);
   animation: slideDown 0.2s ease-out;
 }
 
@@ -2823,7 +2823,7 @@ a.identifier-link:hover {
 }
 
 .metadata-table tbody tr {
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .metadata-table tbody tr:last-child {
@@ -2935,7 +2935,7 @@ a.identifier-link:hover {
   .metadata-table tbody tr {
     display: block;
     padding: 8px 0;
-    border-bottom: 1px solid #444;
+    border-bottom: 1px solid var(--border-color);
   }
 
   .metadata-label {
@@ -3047,9 +3047,9 @@ a.identifier-link:hover {
   display: flex;
   gap: 16px;
   padding: 16px;
-  background-color: #333;
+  background-color: var(--bg-tertiary);
   border-radius: 6px;
-  border-left: 3px solid #555;
+  border-left: 3px solid var(--border-color);
   transition:
     transform 0.2s,
     box-shadow 0.2s;
@@ -3138,7 +3138,7 @@ a.identifier-link:hover {
 }
 
 .history-message {
-  color: #ccc;
+  color: var(--text-secondary);
   font-size: 14px;
   margin-bottom: 8px;
   line-height: 1.4;
@@ -3156,8 +3156,8 @@ a.identifier-link:hover {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  color: #ccc;
-  background-color: #1a1a1a;
+  color: var(--text-secondary);
+  background-color: var(--bg-primary);
 }
 
 .loading-container i,
@@ -3242,12 +3242,12 @@ a.identifier-link:hover {
 }
 
 .delete-options .checkbox-title {
-  color: #f5f7fa;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .delete-options .checkbox-content small {
-  color: #b9c0c8;
+  color: var(--text-muted);
   line-height: 1.4;
 }
 

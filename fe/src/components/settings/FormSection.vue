@@ -41,8 +41,8 @@ defineProps<{
 
 /* Card-like container for section content (follows the h3) */
 .section-card {
-  background-color: #232323;
-  border: 1px solid #333;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 1rem;
   margin-top: 0.75rem;

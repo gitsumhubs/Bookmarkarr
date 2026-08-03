@@ -508,7 +508,7 @@ async function refreshRootFolders(newFolder: RootFolder) {
 .folder-select {
   appearance: none;
   -webkit-appearance: none;
-  background: #2a2a2a;
+  background: var(--card-bg);
   background-image:
     linear-gradient(45deg, transparent 50%, #9aa3b2 50%),
     linear-gradient(135deg, #9aa3b2 50%, transparent 50%);
@@ -519,9 +519,9 @@ async function refreshRootFolders(newFolder: RootFolder) {
     0.35rem 0.35rem,
     0.35rem 0.35rem;
   background-repeat: no-repeat;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   border-radius: 4px;
-  color: #e0e0e0;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   padding: 0.4rem 2rem 0.4rem 0.6rem;
   height: var(--control-height, 40px);
@@ -566,7 +566,7 @@ async function refreshRootFolders(newFolder: RootFolder) {
 }
 
 .state-panel h3 {
-  color: #ccc;
+  color: var(--text-secondary);
   margin: 0 0 0.5rem;
 }
 
@@ -587,7 +587,7 @@ async function refreshRootFolders(newFolder: RootFolder) {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.9rem 1rem;
-  border: 1px solid #252525;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   background:
     radial-gradient(circle at top left, rgba(99, 102, 241, 0.12), transparent 42%),
@@ -662,9 +662,9 @@ async function refreshRootFolders(newFolder: RootFolder) {
     0.35rem 0.35rem,
     100% 100%;
   background-repeat: no-repeat;
-  border: 1px solid #3b3b3b;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
-  color: #ececec;
+  color: var(--text-primary);
   padding: 0.55rem 2rem 0.55rem 0.7rem;
   font-size: 0.82rem;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
@@ -678,9 +678,9 @@ async function refreshRootFolders(newFolder: RootFolder) {
 
 .table-wrap {
   overflow: auto;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border-color);
   border-radius: 10px;
-  background: linear-gradient(180deg, #171717 0%, #121212 100%);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, #121212 100%);
   box-shadow: 0 16px 38px rgba(0, 0, 0, 0.2);
 }
 
@@ -692,7 +692,7 @@ async function refreshRootFolders(newFolder: RootFolder) {
 }
 
 .import-table thead tr {
-  background: #1e1e1e;
+  background: var(--bg-primary);
 }
 
 .import-table th {
@@ -703,7 +703,7 @@ async function refreshRootFolders(newFolder: RootFolder) {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #888;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border-color);
   white-space: nowrap;
 }
 
@@ -732,12 +732,12 @@ async function refreshRootFolders(newFolder: RootFolder) {
 }
 
 .sortable-header:hover {
-  background: #242424;
+  background: var(--bg-secondary);
 }
 
 .sortable-header[aria-sort='ascending'],
 .sortable-header[aria-sort='descending'] {
-  color: #d0d6e4;
+  color: var(--text-secondary);
   background: linear-gradient(180deg, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0.02));
 }
 

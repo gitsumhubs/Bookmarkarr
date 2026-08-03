@@ -27,8 +27,8 @@
   padding: 0.35rem;
 }
 .icon-btn.close:hover {
-  background: #333;
-  color: #fff;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .icon-btn.delete {
@@ -59,21 +59,21 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 .icon-btn.btn-secondary {
-  background-color: #444;
-  color: #fff;
-  border: 1px solid #333;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 /* Backwards-compatible alias used across many components */
 /* Base icon-only buttons: neutral filled grey with white icon
    Use `.icon-button.primary` for brand actions and `.icon-button.danger` for destructive actions */
 .icon-button {
-  background-color: #3a3a3a;
-  border: 1px solid #555;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   padding: 0.5rem;
   border-radius: 6px;
   cursor: pointer;
-  color: #ffffff;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -93,8 +93,8 @@
 }
 
 .icon-button:hover:not(:disabled) {
-  background-color: #4a4a4a;
-  border-color: #666;
+  background-color: var(--bg-surface);
+  border-color: var(--border-color);
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
@@ -270,9 +270,9 @@
 
 /* Neutral (non-primary, non-danger) nav icon buttons: use filled grey background with white icon */
 .nav-btn.icon-button:not(.primary):not(.danger) {
-  background-color: #3a3a3a !important;
-  border-color: #555 !important;
-  color: #ffffff !important;
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
   box-shadow: none !important;
   transform: none !important;
 }
@@ -283,8 +283,8 @@
   stroke: currentColor !important;
 }
 .nav-btn.icon-button:not(.primary):not(.danger):hover:not(:disabled) {
-  background-color: #4a4a4a !important;
-  border-color: #666 !important;
+  background-color: var(--bg-surface) !important;
+  border-color: var(--border-color) !important;
   transform: translateY(-1px) !important;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12) !important;
 }
@@ -505,12 +505,12 @@
 
 /* Secondary / muted */
 .btn-secondary {
-  background-color: #444;
-  color: #fff;
-  border: 1px solid #333;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 .btn-secondary:hover:not(:disabled) {
-  background-color: #555;
+  background-color: var(--bg-surface);
 }
 
 /* Info / subtle variant */
@@ -605,9 +605,9 @@
 
 /* Cancel / secondary semantic */
 .cancel-button {
-  background-color: #555;
-  color: white;
-  border: 1px solid #444;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 .cancel-button:hover:not(:disabled) {
   background-color: #666;

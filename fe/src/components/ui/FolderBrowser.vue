@@ -470,9 +470,9 @@ watch(
   flex: 1;
   padding: 0.6rem 0.75rem;
   background: #1a1a1a; /* match modal form inputs */
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #eef2f8;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
@@ -494,7 +494,7 @@ watch(
   justify-content: space-between;
   align-items: center;
   padding: 0.8rem 1rem;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-color);
 }
 .browser-header .title {
   display: flex;
@@ -563,7 +563,7 @@ watch(
 .breadcrumb-icon {
   width: 16px;
   height: 16px;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 .breadcrumb-separator {
   color: #666;
@@ -598,7 +598,7 @@ watch(
   position: absolute;
   width: 100%;
   height: 100%;
-  border: 3px solid #333;
+  border: 3px solid var(--border-color);
   border-top: 3px solid #2196f3;
   border-radius: 50%;
   animation: spin 1.5s linear infinite;
@@ -649,7 +649,7 @@ watch(
 .loading-text {
   font-size: 1rem;
   font-weight: 500;
-  color: #ccc;
+  color: var(--text-secondary);
   animation: fadeInOut 2s ease-in-out infinite;
 }
 
@@ -700,10 +700,10 @@ watch(
 .search-input {
   width: 100%;
   padding: 0.6rem 0.75rem 0.6rem 2.2rem;
-  background: var(--modal-input-bg, #161616);
+  background: var(--modal-input-bg, var(--bg-primary));
   border: 1px solid rgba(255, 255, 255, 0.04);
   border-radius: 6px;
-  color: #e6eef8;
+  color: var(--text-primary);
   font-size: 0.92rem;
   transition:
     box-shadow 0.12s ease,
@@ -713,7 +713,7 @@ watch(
   outline: none;
   border-color: var(--brand-focus);
   box-shadow: 0 0 0 3px rgba(var(--brand-rgb), 0.08);
-  background: #1b1b1b;
+  background: var(--bg-primary);
 }
 /* Directory list scrolling - use flex so list fills remaining body space and scrolls */
 .directory-list {
@@ -862,7 +862,7 @@ watch(
   overflow: hidden;
   border-radius: 8px;
   margin: 12px; /* create breathing room around content */
-  background: #242424;
+  background: var(--bg-secondary);
   border: 1px solid rgba(255, 255, 255, 0.04);
 }
 

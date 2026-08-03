@@ -2338,7 +2338,7 @@ defineExpose({
 
 <style scoped>
 .collection-view {
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
   min-height: calc(100vh - 120px);
 }
 
@@ -2348,8 +2348,8 @@ defineExpose({
   gap: 1rem;
   margin-bottom: 0; /* toolbar provides separation */
   padding: 10px 20px;
-  background-color: #2a2a2a;
-  border-bottom: 1px solid #333;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
   position: sticky; /* stick below global top nav */
   top: 60px; /* account for fixed global top-nav height */
   z-index: 100; /* sit above content but below global top nav */
@@ -2417,7 +2417,7 @@ defineExpose({
   background-color: transparent;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 6px;
-  color: #e6eef8;
+  color: var(--text-primary);
   font-size: 12px;
   cursor: pointer;
   transition:
@@ -2506,7 +2506,7 @@ defineExpose({
 .toolbar-search {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.04);
-  color: #e6eef8;
+  color: var(--text-primary);
   padding: 8px 10px;
   border-radius: 6px;
   min-width: 220px; /* wider to match Audiobooks view */
@@ -2514,7 +2514,7 @@ defineExpose({
 .toolbar-select {
   background-color: #2a2a2a; /* match CustomSelect trigger */
   border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #e6eef8;
+  color: var(--text-primary);
   padding: 8px 10px;
   border-radius: 6px;
   min-height: 36px;
@@ -2538,8 +2538,8 @@ defineExpose({
   display: inline-block;
 }
 .toolbar-select option {
-  background: #2a2a2a;
-  color: #e6eef8;
+  background: var(--card-bg);
+  color: var(--text-primary);
 }
 
 .toolbar {
@@ -2548,8 +2548,8 @@ defineExpose({
   align-items: center;
   height: 52px; /* consistent toolbar height with Audiobooks view */
   padding: 8px 20px;
-  background-color: #2a2a2a;
-  border-bottom: 1px solid #333;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
   margin-bottom: 16px;
   position: sticky; /* stick below collection top-nav */
   top: calc(60px + 52px); /* below global top-nav + collection top-nav */
@@ -2613,7 +2613,7 @@ defineExpose({
 
 .subtitle {
   font-size: 1.2rem;
-  color: #ccc;
+  color: var(--text-secondary);
   margin-bottom: 20px;
 }
 
@@ -2623,7 +2623,7 @@ defineExpose({
   gap: 20px;
   margin-bottom: 24px;
   font-size: 15px;
-  color: #ccc;
+  color: var(--text-secondary);
   flex-wrap: wrap;
 }
 
@@ -2658,7 +2658,7 @@ defineExpose({
 }
 
 .description {
-  color: #ccc;
+  color: var(--text-secondary);
   line-height: 1.6;
   max-width: 920px;
 }
@@ -2852,7 +2852,7 @@ defineExpose({
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
-  color: #f3f6fb;
+  color: var(--text-primary);
   cursor: pointer;
   transition:
     transform 0.12s ease,
@@ -3004,7 +3004,7 @@ defineExpose({
   background-color: transparent;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 6px;
-  color: #e6eef8;
+  color: var(--text-primary);
   font-size: 13px;
   cursor: pointer;
   transition:
@@ -3169,7 +3169,7 @@ defineExpose({
 .toolbar-search {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.04);
-  color: #e6eef8;
+  color: var(--text-primary);
   padding: 8px 10px;
   border-radius: 6px;
   min-width: 220px; /* wider to match Audiobooks view */
@@ -3177,7 +3177,7 @@ defineExpose({
 .toolbar-select {
   background-color: #2a2a2a; /* match CustomSelect trigger */
   border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #e6eef8;
+  color: var(--text-primary);
   padding: 8px 10px;
   border-radius: 6px;
   min-height: 36px;
@@ -3201,8 +3201,8 @@ defineExpose({
   display: inline-block;
 }
 .toolbar-select option {
-  background: #2a2a2a;
-  color: #e6eef8;
+  background: var(--card-bg);
+  color: var(--text-primary);
 }
 
 .loading-state,
@@ -3352,7 +3352,7 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #cfd5df;
+  color: var(--text-secondary);
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3387,7 +3387,7 @@ defineExpose({
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #f3f6fb;
+  color: var(--text-primary);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: normal;
@@ -3548,13 +3548,13 @@ defineExpose({
 
 .audiobook-extra-details {
   margin-top: 8px;
-  color: #e6eef8;
+  color: var(--text-primary);
 }
 .audiobook-extra-details .detail-line {
   font-size: 12px;
   line-height: 1.2;
   margin: 2px 0;
-  color: #cfd8e3;
+  color: var(--text-secondary);
 }
 .audiobook-extra-details .detail-line.title {
   font-weight: 500;
@@ -3562,25 +3562,25 @@ defineExpose({
 }
 .audiobook-extra-details .detail-line.small {
   font-size: 11px;
-  color: #bfcad6;
+  color: var(--text-secondary);
 }
 .list-extra-details {
   margin-top: 6px;
-  color: #e6eef8;
+  color: var(--text-primary);
 }
 .list-extra-details .detail-line {
   font-size: 12px;
-  color: #bfcad6;
+  color: var(--text-secondary);
 }
 .grid-bottom-details {
   margin-top: 8px;
-  color: #e6eef8;
+  color: var(--text-primary);
   padding: 0 4px;
   width: 100%;
 }
 .grid-bottom-details .detail-line {
   font-size: 12px;
-  color: #bfcad6;
+  color: var(--text-secondary);
   text-align: center;
 }
 .grid-bottom-details .detail-line.title {
@@ -3603,7 +3603,7 @@ defineExpose({
 
 .audiobook-author {
   font-size: 11px;
-  color: #ccc;
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3646,7 +3646,7 @@ defineExpose({
   border-radius: 6px;
   font-size: 10px;
   font-weight: 500;
-  color: #cfcfcf;
+  color: var(--text-secondary);
   margin-top: 0.5rem;
   cursor: pointer;
   white-space: nowrap;
@@ -3679,7 +3679,7 @@ defineExpose({
 .status-badge.not-added {
   background-color: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.14);
-  color: #d3d7de;
+  color: var(--text-secondary);
 }
 
 .quality-profile-badge i {
@@ -3776,7 +3776,7 @@ defineExpose({
   align-items: center;
   justify-content: center;
   height: calc(100vh - 164px);
-  color: #ccc;
+  color: var(--text-secondary);
   text-align: center;
 }
 
@@ -3858,7 +3858,7 @@ defineExpose({
   font-weight: 500;
 }
 .status-overlay .overlay-author {
-  color: #bfcad6;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 .overlay-badges {
@@ -3922,14 +3922,14 @@ defineExpose({
 
 .series-bottom-author {
   font-size: 11px;
-  color: #bfcad6;
+  color: var(--text-secondary);
   margin: 0 0 2px 0;
   text-align: center;
 }
 
 .series-bottom-meta {
   font-size: 11px;
-  color: #bfcad6;
+  color: var(--text-secondary);
   margin: 0;
   text-align: center;
 }
@@ -4149,7 +4149,7 @@ defineExpose({
   border-radius: 6px;
   font-size: 10px;
   font-weight: 500;
-  color: #cfcfcf;
+  color: var(--text-secondary);
   margin-top: 0.5rem;
   cursor: pointer;
   white-space: nowrap;
@@ -4228,7 +4228,7 @@ defineExpose({
 
 .grid-bottom-details .detail-line {
   font-size: 12px;
-  color: #bfcad6;
+  color: var(--text-secondary);
   text-align: center;
 }
 
@@ -4336,7 +4336,7 @@ defineExpose({
 
 .list-details .audiobook-author {
   font-size: 12px;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .list-actions {

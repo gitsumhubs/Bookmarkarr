@@ -73,10 +73,10 @@ function onInput(e: Event) {
 .password-field {
   padding: 0.75rem;
   padding-right: 3rem; /* Make room for the eye icon */
-  border: 1px solid #3a3a3a;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: #1a1a1a;
-  color: white;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   font-size: 1rem;
   width: 100%;
   box-sizing: border-box;

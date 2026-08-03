@@ -371,7 +371,7 @@ function onClose() {
   display: block;
   min-width: 80px;
   margin-top: 8px;
-  color: #ddd;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 .form-input,
@@ -381,7 +381,7 @@ function onClose() {
   border-radius: 6px;
   background: #121212;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1rem;
 }
 .form-select.small {
@@ -391,7 +391,7 @@ function onClose() {
   gap: 14px;
 }
 .rule-row.card {
-  background: #181a1b;
+  background: var(--bg-primary);
   border-radius: 8px;
   box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.12);
   padding: 12px 14px 10px 14px;
@@ -439,7 +439,7 @@ function onClose() {
 .group-toggle {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  color: #ddd;
+  color: var(--text-secondary);
   padding: 4px 8px;
   border-radius: 6px;
   cursor: pointer;

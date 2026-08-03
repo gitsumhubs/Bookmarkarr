@@ -1143,7 +1143,7 @@ defineExpose({ openWebhookForm })
   font-size: 1.1rem;
   margin: 0 0 1rem 0;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .form-group {
@@ -1167,8 +1167,8 @@ defineExpose({ openWebhookForm })
   padding: 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
-  background-color: #1a1a1a;
-  color: #fff;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   font-size: 0.95rem;
   transition: border-color 0.2s;
 }
@@ -1222,7 +1222,7 @@ defineExpose({ openWebhookForm })
 
 /* Webhook Card */
 .webhook-card {
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   overflow: hidden;

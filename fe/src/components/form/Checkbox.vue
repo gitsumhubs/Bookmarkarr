@@ -93,7 +93,7 @@ defineProps({ modelValue: { type: Boolean, default: false } })
 }
 
 .checkbox-label {
-  color: var(--text, #e6eef8);
+  color: var(--text, var(--text-primary));
   display: flex;
   flex-direction: column;
   text-align: left;

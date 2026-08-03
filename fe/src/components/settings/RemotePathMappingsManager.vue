@@ -365,7 +365,7 @@ onMounted(() => {
   font-size: 1.1rem;
   margin: 0 0 1rem 0;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .description {
@@ -457,15 +457,15 @@ onMounted(() => {
 }
 
 .mapping-card {
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 1rem;
   transition: all 0.2s;
 }
 
 .mapping-card:hover {
-  border-color: #666;
+  border-color: var(--border-color);
 }
 
 .mapping-header {
@@ -499,8 +499,8 @@ onMounted(() => {
 }
 
 .mapping-paths {
-  background-color: #222;
-  border: 1px solid #333;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 1rem;
 }
@@ -526,12 +526,12 @@ onMounted(() => {
 
 .path-value {
   padding: 0.5rem 0.75rem;
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-family: 'Courier New', Courier, monospace;
   font-size: 0.85rem;
-  color: #fff;
+  color: var(--text-primary);
   word-break: break-all;
 }
 
@@ -573,8 +573,8 @@ onMounted(() => {
 .path-tester {
   margin-top: 1.5rem;
   padding: 1rem;
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
 }
 
@@ -602,10 +602,10 @@ onMounted(() => {
 .test-input {
   flex: 1;
   padding: 0.75rem;
-  background-color: #222;
-  border: 1px solid #444;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.9rem;
   font-family: 'Courier New', Courier, monospace;
   transition: all 0.2s;
@@ -704,7 +704,7 @@ onMounted(() => {
 }
 
 .result-info p {
-  color: #ccc;
+  color: var(--text-secondary);
   margin: 0.5rem 0;
   font-size: 0.9rem;
 }
@@ -721,20 +721,20 @@ onMounted(() => {
 
 .btn-icon {
   padding: 0.5rem;
-  background-color: #2a2a2a;
-  border: 1px solid #444;
-  color: #fff;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   min-width: auto;
 }
 
 .btn-icon:hover {
-  background-color: #333;
+  background-color: var(--bg-tertiary);
   border-color: var(--brand-500);
   color: var(--brand-500);
 }
 
 .btn-icon.btn-danger:hover {
-  background-color: #333;
+  background-color: var(--bg-tertiary);
   border-color: #dc3545;
   color: #dc3545;
 }

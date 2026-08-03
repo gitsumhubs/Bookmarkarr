@@ -45,7 +45,7 @@ defineProps({
   justify-content: space-between;
   align-items: flex-start;
   padding: 1rem;
-  background: var(--bg-tertiary, #2a2a2a);
+  background: var(--bg-tertiary, var(--card-bg));
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-md, 6px);
   transition: all var(--transition-normal, 0.2s ease);
@@ -92,7 +92,7 @@ defineProps({
   flex-direction: column;
   gap: 0.5rem;
   font-size: 0.85rem;
-  color: var(--text-secondary, #cccccc);
+  color: var(--text-secondary, var(--text-secondary));
 }
 
 .config-actions {

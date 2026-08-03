@@ -222,13 +222,13 @@ function onSubmit() {
 <style scoped>
 .confirm-description {
   padding: 0.5rem 0;
-  color: #cfd8dc;
+  color: var(--text-secondary);
 }
 .path-comparison {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  background: #252526;
+  background: var(--bg-secondary);
   border-radius: 8px;
   padding: 1rem;
 }
@@ -241,13 +241,13 @@ function onSubmit() {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  color: #ddd;
+  color: var(--text-secondary);
 }
 .path-display code {
-  background: #1f1f1f;
+  background: var(--bg-primary);
   padding: 0.5rem;
   border-radius: 6px;
-  color: #e6eef8;
+  color: var(--text-primary);
 }
 .confirm-options {
   margin-top: 0.5rem;
@@ -267,15 +267,15 @@ function onSubmit() {
   flex-direction: column;
 }
 .checkbox-content small {
-  color: #bfc8cc;
+  color: var(--text-muted);
   margin-top: 4px;
 }
 .checkbox-content .checkbox-title {
   font-weight: 500;
-  color: #e6eef8;
+  color: var(--text-primary);
 }
 .confirm-note {
-  color: #bfc8cc;
+  color: var(--text-muted);
   font-size: 0.9rem;
   margin-top: 0.75rem;
 }
@@ -321,7 +321,7 @@ function onSubmit() {
 }
 .warning-content p {
   margin: 0;
-  color: #ddd;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   line-height: 1.4;
 }

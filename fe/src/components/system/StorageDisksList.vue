@@ -62,7 +62,7 @@ defineProps<{
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
-  background: #252525;
+  background: var(--bg-secondary);
   border-radius: 6px;
 }
 
@@ -90,7 +90,7 @@ defineProps<{
 .disk-free {
   margin-left: auto;
   flex-shrink: 0;
-  color: #ccc;
+  color: var(--text-secondary);
   font-size: 0.8rem;
   white-space: nowrap;
 }

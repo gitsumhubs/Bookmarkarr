@@ -140,7 +140,7 @@ const headingId = props.headingId || internalId
 }
 
 .close-btn:hover {
-  background-color: #333;
-  color: #fff;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 </style>

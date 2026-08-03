@@ -801,7 +801,7 @@ const getItemIssues = (item: PreviewItem): string[] => {
 }
 
 .preview-table {
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -809,8 +809,8 @@ const getItemIssues = (item: PreviewItem): string[] => {
 .preview-header {
   display: flex;
   padding: 0.5rem;
-  background: #2f2f2f;
-  color: #ccc;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -820,18 +820,18 @@ const getItemIssues = (item: PreviewItem): string[] => {
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   align-items: center;
   height: 56px;
-  background: #2b2b2b;
+  background: var(--card-bg);
 }
 
 .preview-row:hover {
-  background: #323232;
+  background: var(--bg-tertiary);
 }
 
 .col {
   padding: 0 0.6rem;
   display: flex;
   align-items: center;
-  color: #e6e6e6;
+  color: var(--text-secondary);
 }
 
 .col-check {
@@ -854,7 +854,7 @@ const getItemIssues = (item: PreviewItem): string[] => {
 
 .col-audiobook {
   width: 180px;
-  color: #cfcfcf;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   max-width: 180px;
   white-space: nowrap;
@@ -937,10 +937,10 @@ const getItemIssues = (item: PreviewItem): string[] => {
 .form-input {
   width: 100%;
   padding: 0.5rem;
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.85rem;
   transition: all 0.2s;
 }
@@ -982,9 +982,9 @@ const getItemIssues = (item: PreviewItem): string[] => {
 
 .mode-select,
 .extra-select {
-  background: #333;
-  color: #ddd;
-  border: 1px solid #444;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
   padding: 0.5rem;
   border-radius: 6px;
 }
@@ -999,7 +999,7 @@ const getItemIssues = (item: PreviewItem): string[] => {
   justify-content: center;
   gap: 0.5rem;
   padding: 2rem;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 /* Empty state */
@@ -1016,8 +1016,8 @@ const getItemIssues = (item: PreviewItem): string[] => {
 }
 
 .match-content {
-  background: #2a2a2a;
-  border: 1px solid #444;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   padding: 1.5rem;
   border-radius: 6px;
   width: 100%;
@@ -1035,10 +1035,10 @@ const getItemIssues = (item: PreviewItem): string[] => {
 .match-content select {
   width: 100%;
   padding: 0.75rem;
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 1rem;
 }
 
@@ -1065,18 +1065,18 @@ const getItemIssues = (item: PreviewItem): string[] => {
 
 /* Audiobook table used in cell editor modal */
 .audiobook-table {
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: #1f1f1f;
+  background: var(--bg-primary);
   overflow: hidden;
 }
 
 .table-header {
   display: flex;
-  background: #292929;
-  color: #dcdcdc;
+  background: var(--card-bg);
+  color: var(--text-secondary);
   font-weight: 500;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .table-body {
@@ -1088,14 +1088,14 @@ const getItemIssues = (item: PreviewItem): string[] => {
   display: flex;
   align-items: center;
   padding: 0.6rem 0.75rem;
-  color: #e8e8e8;
+  color: var(--text-secondary);
   cursor: pointer;
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   transition: background-color 0.2s;
 }
 
 .table-row:hover {
-  background: #232323;
+  background: var(--bg-secondary);
 }
 
 .table-row.active {
@@ -1161,7 +1161,7 @@ const getItemIssues = (item: PreviewItem): string[] => {
   align-items: center;
 }
 .recent-title {
-  color: #cfcfcf;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 .recent-list {
@@ -1171,14 +1171,14 @@ const getItemIssues = (item: PreviewItem): string[] => {
   justify-content: center;
 }
 .recent-item {
-  background: #1f1f1f;
-  border: 1px solid #333;
-  color: #e8e8e8;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
   padding: 0.45rem 0.6rem;
   border-radius: 6px;
   cursor: pointer;
 }
 .recent-item:hover {
-  border-color: #444;
+  border-color: var(--border-color);
 }
 </style>

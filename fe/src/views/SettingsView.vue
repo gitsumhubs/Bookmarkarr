@@ -1410,7 +1410,7 @@ onMounted(async () => {
   position: relative;
   top: var(--settings-toolbar-height);
   padding: 2rem;
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
 }
 
 .settings-header {
@@ -1483,7 +1483,7 @@ onMounted(async () => {
 }
 
 .settings-content {
-  background: #2a2a2a;
+  background: var(--card-bg);
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   min-height: 500px;
@@ -1599,8 +1599,8 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  background-color: #2a2a2a;
-  border-bottom: 1px solid #333;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
   margin-bottom: 20px;
 }
 
@@ -1702,7 +1702,7 @@ onMounted(async () => {
 
 /* Webhook Card */
 .webhook-card {
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   overflow: hidden;
@@ -2024,14 +2024,14 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   transition: all 0.2s ease;
 }
 
 .config-card:hover {
-  background-color: #2f2f2f;
+  background-color: var(--bg-tertiary);
   border-color: rgba(77, 171, 247, 0.3);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -2136,7 +2136,7 @@ onMounted(async () => {
   font-size: 1.1rem;
   margin: 0 0 1rem 0;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .form-section h4 {
@@ -2182,10 +2182,10 @@ onMounted(async () => {
 .form-group select {
   width: 100%;
   padding: 0.75rem;
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
   transition: all 0.2s;
 }
@@ -2200,7 +2200,7 @@ onMounted(async () => {
 .form-group input:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0 1000px #1a1a1a inset !important;
   -webkit-text-fill-color: #fff !important;
-  border: 1px solid #444 !important;
+  border: 1px solid var(--border-color) !important;
 }
 
 .form-group input:disabled,
@@ -2509,7 +2509,7 @@ onMounted(async () => {
 
 .input-group-input {
   flex: 1;
-  background: #1a1a1a !important;
+  background: var(--bg-primary) !important;
   color: #adb5bd;
   padding: 0.75rem 1rem;
   border: none !important;
@@ -2519,7 +2519,7 @@ onMounted(async () => {
 
 .input-group-input:focus {
   outline: none;
-  background: #1a1a1a !important;
+  background: var(--bg-primary) !important;
   box-shadow: none !important;
 }
 
@@ -2602,7 +2602,7 @@ onMounted(async () => {
 }
 
 .indexer-card {
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   transition: all 0.2s ease;
@@ -2754,7 +2754,7 @@ onMounted(async () => {
   }
 
   .tab-button {
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--border-color);
     border-left: 3px solid transparent;
     justify-content: flex-start;
   }
@@ -2834,7 +2834,7 @@ onMounted(async () => {
 }
 
 .profile-card {
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   overflow: hidden;
@@ -3474,7 +3474,7 @@ onMounted(async () => {
 
   .tab-dropdown {
     width: 100%;
-    color: #fff;
+    color: var(--text-primary);
     font-size: 0.95rem;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -3487,8 +3487,8 @@ onMounted(async () => {
   }
 
   .tab-dropdown option {
-    background-color: #2a2a2a;
-    color: #fff;
+    background-color: var(--card-bg);
+    color: var(--text-primary);
   }
 }
 

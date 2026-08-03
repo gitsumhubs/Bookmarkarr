@@ -82,6 +82,6 @@ function onCancel() {
 
 <style scoped>
 .confirm-message {
-  color: #ddd;
+  color: var(--text-secondary);
 }
 </style>

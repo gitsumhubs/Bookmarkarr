@@ -380,19 +380,19 @@ h3 svg {
 .form-body {
   padding: 1.25rem;
   border-radius: 6px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
-  background-color: #232323;
+  background-color: var(--bg-secondary);
 }
 
 .blacklist-textarea {
   width: 100%;
   min-height: 7rem;
   padding: 0.9rem 0.85rem;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: #1a1a1a;
-  color: #fff;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   font-size: 0.95rem;
   font-family: inherit;
   resize: vertical;
@@ -426,10 +426,10 @@ h3 svg {
 .input-group input[type='text'] {
   flex: 1;
   padding: 0.9rem 0.85rem;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: #1a1a1a;
-  color: #fff;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   font-size: 0.95rem;
   transition: all 0.12s;
 }
@@ -446,8 +446,8 @@ h3 svg {
 
 .help-button {
   padding: 0.6rem 0.75rem;
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   color: #adb5bd;
   cursor: pointer;
@@ -459,8 +459,8 @@ h3 svg {
 }
 
 .help-button:hover {
-  border-color: #666;
-  color: #e0e0e0;
+  border-color: var(--border-color);
+  color: var(--text-secondary);
   background-color: rgba(255, 255, 255, 0.05);
 }
 
@@ -473,10 +473,10 @@ h3 svg {
 .form-group select {
   width: 100%;
   padding: 0.9rem 0.85rem;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: #1a1a1a;
-  color: #fff;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   font-size: 0.95rem;
   transition: all 0.12s;
 }
@@ -503,7 +503,7 @@ h3 svg {
 }
 
 .modal-content {
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
   border-radius: 8px;
   max-width: 600px;
   width: 100%;
@@ -518,7 +518,7 @@ h3 svg {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
@@ -557,12 +557,12 @@ h3 svg {
 
 .pattern-help li {
   padding: 0.5rem 0;
-  color: #ddd;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
 .pattern-help li code {
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
   padding: 0.2rem 0.4rem;
   border-radius: 3px;
   color: #4dd0e1;
@@ -571,12 +571,12 @@ h3 svg {
 
 .pattern-help p {
   margin: 1rem 0 0.5rem 0;
-  color: #ddd;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
 .pattern-help p code {
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
   padding: 0.2rem 0.4rem;
   border-radius: 3px;
   color: #4dd0e1;
@@ -585,7 +585,7 @@ h3 svg {
 .pattern-help .example {
   margin-top: 1.5rem;
   padding: 0.75rem;
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
   border-left: 3px solid var(--brand-500);
   border-radius: 4px;
 }
@@ -601,7 +601,7 @@ h3 svg {
 .pattern-preview {
   margin-top: 0.75rem;
   padding: 0.75rem;
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
   border-left: 3px solid var(--brand-500);
   border-radius: 4px;
   font-size: 0.9rem;

@@ -1462,14 +1462,14 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   flex-direction: column;
   min-width: 0;
   min-height: 100dvh;
-  background-color: #1a1a1a;
-  color: white;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 /* Top Navigation */
 .top-nav {
-  background-color: #2a2a2a;
-  border-bottom: 1px solid #3a3a3a;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
   padding: 0 1rem;
   height: var(--top-nav-height);
   display: flex;
@@ -1631,8 +1631,8 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   position: absolute;
   right: 0;
   top: 48px;
-  background: #252525;
-  border: 1px solid #3a3a3a;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   min-width: 160px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
@@ -1646,7 +1646,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   padding: 0.5rem 1rem;
   background: transparent;
   border: none;
-  color: #ddd;
+  color: var(--text-secondary);
   text-align: left;
   cursor: pointer;
 }
@@ -1657,13 +1657,13 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 }
 
 .user-menu-item:hover {
-  background: #333;
+  background: var(--bg-tertiary);
 }
 
 .nav-btn {
   background: none;
   border: none;
-  color: #ccc;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 6px;
@@ -1672,8 +1672,8 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 }
 
 .nav-btn:hover {
-  background-color: #3a3a3a;
-  color: white;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 /* The top bar keeps its own dark treatment in both modes, so the toggle inherits
@@ -1682,7 +1682,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--app-nav-text, #ccc);
+  color: var(--app-nav-text, var(--text-secondary));
 }
 
 .theme-toggle-icon {
@@ -1698,7 +1698,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   padding: 6px 8px;
   border-radius: 6px;
   background: transparent;
-  color: #c7cfd6;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 .signalr-dot {
@@ -1718,7 +1718,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 }
 .signalr-text {
   font-size: 12px;
-  color: #bfc8cf;
+  color: var(--text-muted);
 }
 .signalr-auth {
   font-size: 11px;
@@ -1750,8 +1750,8 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 /* Sidebar */
 .sidebar {
   width: 200px;
-  background-color: #2a2a2a;
-  border-right: 1px solid #3a3a3a;
+  background-color: var(--card-bg);
+  border-right: 1px solid var(--border-color);
   position: fixed;
   left: 0;
   top: var(--app-top-offset);
@@ -1787,7 +1787,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   display: flex;
   align-items: center;
   padding: 0.75rem 1rem;
-  color: #ccc;
+  color: var(--text-secondary);
   text-decoration: none;
   transition: all 0.2s;
   position: relative;
@@ -1801,8 +1801,8 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 }
 
 .nav-item:hover {
-  background-color: #3a3a3a;
-  color: white;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .nav-item.router-link-active {
@@ -1823,8 +1823,8 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   align-items: center;
   justify-content: space-between;
   padding: 0.5rem 1rem 0.5rem;
-  border-top: 1px solid #3a3a3a;
-  background-color: #2a2a2a;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--card-bg);
 }
 
 .sidebar-source-link {
@@ -1941,7 +1941,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 .main-content {
   flex: 1;
   margin-left: 200px;
-  background-color: #1a1a1a;
+  background-color: var(--bg-primary);
   min-width: 0;
   min-height: calc(100dvh - var(--app-top-offset));
   width: calc(100vw - 217px);
@@ -2012,7 +2012,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   /* Ensure nav stays above all content on mobile */
   .top-nav {
     z-index: 2000 !important;
-    background-color: #2a2a2a !important;
+    background-color: var(--card-bg) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
@@ -2020,7 +2020,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   /* Ensure sidebar stays above images and is completely opaque on mobile */
   .sidebar {
     z-index: 1500 !important;
-    background-color: #2a2a2a !important;
+    background-color: var(--card-bg) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
@@ -2098,7 +2098,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 }
 
 .search-inline-icon {
-  color: #c7cfd6;
+  color: var(--text-secondary);
   font-size: 20px;
   cursor: pointer;
   border-radius: 6px;
@@ -2108,12 +2108,12 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 }
 
 .search-inline-icon:hover {
-  background-color: #3a3a3a;
-  color: #fff;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .notification-inline-icon {
-  color: #c7cfd6;
+  color: var(--text-secondary);
   font-size: 20px;
   cursor: pointer;
   border-radius: 6px;
@@ -2123,8 +2123,8 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 }
 
 .notification-inline-icon:hover {
-  background-color: #3a3a3a;
-  color: #fff;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 /* Standardize header/nav icons: size, alignment, color, and hit area */
@@ -2225,7 +2225,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   height: 28px;
   font-size: 20px;
   flex-shrink: 0;
-  color: #c7cfd6;
+  color: var(--text-secondary);
 }
 
 /* Sub-navigation under main nav items */
@@ -2268,7 +2268,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 .sidebar .nav-subitem {
   display: block;
   font-size: 0.9rem;
-  color: #cfcfcf;
+  color: var(--text-secondary);
   padding: 6px 0;
   text-decoration: none;
   border-left: 3px solid rgba(255, 255, 255, 0.1); /* Muted border for all */
@@ -2296,9 +2296,9 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   max-width: 50vw;
   padding: 8px 12px 8px 12px;
   border-radius: 6px;
-  border: 1px solid #424242;
-  background: #222;
-  color: #fff;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   outline: none;
   font-size: 0.95rem;
   position: relative;
@@ -2330,8 +2330,8 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   top: 44px;
   left: 0;
   right: 0;
-  background: #1f1f1f;
-  border: 1px solid #333;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 6px;
   z-index: 1400;
@@ -2349,7 +2349,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   object-fit: cover;
   border-radius: 6px;
   flex-shrink: 0;
-  background: #2a2a2a;
+  background: var(--card-bg);
 }
 
 .search-empty-overlay {
@@ -2379,7 +2379,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   padding: 8px 10px;
   border-radius: 6px;
   cursor: pointer;
-  color: #e6eef6;
+  color: var(--text-primary);
 }
 
 .search-result:hover {
@@ -2394,7 +2394,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 
 .result-sub {
   font-size: 0.82rem;
-  color: #bfc8cf;
+  color: var(--text-muted);
 }
 
 .search-empty {
@@ -2413,10 +2413,10 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
     width: 90%;
     max-width: 400px;
     z-index: 2001;
-    background-color: #1e1e1e;
+    background-color: var(--bg-primary);
     border-radius: 6px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    border: 1px solid #3a3a3a;
+    border: 1px solid var(--border-color);
   }
 
   /* Backdrop element (renders in DOM) - clicks close the search reliably */
@@ -2434,7 +2434,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
     width: 100% !important;
     opacity: 1;
     pointer-events: auto;
-    background: #1e1e1e;
+    background: var(--bg-primary);
     border: 0px solid transparent;
     transform: translateX(0) !important;
   }
@@ -2456,7 +2456,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
     transform: translateY(-50%);
     background: none;
     border: none;
-    color: #ccc;
+    color: var(--text-secondary);
     padding: 0.5rem;
     border-radius: 6px;
     z-index: 1;
@@ -2468,8 +2468,8 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   }
 
   .nav-search-inline .nav-btn:hover {
-    background-color: #3a3a3a;
-    color: white;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
   }
 
   .search-input-inline {
@@ -2518,8 +2518,8 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   position: absolute;
   top: 48px;
   right: 0;
-  background: #252525;
-  border: 1px solid #3a3a3a;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   min-width: 320px;
   max-width: 400px;
@@ -2536,8 +2536,8 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid #3a3a3a;
-  background: #2a2a2a;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--card-bg);
 }
 
 .dropdown-header strong {
@@ -2549,7 +2549,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 .clear-btn {
   background: none;
   border: none;
-  color: #ccc;
+  color: var(--text-secondary);
   font-size: 12px;
   cursor: pointer;
   padding: 4px 8px;
@@ -2558,8 +2558,8 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 }
 
 .clear-btn:hover {
-  background-color: #3a3a3a;
-  color: #fff;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .notification-list {
@@ -2575,12 +2575,12 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   align-items: flex-start;
   gap: 12px;
   padding: 12px 16px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
   transition: background-color 0.2s;
 }
 
 .notification-item:hover {
-  background-color: #2a2a2a;
+  background-color: var(--card-bg);
 }
 
 .notification-item:last-child {
@@ -2615,7 +2615,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 
 .notif-message {
   font-size: 12px;
-  color: #ccc;
+  color: var(--text-secondary);
   line-height: 1.4;
   overflow: hidden;
   display: -webkit-box;
@@ -2648,8 +2648,8 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 }
 
 .dismiss-btn:hover {
-  background-color: #3a3a3a;
-  color: #ccc;
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
 .notif-time {
@@ -2667,8 +2667,8 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 }
 
 .dropdown-footer {
-  border-top: 1px solid #3a3a3a;
-  background: #2a2a2a;
+  border-top: 1px solid var(--border-color);
+  background: var(--card-bg);
   padding: 8px 16px;
 }
 

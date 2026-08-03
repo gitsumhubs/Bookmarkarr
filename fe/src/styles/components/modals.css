@@ -15,8 +15,8 @@
 }
 
 .modal-content {
-  background: #2a2a2a;
-  border: 1px solid #444;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   width: 100%;
   max-height: 90vh;
@@ -31,7 +31,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2,
@@ -58,8 +58,8 @@
 
 .close-btn:hover,
 .modal-close:hover {
-  background-color: #333;
-  color: #fff;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .close-btn:focus-visible,
@@ -106,8 +106,8 @@
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.6rem 0.75rem;
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.12s ease;
@@ -123,8 +123,8 @@
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.6rem 0.75rem;
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.12s ease;
@@ -167,7 +167,7 @@
 .modal-content .radio-label:not(.active) .radio-title,
 .modal-content .checkbox-label:not(.active) .checkbox-title,
 .modal-content .checkbox-group .input-checkbox:not(.active) .checkbox-label > * {
-  color: #ccc;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 .modal-content .radio-content small,
@@ -195,7 +195,7 @@
   gap: 1rem;
   justify-content: space-between;
   padding: 1.5rem 2rem;
-  border-top: 1px solid #444;
+  border-top: 1px solid var(--border-color);
 }
 
 /* Modal action buttons (consistent with global .btn rules) */
@@ -278,12 +278,12 @@
 
 /* Secondary (muted) */
 .btn-secondary {
-  background-color: #444;
-  color: #fff;
-  border: 1px solid #333;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 .btn-secondary:hover:not(:disabled) {
-  background-color: #555;
+  background-color: var(--bg-surface);
 }
 
 /* Focus & disabled states (consistent and accessible) */
@@ -302,9 +302,9 @@
 
 .modal-actions .cancel-button,
 .modal-footer .cancel-button {
-  background-color: #555;
-  color: white;
-  border: 1px solid #444;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 .modal-actions .cancel-button:hover:not(:disabled),
@@ -462,8 +462,8 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #1e1e1e;
-  border: 1px solid #444;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
   transition: all 0.12s ease;
   z-index: 1;
 }
@@ -535,12 +535,12 @@
 }
 
 .modal-content .delete-options .checkbox-title {
-  color: #f5f7fa;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .modal-content .delete-options .checkbox-content small {
-  color: #b9c0c8;
+  color: var(--text-muted);
   line-height: 1.4;
 }
 
@@ -575,8 +575,8 @@
 .dialog,
 .confirm-dialog,
 .match-dialog {
-  background: #2a2a2a;
-  border: 1px solid #444;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   width: 100%;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
@@ -599,7 +599,7 @@
 .confirm-dialog .confirm-header,
 .match-dialog .match-header {
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .dialog .dialog-body,
@@ -613,7 +613,7 @@
 .confirm-dialog .confirm-actions,
 .match-dialog .match-actions {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #444;
+  border-top: 1px solid var(--border-color);
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;
@@ -732,8 +732,8 @@
 
 /* Card wrapper for controls following the label */
 .modal-content .form-control-card {
-  background-color: #232323;
-  border: 1px solid #333;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 1rem;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
@@ -782,10 +782,10 @@
   width: 100%;
   padding: 0.75rem;
   font-size: 0.95rem;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: #1a1a1a;
-  color: #fff;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   transition: all 0.2s;
 }
 
@@ -887,9 +887,9 @@
 
 /* Make the inline browser input visually match modal inputs */
 .modal-content .folder-browser .browser-input {
-  background-color: #1a1a1a;
-  border: 1px solid #444;
-  color: #fff;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   padding: 0.75rem;
   border-radius: 6px;
   transition: all 0.2s;
@@ -929,8 +929,8 @@
 
 /* Reusable section-card inside modals (matches FormSection .section-card visuals) */
 .modal-content .section-card {
-  background-color: #232323;
-  border: 1px solid #333;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 0.75rem;
   margin-top: 0.5rem;

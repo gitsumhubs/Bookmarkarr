@@ -71,7 +71,7 @@ defineProps({
 
 .loading-message {
   margin: 0;
-  color: #ccc;
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 

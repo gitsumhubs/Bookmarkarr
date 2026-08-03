@@ -1300,7 +1300,7 @@ const capitalizeFirst = (str: string): string => {
   position: relative;
   border-radius: 6px;
   overflow: hidden;
-  background: #333;
+  background: var(--bg-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1385,7 +1385,7 @@ const capitalizeFirst = (str: string): string => {
   color: white;
   font-size: 1.1rem;
   font-weight: 500;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border-color);
   padding-bottom: 0.5rem;
 }
 
@@ -1402,13 +1402,13 @@ const capitalizeFirst = (str: string): string => {
 }
 
 .narrators {
-  color: #ccc;
+  color: var(--text-secondary);
   font-style: italic;
   margin: 0;
 }
 
 .description {
-  color: #ccc;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin: 0;
   white-space: pre-wrap;
@@ -1497,7 +1497,7 @@ const capitalizeFirst = (str: string): string => {
 
 .metadata-editor {
   padding: 1rem;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.02);
 }
@@ -1539,10 +1539,10 @@ const capitalizeFirst = (str: string): string => {
 .form-select {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #555;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: #333;
-  color: white;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
   font-size: 1rem;
 }
 
@@ -1554,7 +1554,7 @@ const capitalizeFirst = (str: string): string => {
 
 .form-help {
   display: block;
-  color: #ccc;
+  color: var(--text-secondary);
   font-size: 0.85rem;
   margin-top: 0.5rem;
 }
@@ -1580,9 +1580,9 @@ const capitalizeFirst = (str: string): string => {
   width: 100%;
   padding: 0.6rem 0.75rem;
   border-radius: 6px;
-  border: 1px solid #3a3a3a;
-  background-color: #2a2a2a;
-  color: #fff;
+  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
@@ -1601,7 +1601,7 @@ const capitalizeFirst = (str: string): string => {
 
 .root-label {
   padding: 0.45rem 0 0.45rem 0.6rem;
-  color: #ccc;
+  color: var(--text-secondary);
   font-family:
     ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Segoe UI Mono', monospace;
   font-size: 0.9rem;

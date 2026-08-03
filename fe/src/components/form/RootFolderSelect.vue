@@ -141,7 +141,7 @@ function onChange(e: Event) {
   height: 40px;
   box-sizing: border-box;
   background-color: #1a1a1a; /* match input background */
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   color: white;
   font-size: 0.95rem;
@@ -157,9 +157,9 @@ function onChange(e: Event) {
 
 .form-input {
   padding: 0.6rem 0.75rem;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-  color: white;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
   border-radius: 6px;
 }
 

@@ -179,10 +179,10 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #2a2a2a;
+  background: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 6px;
-  color: #e6eef8;
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 12px;
 }
@@ -197,7 +197,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
   left: auto;
   right: 0;
   min-width: 220px;
-  background: #2a2a2a;
+  background: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 6px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);

@@ -80,7 +80,7 @@ defineProps({
   justify-content: space-between; /* cancel on far left, actions on far right */
   gap: 1rem;
   padding: 1rem 2rem;
-  border-top: 1px solid #444;
+  border-top: 1px solid var(--border-color);
 }
 
 .modal-footer-left {

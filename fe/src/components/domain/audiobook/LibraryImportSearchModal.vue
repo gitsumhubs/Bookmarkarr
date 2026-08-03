@@ -190,7 +190,7 @@ function select(result: SearchResult) {
 .results-list {
   max-height: 320px;
   overflow-y: auto;
-  border: 1px solid #333;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
 }
 
@@ -201,7 +201,7 @@ function select(result: SearchResult) {
   padding: 0.5rem 0.75rem;
   cursor: pointer;
   transition: background 0.15s;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .result-item:last-child {
@@ -209,7 +209,7 @@ function select(result: SearchResult) {
 }
 
 .result-item:hover {
-  background: #2a2a2a;
+  background: var(--card-bg);
 }
 
 .result-thumb {
@@ -228,7 +228,7 @@ function select(result: SearchResult) {
 .result-title {
   display: block;
   font-size: 0.875rem;
-  color: #e0e0e0;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

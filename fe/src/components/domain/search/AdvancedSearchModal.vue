@@ -303,8 +303,8 @@ select.form-input {
 }
 
 select.form-input option {
-  background-color: #1a1a1a;
-  color: white;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .error-message {

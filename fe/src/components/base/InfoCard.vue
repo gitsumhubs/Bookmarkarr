@@ -70,15 +70,15 @@ withDefaults(
   align-items: flex-start;
   gap: 1rem;
   padding: 1.25rem;
-  background: #232323;
-  border: 1px solid #333;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
   transition: all 0.2s;
 }
 
 .info-card:hover {
-  border-color: #444;
+  border-color: var(--border-color);
   transform: translateY(-1px);
 }
 

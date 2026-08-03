@@ -177,16 +177,16 @@ const handleCancel = () => {
 
 <style scoped>
 .remote-path-mapping-form {
-  background-color: #222;
+  background-color: var(--bg-secondary);
   padding: 1.5rem;
   border-radius: 6px;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
 }
 
 .form-header {
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .form-header h4 {
@@ -264,10 +264,10 @@ label.required::after {
   width: 100%;
   padding: 0.75rem;
   font-size: 0.95rem;
-  border: 1px solid #444;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background-color: #1a1a1a;
-  color: #fff;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   transition: all 0.2s;
 }
 
@@ -295,7 +295,7 @@ label.required::after {
   justify-content: flex-end;
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #444;
+  border-top: 1px solid var(--border-color);
 }
 
 /* Use centralized `.btn` styles in `src/assets/buttons.css`. Local components may apply `.btn-primary` / `.cancel-button` as needed. */

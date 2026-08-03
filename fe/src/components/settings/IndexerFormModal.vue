@@ -590,8 +590,8 @@ const handleSubmit = async () => {
 }
 
 .modal-content {
-  background: #2a2a2a;
-  border: 1px solid #444;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   max-width: 700px;
   width: 100%;
@@ -606,7 +606,7 @@ const handleSubmit = async () => {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
@@ -642,10 +642,10 @@ const handleSubmit = async () => {
 .form-group select {
   width: 100%;
   padding: 0.75rem;
-  background-color: #1a1a1a;
-  border: 1px solid #444;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
   transition: all 0.2s;
 }
@@ -677,7 +677,7 @@ const handleSubmit = async () => {
 }
 .checkbox-group label:hover {
   border-color: var(--brand-500);
-  background-color: #222;
+  background-color: var(--bg-secondary);
 }
 .checkbox-group label span {
   flex: 1;

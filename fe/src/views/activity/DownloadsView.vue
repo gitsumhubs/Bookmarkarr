@@ -682,7 +682,7 @@ onBeforeUnmount(() => {
 
   .tab-dropdown {
     width: 100%;
-    color: #fff;
+    color: var(--text-primary);
     font-size: 0.95rem;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -695,8 +695,8 @@ onBeforeUnmount(() => {
   }
 
   .tab-dropdown option {
-    background-color: #2a2a2a;
-    color: #fff;
+    background-color: var(--card-bg);
+    color: var(--text-primary);
   }
 }
 

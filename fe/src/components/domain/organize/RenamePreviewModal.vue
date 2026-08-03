@@ -377,7 +377,7 @@ function reset() {
   margin: 0;
   font-size: 0.95rem;
   line-height: 1.4;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .info-section strong {
@@ -446,7 +446,7 @@ function reset() {
 
 .organize-toolbar-title {
   margin: 0;
-  color: var(--text-secondary, #c7ced8);
+  color: var(--text-secondary, var(--text-secondary));
   line-height: 1.4;
 }
 
@@ -498,7 +498,7 @@ function reset() {
 
 .preview-title {
   font-weight: 600;
-  color: var(--text-primary, #f3f6fb);
+  color: var(--text-primary, var(--text-primary));
   line-height: 1.4;
 }
 
@@ -559,7 +559,7 @@ function reset() {
 }
 
 .result-detail {
-  color: var(--text-secondary, #c7ced8);
+  color: var(--text-secondary, var(--text-secondary));
 }
 
 .cancel-button {

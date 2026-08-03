@@ -105,7 +105,7 @@ withDefaults(defineProps<Props>(), {
 /* Default variant */
 .pill-default {
   background-color: rgba(156, 163, 175, 0.15);
-  color: #d1d5db;
+  color: var(--text-secondary);
   border-color: rgba(156, 163, 175, 0.3);
 }
 
