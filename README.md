@@ -80,7 +80,56 @@ clear warning and keeps running rather than failing to start, so check
 
 ## Setting it up
 
-### 1. Download clients
+### 1. Let Bookmarkarr reach your other containers
+
+Do this first — the steps below won't connect until it's done.
+
+If you run NZBGet, Prowlarr, or your torrent client in **their own compose files** (one
+folder per service, the usual setup), Docker puts each on its own network. Bookmarkarr
+can't resolve `nzbget` or `prowlarr` by name until it joins those networks.
+
+Find the network names:
+
+```bash
+docker network ls
+```
+
+They're usually `<foldername>_default` — so `nzbget_default`, `prowlarr_default`. Then add
+them to your `docker-compose.yml`:
+
+```yaml
+services:
+  bookmarkarr:
+    # ... your existing config ...
+    networks:
+      - default
+      - nzbget
+      - prowlarr
+      - torrent
+
+networks:
+  nzbget:
+    external: true
+    name: nzbget_default        # ← the real names from `docker network ls`
+  prowlarr:
+    external: true
+    name: prowlarr_default
+  torrent:
+    external: true
+    name: qbittorrent_default
+```
+
+Then `docker compose up -d`. Now `http://nzbget:6789` and `http://prowlarr:9696` work.
+
+> **Other setups.** If everything is in **one** compose file, skip this — Compose already
+> puts them on a shared network. If your services run on the host or another machine, skip
+> it too and just use their LAN URLs (`http://192.168.1.50:6789`); `host.docker.internal`
+> is available for host-published ports.
+
+Why bother instead of using IP addresses? Container IPs change when containers are
+recreated. Names don't.
+
+### 2. Download clients
 
 **Settings → Download Clients**. NZBGet, SABnzbd, qBittorrent, and RDT Client are supported.
 Use a URL reachable *from inside the container*, and hit **Test** before saving.
@@ -100,7 +149,7 @@ API host, port, and credentials.
 Bookmarkarr and your download client should see finished files at the **same** `/downloads`
 path. If they don't, add a mapping under **Settings → Download Clients → Add Mapping**.
 
-### 2. Indexers
+### 3. Indexers
 
 **Settings → Indexers → Import from Prowlarr**. Enter a reachable Prowlarr URL (usually
 `http://prowlarr:9696`), the API key from **Prowlarr → Settings → General**, and an optional
@@ -108,7 +157,7 @@ tag filter. Import, then **Test** each one.
 
 Direct Newznab/Torznab indexers work too.
 
-### 3. Add books
+### 4. Add books
 
 Search from **Add New**, or import your Goodreads shelf (below).
 
@@ -187,22 +236,15 @@ type, so an ebook format will never satisfy an audiobook import.
 **Downloads finish but never import.** Almost always a path mismatch. Compare the path your
 client reports with Bookmarkarr's `/downloads` and add a remote path mapping if they differ.
 
-**Bookmarkarr can't reach Prowlarr or the download client.** The URL must resolve from
-*inside* the container — `localhost` won't work unless the service shares the container. If
-you address services by Docker name, join their network:
+**Bookmarkarr can't reach Prowlarr or the download client.** The URL has to resolve from
+*inside* the container — `localhost` only works if the service is in the same container.
+If you're addressing services by name, see
+[step 1](#1-let-bookmarkarr-reach-your-other-containers): Bookmarkarr must share a Docker
+network with them. Check which networks it joined:
 
-```yaml
-services:
-  bookmarkarr:
-    networks: [default, media-services]
-
-networks:
-  media-services:
-    external: true
-    name: existing-download-stack-network
+```bash
+docker inspect bookmarkarr --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}'
 ```
-
-Find the real name with `docker network ls`. The network must already exist.
 
 **Something looks unconfigured after upgrading.** Check `docker logs bookmarkarr` for
 warnings about mounts that are missing or not writable.
