@@ -39,39 +39,13 @@ services:
         max-file: "3"
     restart: unless-stopped
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # CONNECTING TO NZBGET / PROWLARR / YOUR TORRENT CLIENT
+    # NZBGet/Prowlarr/torrent client in their own compose files? Uncomment BOTH
+    # blocks below, using the real names from `docker network ls`.
+    # Guide: https://github.com/gitsumhubs/Bookmarkarr#1-check-bookmarkarr-can-reach-your-other-containers
     #
-    # Most setups run each of these in its own compose file, which puts them on
-    # separate Docker networks. Until Bookmarkarr joins those networks, hostnames
-    # like http://nzbget:6789 will NOT resolve and every connection test fails.
-    #
-    # 1. List your networks:   docker network ls
-    # 2. Uncomment the block below AND the networks: section at the bottom.
-    # 3. Replace the name: values with your real network names.
-    # 4. Delete any entry for a service you don't run.
-    #
-    # Names are usually <foldername>_default, taken from the DIRECTORY the other
-    # compose file lives in - not the service name. A Prowlarr in a folder called
-    # prowlarr-abb creates prowlarr-abb_default, so always copy from the command
-    # above rather than guessing.
-    #
-    # Not needed if everything is in one compose file, or if you address the
-    # other services by LAN URL such as http://192.168.1.50:6789.
-    #
-    # networks:
-    #   - default
-    #   - nzbget
-    #   - prowlarr
-    #   - torrent
+    # networks: [default, nzbget, prowlarr, torrent]
 
-# networks:
-#   nzbget:
-#     external: true
-#     name: nzbget_default
-#   prowlarr:
-#     external: true
-#     name: prowlarr_default
-#   torrent:
-#     external: true
-#     name: rdtclient_default      # or qbittorrent_default, transmission_default, ...
+# networks:                       # ← this block too, not just the one above
+#   nzbget:   {external: true, name: nzbget_default}
+#   prowlarr: {external: true, name: prowlarr_default}
+#   torrent:  {external: true, name: rdtclient_default}

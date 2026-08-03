@@ -39,30 +39,15 @@ services:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
-    # ── Connecting to NZBGet / Prowlarr / your torrent client ───────────────
-    # Run them in their own compose files? Then they're on separate Docker
-    # networks and http://nzbget:6789 will NOT resolve until you join them.
+    # NZBGet/Prowlarr/torrent client in their own compose files? Uncomment BOTH
+    # blocks below, using the real names from `docker network ls`. See step 1.
     #
-    #   1. docker network ls          ← get your real network names
-    #   2. Uncomment this block and the networks: section below
-    #   3. Swap in those names, and delete anything you don't run
-    #
-    # networks:
-    #   - default
-    #   - nzbget
-    #   - prowlarr
-    #   - torrent
+    # networks: [default, nzbget, prowlarr, torrent]
 
-# networks:
-#   nzbget:
-#     external: true
-#     name: nzbget_default
-#   prowlarr:
-#     external: true
-#     name: prowlarr_default
-#   torrent:
-#     external: true
-#     name: rdtclient_default    # or qbittorrent_default, transmission_default
+# networks:                       # ← this block too, not just the one above
+#   nzbget:   {external: true, name: nzbget_default}
+#   prowlarr: {external: true, name: prowlarr_default}
+#   torrent:  {external: true, name: rdtclient_default}
 ```
 
 > **Network names come from the folder** the other compose file lives in, not the service
