@@ -78,6 +78,18 @@ namespace Bookmarkarr.Tests.Builders
             return this;
         }
 
+        public ApplicationSettingsBuilder WithAllowedEbookFileExtensions(params string[] values)
+        {
+            _applicationSettings.AllowedEbookFileExtensions = [.. values];
+            return this;
+        }
+
+        public ApplicationSettingsBuilder WithAllowedFileExtensions(params string[] values)
+        {
+            _applicationSettings.AllowedFileExtensions = [.. values];
+            return this;
+        }
+
         public ApplicationSettingsBuilder WithMultiFileNamingPattern(string value)
         {
             _applicationSettings.MultiFileNamingPattern = value;

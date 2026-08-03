@@ -80,9 +80,14 @@ namespace Bookmarkarr.Application.Downloads.Import
                     .Where(file => !FileUtils.IsBlacklistedFile(file, settings.ImportBlacklistExtensions))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
+                // Honour the configured audiobook extension list; an unset list falls
+                // back to the built-in audio set rather than accepting everything.
+                bool IsImportableAudio(string path) =>
+                    FileUtils.IsImportableFor(path, EditionMediaType.Audiobook, settings.AllowedFileExtensions);
+
                 var plannedAudioFiles = MultiFileImportPlanner.BuildPlans(
                     sourceFiles
-                        .Where(FileUtils.IsAudioFile)
+                        .Where(IsImportableAudio)
                         .Select(f => (f, (string?)null)));
                 var planByPath = plannedAudioFiles.ToDictionary(p => p.FullPath, StringComparer.OrdinalIgnoreCase);
                 var diskNumbersForNaming = MultiFileImportPlanner.BuildStableNamingNumbers(plannedAudioFiles, p => p.DiskNumberHint);
@@ -130,13 +135,13 @@ namespace Bookmarkarr.Application.Downloads.Import
 
                     foreach (var file in orderedFiles)
                     {
-                        if (!FileUtils.IsAudioFile(file))
+                        if (!IsImportableAudio(file))
                         {
                             var hasSuccessfulAudioImport = results.Any(r =>
                                 r.Success
                                 && !string.IsNullOrWhiteSpace(r.FinalPath)
                                 && !string.IsNullOrWhiteSpace(r.SourcePath)
-                                && FileUtils.IsAudioFile(r.SourcePath!));
+                                && IsImportableAudio(r.SourcePath!));
 
                             if (!hasSuccessfulAudioImport || string.IsNullOrWhiteSpace(audiobook.BasePath))
                             {
@@ -385,7 +390,8 @@ namespace Bookmarkarr.Application.Downloads.Import
 
                 var ebookFiles = files
                     .Where(file => !FileUtils.IsBlacklistedFile(file, settings.ImportBlacklistExtensions))
-                    .Where(FileUtils.IsEbookFile)
+                    .Where(file => FileUtils.IsImportableFor(
+                        file, EditionMediaType.Ebook, settings.AllowedEbookFileExtensions))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
                 if (ebookFiles.Count == 0)

@@ -95,6 +95,67 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Import
         }
 
         [Fact]
+        public async Task EbookImport_HonoursConfiguredEbookExtensionList()
+        {
+            // Narrowing the configured list must actually narrow what imports. Before the
+            // extension settings were wired in, this PDF would have been accepted because
+            // the built-in ebook set includes it regardless of configuration.
+            await _applicationSettingsRepository.SaveAsync(new ApplicationSettingsBuilder()
+                .WithCopyFileOnCompleted()
+                .WithoutMetadataProcessing()
+                .WithAllowedEbookFileExtensions(".epub")
+                .Build());
+
+            var ebookRoot = FileService.GetTempDirectory("ebook-library-narrowed");
+            var sourceRoot = FileService.GetTempDirectory("ebook-download-narrowed");
+            var pdfFile = await FileService.GetFileAsync(sourceRoot, "release.pdf");
+            var audiobook = await _audiobookRepository.AddAsync(new AudiobookBuilder()
+                .WithTitle("Narrowed Formats")
+                .WithAuthor("Some Author")
+                .Build());
+
+            var service = _provider.GetRequiredService<IDownloadImportService>();
+            var results = await service.ImportDownloadFilesAsync(
+                audiobook,
+                [pdfFile],
+                options: new DownloadImportOptions(
+                    ContentType: DownloadContentTypes.Ebook,
+                    LibraryRoot: ebookRoot));
+
+            Assert.All(results, result => Assert.False(result.Success));
+            Assert.False(Directory.Exists(Path.Join(ebookRoot, "Some Author")));
+        }
+
+        [Fact]
+        public async Task EbookImport_ConfiguredListStillAcceptsAllowedFormat()
+        {
+            await _applicationSettingsRepository.SaveAsync(new ApplicationSettingsBuilder()
+                .WithCopyFileOnCompleted()
+                .WithoutMetadataProcessing()
+                .WithAllowedEbookFileExtensions(".epub")
+                .Build());
+
+            var ebookRoot = FileService.GetTempDirectory("ebook-library-allowed");
+            var sourceRoot = FileService.GetTempDirectory("ebook-download-allowed");
+            var epubFile = await FileService.GetFileAsync(sourceRoot, "release.epub");
+            var audiobook = await _audiobookRepository.AddAsync(new AudiobookBuilder()
+                .WithTitle("Allowed Format")
+                .WithAuthor("Some Author")
+                .Build());
+
+            var service = _provider.GetRequiredService<IDownloadImportService>();
+            var results = await service.ImportDownloadFilesAsync(
+                audiobook,
+                [epubFile],
+                options: new DownloadImportOptions(
+                    ContentType: DownloadContentTypes.Ebook,
+                    LibraryRoot: ebookRoot));
+
+            Assert.Single(results);
+            Assert.True(results[0].Success);
+        }
+
+        [Fact]
         public async Task EbookImport_RejectsAudioOnlyPayload()
         {
             await _applicationSettingsRepository.SaveAsync(new ApplicationSettingsBuilder()
