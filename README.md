@@ -150,12 +150,22 @@ Search from **Add New**, or import your Goodreads shelf (below).
 
 AudiobookBay works through Prowlarr, and magnet results work directly.
 
-1. **In Prowlarr**, add AudiobookBay as an indexer. This requires a Prowlarr build or
-   maintained indexer definition that supports it — Bookmarkarr does **not** install that
-   definition for you. Confirm it passes Prowlarr's own **Test** first.
-2. Check that its category mappings distinguish audio/audiobook from book/ebook, since
-   Bookmarkarr uses those categories to route results.
-3. **In Bookmarkarr**, import it via **Settings → Indexers → Import from Prowlarr**, then run
+**Stock Prowlarr does not include AudiobookBay.** It isn't in the official indexer
+definitions, and Bookmarkarr can't install definitions into Prowlarr — so you need a
+Prowlarr build that ships it.
+
+One community option is the [prowlarr-abb](https://github.com/BitlessByte0/prowlarr-abb)
+fork (`bitlessbyte/prowlarr`), a LinuxServer.io-based image with the definition included.
+It's third-party and unofficial: it only picks up upstream Prowlarr releases when its
+maintainer rebuilds, so check it's still actively maintained before depending on it. Any
+build providing a working AudiobookBay definition will do.
+
+Once Prowlarr has it:
+
+1. **In Prowlarr**, add AudiobookBay and confirm it passes Prowlarr's own **Test**.
+2. Check its category mappings distinguish audio/audiobook from book/ebook — Bookmarkarr
+   uses those to route results.
+3. **In Bookmarkarr**, import via **Settings → Indexers → Import from Prowlarr**, then run
    **Test**.
 4. AudiobookBay returns **magnets**, so you need a torrent-capable client — qBittorrent or
    RDT Client — configured with the `audiobooks` category.

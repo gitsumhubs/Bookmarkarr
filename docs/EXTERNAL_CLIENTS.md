@@ -51,7 +51,7 @@ The remote path must match the beginning of the path reported by the client. The
 
 Configure compatible Newznab/Torznab endpoints directly or import them from Prowlarr:
 
-1. Configure AudiobookBay and any other indexers in Prowlarr and confirm they pass Prowlarr's own test. AudiobookBay requires a Prowlarr build or maintained indexer definition that supports it; Bookmarkarr does not install that definition.
+1. Configure AudiobookBay and any other indexers in Prowlarr and confirm they pass Prowlarr's own test. Stock Prowlarr does not ship an AudiobookBay definition, so this requires a Prowlarr build that includes one; Bookmarkarr cannot install indexer definitions into Prowlarr. See [AudiobookBay](#audiobookbay) below.
 2. In Bookmarkarr, open **Settings → Indexers → Import from Prowlarr**.
 3. Enter a reachable Prowlarr URL, normally `http://prowlarr:9696` on a shared Docker network.
 4. Copy the Prowlarr API key from **Prowlarr → Settings → General**.
@@ -59,6 +59,32 @@ Configure compatible Newznab/Torznab endpoints directly or import them from Prow
 6. Import, then run Bookmarkarr's Test action on each imported indexer.
 
 Use category capabilities that distinguish audio/audiobook and book/ebook. AudiobookBay magnet results are supported directly. The former custom Torznab proxy is not required.
+
+### AudiobookBay
+
+AudiobookBay is not part of Prowlarr's official indexer definitions. A stock Prowlarr install has no AudiobookBay option, and Bookmarkarr cannot add one — indexer definitions live in Prowlarr.
+
+A Prowlarr build that includes the definition is required. One community option is the [prowlarr-abb](https://github.com/BitlessByte0/prowlarr-abb) fork, published as `bitlessbyte/prowlarr`, which is a LinuxServer.io-based image carrying the definition:
+
+```yaml
+services:
+  prowlarr:
+    image: bitlessbyte/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ./config:/config
+    ports:
+      - 9696:9696
+    restart: unless-stopped
+```
+
+This is third-party and unofficial. It inherits upstream Prowlarr releases only when its maintainer rebuilds the image, so `docker compose pull` tracks the fork's release cadence rather than Prowlarr's. Confirm the fork is still actively built before depending on it, and prefer any equivalent build that provides a working definition.
+
+Because AudiobookBay returns magnets, a torrent-capable download client (qBittorrent or RDT Client) must be configured with the `audiobooks` category.
 
 Bookmarkarr applies its own positive server-side classifier after indexer category mapping. Client-supplied media labels cannot widen results.
 
