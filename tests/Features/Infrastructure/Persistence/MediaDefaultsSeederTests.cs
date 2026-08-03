@@ -218,6 +218,68 @@ public sealed class MediaDefaultsSeederTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task BooksMissingTheLegacyProfileColumn_AreRepairedFromTheirEdition()
+    {
+        // Regression: repairing only editions left the parent book's profile null, and
+        // automatic search reads the book-level column - so every one of those books
+        // failed with "no quality profile assigned" despite a correctly set up edition.
+        int bookId;
+        await using (var seed = CreateContext())
+        {
+            var book = new Audiobook { Title = "Legacy Book", Authors = ["Someone"], Editions = [] };
+            seed.Audiobooks.Add(book);
+            await seed.SaveChangesAsync();
+            bookId = book.Id;
+
+            seed.BookEditions.Add(BookEdition.Create(book.Id, EditionMediaType.Audiobook));
+            await seed.SaveChangesAsync();
+        }
+
+        await RunSeederAsync();
+
+        await using var db = CreateContext();
+        var repaired = await db.Audiobooks.SingleAsync(b => b.Id == bookId);
+        var edition = await db.BookEditions
+            .SingleAsync(e => e.BookId == bookId && e.MediaType == EditionMediaType.Audiobook);
+
+        Assert.NotNull(repaired.QualityProfileId);
+
+        // The book must agree with its edition rather than being guessed separately.
+        Assert.Equal(edition.QualityProfileId, repaired.QualityProfileId);
+    }
+
+    [Fact]
+    public async Task BooksThatAlreadyHaveAProfile_AreLeftAlone()
+    {
+        int bookId;
+        int deliberateProfileId;
+        await using (var seed = CreateContext())
+        {
+            var profile = new QualityProfile { Name = "Hand Picked", MediaType = EditionMediaType.Audiobook };
+            seed.QualityProfiles.Add(profile);
+            await seed.SaveChangesAsync();
+            deliberateProfileId = profile.Id;
+
+            var book = new Audiobook
+            {
+                Title = "Already Configured",
+                Authors = ["Someone"],
+                QualityProfileId = profile.Id,
+                Editions = []
+            };
+            seed.Audiobooks.Add(book);
+            await seed.SaveChangesAsync();
+            bookId = book.Id;
+        }
+
+        await RunSeederAsync();
+
+        await using var db = CreateContext();
+        var untouched = await db.Audiobooks.SingleAsync(b => b.Id == bookId);
+        Assert.Equal(deliberateProfileId, untouched.QualityProfileId);
+    }
+
+    [Fact]
     public async Task MissingLibraryMount_IsSkippedWithoutRegisteringAnUnusableRoot()
     {
         Environment.SetEnvironmentVariable(

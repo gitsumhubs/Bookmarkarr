@@ -256,7 +256,15 @@ namespace Bookmarkarr.Infrastructure.Persistence
             var editions = await db.BookEditions
                 .Where(edition => edition.QualityProfileId == null || edition.RootFolderId == null)
                 .ToListAsync(ct);
-            if (editions.Count == 0)
+
+            // The parent book carries its own legacy profile column, and several callers
+            // still read it - automatic search among them. Repairing only the editions
+            // left those books unsearchable despite their edition being correctly set up.
+            var booksMissingProfile = await db.Audiobooks
+                .Where(book => book.QualityProfileId == null)
+                .ToListAsync(ct);
+
+            if (editions.Count == 0 && booksMissingProfile.Count == 0)
             {
                 return;
             }
@@ -292,11 +300,34 @@ namespace Bookmarkarr.Infrastructure.Persistence
                 }
             }
 
-            if (repaired > 0)
+            // Give each book the profile its own audiobook edition uses, so the legacy
+            // book-level column agrees with the edition rather than being independently
+            // guessed. Books with no audiobook edition fall back to the audiobook default.
+            var editionProfileByBook = await db.BookEditions
+                .Where(edition => edition.MediaType == EditionMediaType.Audiobook
+                    && edition.QualityProfileId != null)
+                .GroupBy(edition => edition.BookId)
+                .ToDictionaryAsync(group => group.Key, group => group.Min(e => e.QualityProfileId), ct);
+
+            var booksRepaired = 0;
+            foreach (var book in booksMissingProfile)
+            {
+                var profileId = editionProfileByBook.TryGetValue(book.Id, out var fromEdition)
+                    ? fromEdition
+                    : profiles.TryGetValue(EditionMediaType.Audiobook, out var fallback) ? fallback.Id : null;
+
+                if (profileId is not null)
+                {
+                    book.QualityProfileId = profileId;
+                    booksRepaired++;
+                }
+            }
+
+            if (repaired > 0 || booksRepaired > 0)
             {
                 _logger.LogInformation(
-                    "MediaDefaultsSeeder: filled {Count} missing profile/root assignment(s) on existing editions",
-                    repaired);
+                    "MediaDefaultsSeeder: filled {EditionCount} edition and {BookCount} book profile/root assignment(s)",
+                    repaired, booksRepaired);
             }
         }
 

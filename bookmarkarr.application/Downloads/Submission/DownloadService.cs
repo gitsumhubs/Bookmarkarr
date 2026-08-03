@@ -130,13 +130,23 @@ namespace Bookmarkarr.Application.Downloads.Submission
                 };
             }
 
-            if (audiobook.QualityProfile == null)
+            // The edition owns the quality profile in Bookmarkarr's model; the book-level
+            // one is the legacy field. Fall back to the audiobook edition so a book whose
+            // parent row predates edition-aware defaults can still search.
+            var qualityProfile = audiobook.QualityProfile
+                ?? audiobook.Editions?
+                    .FirstOrDefault(edition => edition.MediaType == EditionMediaType.Audiobook
+                        && edition.QualityProfile != null)?.QualityProfile;
+
+            if (qualityProfile == null)
             {
-                logger.LogWarning("Audiobook '{Title}' has no quality profile assigned", audiobook.Title);
+                logger.LogWarning(
+                    "Book '{Title}' has no quality profile on the book or its audiobook edition",
+                    audiobook.Title);
                 return new SearchAndDownloadResult
                 {
                     Success = false,
-                    Message = "Audiobook has no quality profile assigned"
+                    Message = "No quality profile assigned to this book or its audiobook edition"
                 };
             }
 
@@ -178,7 +188,7 @@ namespace Bookmarkarr.Application.Downloads.Submission
             }
 
             // Score results against quality profile
-            var scoredResults = await qualityProfileService.ScoreSearchResults(searchResults, audiobook.QualityProfile);
+            var scoredResults = await qualityProfileService.ScoreSearchResults(searchResults, qualityProfile);
 
             // Log all scored results for debugging
             logger.LogInformation("Scored {Count} search results for audiobook '{Title}':", scoredResults.Count, LogRedaction.SanitizeText(audiobook.Title));

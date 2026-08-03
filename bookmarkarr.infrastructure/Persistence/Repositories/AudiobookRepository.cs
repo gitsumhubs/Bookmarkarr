@@ -41,7 +41,7 @@ namespace Bookmarkarr.Infrastructure.Persistence.Repositories
         {
             return await _db.Audiobooks
                 .Include(a => a.Files)
-                .Include(a => a.Editions).ThenInclude(e => e.Files)
+                .IncludeEditionDetails()
                 .OrderBy(a => a.Title)
                 .ToListAsync();
         }
@@ -100,7 +100,7 @@ namespace Bookmarkarr.Infrastructure.Persistence.Repositories
                 .Include(a => a.Files)
                 .Include(a => a.ExternalIdentifiers)
                 .Include(a => a.SeriesMemberships)
-                .Include(a => a.Editions).ThenInclude(e => e.Files)
+                .IncludeEditionDetails()
                 .FirstOrDefaultAsync(a => a.Id == id);
         }
 
