@@ -1,6 +1,9 @@
 
 namespace Bookmarkarr.Application.Downloads.Contracts
 {
+    /// <param name="ForceArchiveExtraction">Extract archives even when the setting is off.</param>
+    /// <param name="ContentType">Audiobook or ebook; selects the import branch.</param>
+    /// <param name="LibraryRoot">Destination library root; falls back to the configured one.</param>
     /// <param name="CompletedFileActionOverride">
     /// Overrides the configured completed-file action for this import only. Library
     /// import lets the user choose copy/move per batch; downloads leave this null and

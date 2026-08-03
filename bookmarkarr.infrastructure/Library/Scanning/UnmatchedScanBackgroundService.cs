@@ -261,6 +261,15 @@ namespace Bookmarkarr.Infrastructure.Library.Scanning
                             ApplyEmbeddedTags(parsed, tags);
                         }
 
+                        // An ebook is one file whose name is the title; the surrounding
+                        // folder is usually the author or series. The path parser is built
+                        // for audiobook folder layouts and often yields no title here,
+                        // which would leave the UI searching on the author's name.
+                        if (mediaType == EditionMediaType.Ebook && string.IsNullOrWhiteSpace(parsed.Title))
+                        {
+                            parsed.Title = Path.GetFileNameWithoutExtension(representative);
+                        }
+
                         var relativeFolder = bookFolder.Length > rootFolderPath.Length
                             ? bookFolder[(rootFolderPath.Length)..].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                             : bookFolder;
