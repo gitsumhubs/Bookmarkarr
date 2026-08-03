@@ -61,10 +61,8 @@ services:
 #     name: prowlarr_default
 ```
 
-> **Skip the networks part if** everything is in one compose file (Docker already connects
-> them), or your services run on the host / another machine — then just use their LAN URL
-> like `http://192.168.1.50:6789`. Container names are only needed to talk container-to-container,
-> and they're worth it because names survive restarts while container IPs don't.
+> **Skip the networks part if** everything is in one compose file, or your services run on
+> the host — use their LAN URL like `http://192.168.1.50:6789` instead.
 
 Then start it:
 
@@ -73,35 +71,22 @@ mkdir -p data/config data/audiobooks data/ebooks data/downloads
 docker compose up -d
 ```
 
-Open <http://localhost:3018> once the health status is `healthy`.
+Open <http://localhost:3018>.
 
-There's **no Dockerfile to build and no source checkout** — it pulls a prebuilt
-multi-architecture image from GHCR. You don't need an `.env` file either.
-
-Or grab the maintained Compose file, which adds a health check, log rotation, and optional
-`${VARIABLE:-default}` overrides:
-
-```bash
-curl -fsSLO https://raw.githubusercontent.com/gitsumhubs/Bookmarkarr/main/docker-compose.yml
-```
-
-> Whatever `PUID:PGID` you choose must be able to write to all four host paths. Never point
-> the config volume at another application's config/database directory.
+> `PUID:PGID` must be able to write all four host paths. Don't point the config volume at
+> another app's config directory.
 
 ### What happens on first run
 
-Bookmarkarr sets itself up so you aren't starting from an empty database. On first start it
-creates, **only if missing**:
+Bookmarkarr creates these on first start, **only if missing**:
 
 - A **Default Audiobook** quality profile (prefers M4B, then MP3/M4A/FLAC/Opus)
 - A **Default Ebook** quality profile (prefers EPUB, then AZW3/MOBI/PDF)
 - Library roots for `/audiobooks` and `/ebooks`
 - Staging folders `/downloads/audiobooks` and `/downloads/ebooks`
 
-It never overwrites anything you configured yourself — upgrading an existing install only
-fills in what isn't there. If a folder isn't mounted or isn't writable, Bookmarkarr logs a
-clear warning and keeps running rather than failing to start, so check
-`docker logs bookmarkarr` if something looks missing.
+Nothing you've configured is overwritten. If something looks missing, check
+`docker logs bookmarkarr` for mount warnings.
 
 ---
 
@@ -163,8 +148,7 @@ Search from **Add New**, or import your Goodreads shelf (below).
 
 ## Using AudiobookBay
 
-AudiobookBay works through Prowlarr, and magnet results are supported directly — the old
-custom Torznab proxy is no longer needed.
+AudiobookBay works through Prowlarr, and magnet results work directly.
 
 1. **In Prowlarr**, add AudiobookBay as an indexer. This requires a Prowlarr build or
    maintained indexer definition that supports it — Bookmarkarr does **not** install that
@@ -176,15 +160,14 @@ custom Torznab proxy is no longer needed.
 4. AudiobookBay returns **magnets**, so you need a torrent-capable client — qBittorrent or
    RDT Client — configured with the `audiobooks` category.
 
-Bookmarkarr applies its own server-side media classifier *after* the indexer's categories, so
-an audiobook search only ever returns audiobooks and an ebook search only ever returns
-ebooks. A mislabelled release can't widen your results.
+Bookmarkarr filters results server-side, so an audiobook search only returns audiobooks and
+an ebook search only returns ebooks.
 
 ---
 
 ## Importing from Goodreads
 
-**Library → Import → Goodreads**. The page walks you through it, but in short:
+**Library → Import → Goodreads**:
 
 1. Go to [goodreads.com/review/import](https://www.goodreads.com/review/import) and click
    **Export Library**.
@@ -193,24 +176,16 @@ ebooks. A mislabelled release can't widen your results.
 4. Choose which books to add, resolve any ambiguous matches, and pick the audiobook edition,
    the ebook edition, or both.
 
-Importing is **additive**. It adds missing books and editions with the correct root folder,
-quality profile, and category — and it does **not** start searches. Nothing is downloaded
-until you press Search yourself, or tick the optional *search after import* box.
-
-Your raw CSV is never retained.
+Importing is **additive** and starts no searches. Nothing downloads until you press Search,
+or tick *search after import*. Your CSV isn't retained.
 
 ---
 
 ## Verifying your first download
 
-Use a legal test item and confirm:
-
-1. Every indexer and download-client test succeeds.
-2. Audiobook mode returns only audio or legitimate audiobook bundles; ebook mode returns only
-   recognized ebook releases.
-3. The release shows up in **Activity** and in the expected client category.
-4. After it completes, the file is imported under `/audiobooks` or `/ebooks` and appears in
-   your library.
+1. Indexer and download-client tests pass.
+2. The release appears in **Activity** under the expected category.
+3. Once complete, the file lands in `/audiobooks` or `/ebooks` and shows in your library.
 
 ```bash
 docker compose ps
@@ -222,14 +197,12 @@ curl --fail http://localhost:3018/api/v1/system/ready
 
 ## Troubleshooting
 
-**A book stays "Missing" after searching.** Check that the edition has a quality profile on
-its detail page. Automatic grabs require one; manual searches don't — which is why manual
-search can appear to work while automatic doesn't.
+**A book stays "Missing" after searching.** Check the edition has a quality profile on its
+detail page — automatic grabs need one, manual searches don't.
 
 **Ebooks aren't importing.** Confirm your client has a separate `ebooks` category pointing at
-`/downloads/ebooks`, and review the allowed ebook extensions under **Settings → File
-Management**. Audiobook and ebook extensions are configured separately and applied per media
-type, so an ebook format will never satisfy an audiobook import.
+`/downloads/ebooks`, and check the allowed ebook extensions under **Settings → File
+Management**.
 
 **Downloads finish but never import.** Almost always a path mismatch. Compare the path your
 client reports with Bookmarkarr's `/downloads` and add a remote path mapping if they differ.
