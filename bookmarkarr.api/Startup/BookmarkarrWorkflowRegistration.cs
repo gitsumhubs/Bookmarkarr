@@ -95,6 +95,7 @@ public static class BookmarkarrWorkflowRegistration
         services.AddScoped<ProwlarrIndexerUpsertWorkflow>();
         services.AddScoped<StructuredSearchWorkflow>();
         services.AddScoped<SearchByTitleWorkflow>();
+        services.AddScoped<Bookmarkarr.Api.Features.Library.EbookLibraryImportWorkflow>();
         services.AddScoped<ManualImportPathPlanner>();
         services.AddScoped<ManualImportCompanionImporter>();
         // Singleton: it outlives the request that schedules it and creates its own scopes.

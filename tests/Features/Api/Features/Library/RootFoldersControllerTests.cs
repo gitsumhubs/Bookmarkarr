@@ -26,7 +26,15 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Library
         {
             public System.Threading.Channels.ChannelReader<UnmatchedScanJob> Reader =>
                 System.Threading.Channels.Channel.CreateUnbounded<UnmatchedScanJob>().Reader;
-            public Task<Guid> EnqueueAsync(string rootFolderPath) => Task.FromResult(Guid.NewGuid());
+            public Bookmarkarr.Domain.Books.EditionMediaType LastRequestedMediaType { get; private set; }
+
+            public Task<Guid> EnqueueAsync(
+                string rootFolderPath,
+                Bookmarkarr.Domain.Books.EditionMediaType mediaType = Bookmarkarr.Domain.Books.EditionMediaType.Audiobook)
+            {
+                LastRequestedMediaType = mediaType;
+                return Task.FromResult(Guid.NewGuid());
+            }
             public bool TryGetJob(Guid id, out UnmatchedScanJob? job) { job = null; return false; }
             public void UpdateJob(Guid id, string status, List<UnmatchedFileResult>? results = null, string? error = null) { }
             public bool TryGetLastJobForPath(string rootFolderPath, out UnmatchedScanJob? job) { job = null; return false; }

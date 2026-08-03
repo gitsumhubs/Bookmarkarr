@@ -148,7 +148,9 @@ namespace Bookmarkarr.Api.Features.Library
             var folder = await _service.GetByIdAsync(id);
             if (folder == null) return NotFound(new { message = "Root folder not found" });
 
-            var jobId = await _unmatchedQueue.EnqueueAsync(folder.Path);
+            // Scan for the media type this root actually holds, so an ebook root looks
+            // for ebooks rather than reporting nothing.
+            var jobId = await _unmatchedQueue.EnqueueAsync(folder.Path, folder.MediaType);
             return Ok(new { jobId = jobId.ToString() });
         }
 

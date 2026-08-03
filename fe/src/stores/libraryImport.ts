@@ -483,9 +483,82 @@ export const useLibraryImportStore = defineStore('libraryImport', () => {
     }
   }
 
-  async function importSelected(
+  /**
+   * Imports the selected ebook rows into their matched books.
+   *
+   * Mirrors the audiobook flow's two steps - create/find the book, then file the
+   * media - but the second step targets the ebook edition.
+   */
+  async function importSelectedEbooks(
     rootFolderPath: string,
   ): Promise<{ imported: number; errors: string[] }> {
+    const toImport = itemList.value.filter((i) => i.selected && i.selectedMatch)
+    importErrors.value = []
+    let imported = 0
+
+    for (const item of toImport) {
+      const match = item.selectedMatch!
+      try {
+        let bookId: number
+        try {
+          const metadata = await _enrichMetadata(match)
+          const { audiobook } = await apiService.addToLibrary(metadata, {
+            monitored: monitor.value != 'none',
+            destinationPath: rootFolderPath,
+            searchResult: {
+              ...match,
+              genres: normalizeGenres(match.genres),
+              series: Array.isArray(match.series)
+                ? ((match.series as Array<{ name?: string }>)[0]?.name ?? undefined)
+                : match.series,
+            },
+          })
+          bookId = audiobook.id
+        } catch (e: unknown) {
+          // 409 = the book is already in the library; import into the existing one.
+          const err = e as { status?: number; body?: unknown }
+          if (err?.status === 409 && err?.body) {
+            const body = typeof err.body === 'string' ? JSON.parse(err.body) : err.body
+            if (body?.audiobook?.id) {
+              bookId = body.audiobook.id
+            } else {
+              throw e
+            }
+          } else {
+            throw e
+          }
+        }
+
+        const result = await apiService.importEbookFiles({
+          bookId,
+          sourceFiles: item.sourceFiles,
+          action: action.value === 'move' ? 'Move' : 'Copy',
+        })
+        imported += result.imported
+        if (result.errors?.length) {
+          importErrors.value.push(...result.errors)
+        }
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Ebook import failed'
+        logger.error('Ebook import failed for item', item.fullPath, e)
+        importErrors.value.push(`${item.detectedTitle ?? item.folderName}: ${message}`)
+      }
+    }
+
+    return { imported, errors: importErrors.value }
+  }
+
+  async function importSelected(
+    rootFolderPath: string,
+    mediaType: 'Audiobook' | 'Ebook' = 'Audiobook',
+  ): Promise<{ imported: number; errors: string[] }> {
+    // Ebooks take a dedicated path. The audiobook flow below finishes with
+    // startManualImport, which writes AudiobookFile rows carrying audio-only metadata;
+    // an ebook belongs in an EditionFile row on the book's ebook edition instead.
+    if (mediaType === 'Ebook') {
+      return importSelectedEbooks(rootFolderPath)
+    }
+
     const toImport = itemList.value.filter((i) => i.selected && i.selectedMatch)
     importErrors.value = []
     let imported = 0

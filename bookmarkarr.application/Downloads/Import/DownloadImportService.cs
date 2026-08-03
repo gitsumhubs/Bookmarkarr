@@ -51,7 +51,8 @@ namespace Bookmarkarr.Application.Downloads.Import
 
             try
             {
-                var completedFileAction = settings.CompletedFileAction;
+                // Library import picks an action per batch; downloads use the configured default.
+                var completedFileAction = options?.CompletedFileActionOverride ?? settings.CompletedFileAction;
 
                 // Extract archives if any
                 if (settings.ExtractArchives || options?.ForceArchiveExtraction == true)

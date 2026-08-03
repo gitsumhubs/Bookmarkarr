@@ -291,6 +291,8 @@ export interface RootFolder {
   id: number
   name: string
   path: string
+  /** Media type stored under this root. Determines how a library import files its media. */
+  mediaType?: EditionMediaType
   isDefault: boolean
   createdAt: string
   updatedAt?: string

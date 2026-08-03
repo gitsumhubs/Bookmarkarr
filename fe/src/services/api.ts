@@ -923,6 +923,30 @@ class ApiService {
     })
   }
 
+  /**
+   * Imports ebook files that already exist on disk into a book's ebook edition.
+   *
+   * Separate from startManualImport, which is audiobook-shaped: it writes AudiobookFile
+   * rows with audio-only metadata. Ebooks belong in EditionFile rows on the ebook edition.
+   */
+  async importEbookFiles(payload: {
+    bookId: number
+    sourceFiles: string[]
+    action?: 'Copy' | 'Move' | 'Hardlink'
+  }): Promise<{ imported: number; editionId: number | null; errors: string[] }> {
+    return this.request<{ imported: number; editionId: number | null; errors: string[] }>(
+      '/library/ebook-import',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          bookId: payload.bookId,
+          sourceFiles: payload.sourceFiles,
+          action: payload.action ?? 'Copy',
+        }),
+      },
+    )
+  }
+
   async getUnmatchedResults(jobId: string): Promise<UnmatchedFilesResponse> {
     return this.request<UnmatchedFilesResponse>(`/rootfolders/unmatched-results/${jobId}`)
   }

@@ -45,6 +45,12 @@ namespace Bookmarkarr.Application.Audiobooks.Jobs
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public string RootFolderPath { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Media type of the root being scanned. Determines which extensions are
+        /// collected and how discovered files are grouped.
+        /// </summary>
+        public EditionMediaType MediaType { get; set; } = EditionMediaType.Audiobook;
         public DateTime EnqueuedAt { get; set; } = DateTime.UtcNow;
         public DateTime? CompletedAt { get; set; }
         public string Status { get; set; } = "Queued";
@@ -54,7 +60,7 @@ namespace Bookmarkarr.Application.Audiobooks.Jobs
 
     public interface IUnmatchedScanQueueService
     {
-        Task<Guid> EnqueueAsync(string rootFolderPath);
+        Task<Guid> EnqueueAsync(string rootFolderPath, EditionMediaType mediaType = EditionMediaType.Audiobook);
         bool TryGetJob(Guid id, out UnmatchedScanJob? job);
         void UpdateJob(Guid id, string status, List<UnmatchedFileResult>? results = null, string? error = null);
         bool TryGetLastJobForPath(string rootFolderPath, out UnmatchedScanJob? job);
@@ -92,7 +98,7 @@ namespace Bookmarkarr.Application.Audiobooks.Jobs
             }
         }
 
-        public async Task<Guid> EnqueueAsync(string rootFolderPath)
+        public async Task<Guid> EnqueueAsync(string rootFolderPath, EditionMediaType mediaType = EditionMediaType.Audiobook)
         {
             PurgeExpired();
             // Dedupe: if a queued/processing job exists for the same path, return it
@@ -106,7 +112,7 @@ namespace Bookmarkarr.Application.Audiobooks.Jobs
                 return existing.Id;
             }
 
-            var job = new UnmatchedScanJob { RootFolderPath = rootFolderPath };
+            var job = new UnmatchedScanJob { RootFolderPath = rootFolderPath, MediaType = mediaType };
             _jobs[job.Id] = job;
             _logger.LogInformation("Enqueueing unmatched scan job {JobId} for {Path}", job.Id, rootFolderPath);
             await _channel.Writer.WriteAsync(job);

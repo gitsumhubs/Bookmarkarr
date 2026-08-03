@@ -196,7 +196,28 @@ namespace Bookmarkarr.Infrastructure.Library.Scanning
             if (!string.IsNullOrEmpty(tags.Asin)) target.Asin = tags.Asin;
         }
 
-        private List<string> CollectAudioFiles(string rootFolderPath)
+        /// <summary>
+        /// Walks a root and returns every file importable for the given media type.
+        /// </summary>
+        private List<string> CollectFilesForMedia(string rootFolderPath, EditionMediaType mediaType) =>
+            mediaType == EditionMediaType.Ebook
+                ? CollectFiles(rootFolderPath, FileUtils.IsEbookFile)
+                : CollectFiles(rootFolderPath, path =>
+                    AudioExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase));
+
+        private List<string> CollectAudioFiles(string rootFolderPath) =>
+            CollectFiles(rootFolderPath, path =>
+                AudioExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase));
+
+        /// <summary>
+        /// Recursive root walk shared by every media type.
+        /// </summary>
+        /// <remarks>
+        /// The traversal guards matter regardless of which extensions are being collected:
+        /// reparse points are skipped and every resolved subdirectory is re-checked against
+        /// the root, so a symlink cannot walk the scan out of the configured library.
+        /// </remarks>
+        private List<string> CollectFiles(string rootFolderPath, Func<string, bool> isMatch)
         {
             var candidates = new List<string>();
             var normalizedRoot = Path.GetFullPath(rootFolderPath);
@@ -213,7 +234,7 @@ namespace Bookmarkarr.Infrastructure.Library.Scanning
                     {
                         try
                         {
-                            if (AudioExtensions.Contains(Path.GetExtension(file), StringComparer.OrdinalIgnoreCase))
+                            if (isMatch(file))
                                 candidates.Add(file);
                         }
                         catch (Exception ex) when (ex is not OperationCanceledException && ex is not OutOfMemoryException && ex is not StackOverflowException)

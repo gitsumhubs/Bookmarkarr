@@ -16,6 +16,8 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 using System.Text.RegularExpressions;
+using Bookmarkarr.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -134,7 +136,7 @@ namespace Bookmarkarr.Infrastructure.Library.Scanning
             _logger.LogInformation("Processing unmatched scan job {JobId} for {Path}", job.Id, job.RootFolderPath);
             _queue.UpdateJob(job.Id, "Processing");
 
-            var results = await ScanAsync(job.RootFolderPath, cancellationToken);
+            var results = await ScanAsync(job.RootFolderPath, job.MediaType, cancellationToken);
 
             _queue.UpdateJob(job.Id, "Completed", results);
             _logger.LogInformation("Unmatched scan job {JobId} completed: {Count} unmatched items", job.Id, results.Count);
@@ -145,7 +147,7 @@ namespace Bookmarkarr.Infrastructure.Library.Scanning
                 cancellationToken);
         }
 
-        private async Task<List<UnmatchedFileResult>> ScanAsync(string rootFolderPath, CancellationToken ct)
+        private async Task<List<UnmatchedFileResult>> ScanAsync(string rootFolderPath, EditionMediaType mediaType, CancellationToken ct)
         {
             using var scope = _scopeFactory.CreateScope();
             var fileRepository = scope.ServiceProvider.GetRequiredService<IAudiobookFileRepository>();
@@ -169,8 +171,24 @@ namespace Bookmarkarr.Infrastructure.Library.Scanning
                 trackedFromFiles.Concat(trackedFromAudiobooks).Select(NormalizePath),
                 StringComparer.OrdinalIgnoreCase);
 
+            // Ebook files live in EditionFiles rather than AudiobookFiles, so an ebook
+            // scan has to consult that table or every already-imported ebook would be
+            // reported as unmatched on every scan.
+            if (mediaType == EditionMediaType.Ebook)
+            {
+                var db = scope.ServiceProvider.GetRequiredService<BookmarkarrDbContext>();
+                var trackedEditionFiles = await db.EditionFiles
+                    .AsNoTracking()
+                    .Select(file => file.Path)
+                    .ToListAsync(ct);
+                foreach (var path in trackedEditionFiles.Where(p => !string.IsNullOrWhiteSpace(p)))
+                {
+                    trackedNormalized.Add(NormalizePath(path));
+                }
+            }
+
             // Walk the root folder tree
-            var candidates = CollectAudioFiles(rootFolderPath);
+            var candidates = CollectFilesForMedia(rootFolderPath, mediaType);
 
             // Filter to untracked files
             var unmatched = candidates
@@ -202,11 +220,22 @@ namespace Bookmarkarr.Infrastructure.Library.Scanning
                     var folderFiles = folderGroup.ToList();
                     IReadOnlyDictionary<string, PathParsedMetadata>? embeddedTagsByFile = null;
 
-                    var groupedFiles = BuildGroupedFilesForFolder(folderFiles, bookFolder);
-                    if (groupedFiles.Count > 1 && !string.IsNullOrEmpty(ffprobePath))
+                    // An ebook is a single self-contained file, so each one is its own
+                    // book. The multi-part grouping that stitches audiobook chapters
+                    // together would wrongly merge unrelated titles sharing a folder.
+                    List<List<string>> groupedFiles;
+                    if (mediaType == EditionMediaType.Ebook)
                     {
-                        embeddedTagsByFile = await ReadEmbeddedTagsForFilesAsync(folderFiles, ffprobePath, token);
-                        groupedFiles = BuildGroupedFilesForFolder(folderFiles, bookFolder, embeddedTagsByFile);
+                        groupedFiles = [.. folderFiles.Select(file => new List<string> { file })];
+                    }
+                    else
+                    {
+                        groupedFiles = BuildGroupedFilesForFolder(folderFiles, bookFolder);
+                        if (groupedFiles.Count > 1 && !string.IsNullOrEmpty(ffprobePath))
+                        {
+                            embeddedTagsByFile = await ReadEmbeddedTagsForFilesAsync(folderFiles, ffprobePath, token);
+                            groupedFiles = BuildGroupedFilesForFolder(folderFiles, bookFolder, embeddedTagsByFile);
+                        }
                     }
 
                     foreach (var files in groupedFiles)
@@ -222,7 +251,7 @@ namespace Bookmarkarr.Infrastructure.Library.Scanning
                         {
                             tags = cachedTags;
                         }
-                        else if (!string.IsNullOrEmpty(ffprobePath))
+                        else if (!string.IsNullOrEmpty(ffprobePath) && mediaType != EditionMediaType.Ebook)
                         {
                             tags = await PathMetadataParser.ReadEmbeddedTagsAsync(representative, ffprobePath, token);
                         }

@@ -25,6 +25,7 @@ const advancedSearch = vi.fn()
 const scanUnmatchedFiles = vi.fn()
 const getUnmatchedResults = vi.fn()
 const getSavedUnmatchedFiles = vi.fn()
+const importEbookFiles = vi.fn()
 let unmatchedScanHandler:
   | ((payload: { jobId: string; error?: string }) => void | Promise<void>)
   | null = null
@@ -38,6 +39,7 @@ vi.mock('@/services/api', () => ({
     scanUnmatchedFiles,
     getUnmatchedResults,
     getSavedUnmatchedFiles,
+    importEbookFiles,
   },
 }))
 
@@ -195,5 +197,67 @@ describe('library import store', () => {
     expect(store.items['C:\\incoming\\Chapter 01.mp3']?.selectedMatch?.title).toBe(
       'Jack of Shadows',
     )
+  })
+
+  it('routes an ebook root through the ebook import endpoint, not manual import', async () => {
+    const { useLibraryImportStore } = await import('@/stores/libraryImport')
+    const store = useLibraryImportStore()
+    importEbookFiles.mockResolvedValue({ imported: 1, editionId: 7, errors: [] })
+
+    store.items = {
+      '/incoming/Dune.epub': {
+        id: '/incoming/Dune.epub',
+        fullPath: '/incoming/Dune.epub',
+        sourceFiles: ['/incoming/Dune.epub'],
+        folderPath: '/incoming',
+        relativePath: 'Dune',
+        folderName: 'Dune',
+        format: 'EPUB',
+        fileCount: 1,
+        selectedMatch: { title: 'Dune', authors: [] } as unknown as SearchResult,
+        hasSearched: true,
+        isSearching: false,
+        selected: true,
+      },
+    }
+
+    store.action = 'copy'
+    const result = await store.importSelected('/ebooks', 'Ebook')
+
+    // The audiobook path would write AudiobookFile rows with audio-only metadata.
+    expect(startManualImport).not.toHaveBeenCalled()
+    expect(importEbookFiles).toHaveBeenCalledWith({
+      bookId: 42,
+      sourceFiles: ['/incoming/Dune.epub'],
+      action: 'Copy',
+    })
+    expect(result.imported).toBe(1)
+  })
+
+  it('still uses manual import when the destination root is an audiobook root', async () => {
+    const { useLibraryImportStore } = await import('@/stores/libraryImport')
+    const store = useLibraryImportStore()
+
+    store.items = {
+      '/incoming/Book.mp3': {
+        id: '/incoming/Book.mp3',
+        fullPath: '/incoming/Book.mp3',
+        sourceFiles: ['/incoming/Book.mp3'],
+        folderPath: '/incoming',
+        relativePath: 'Book',
+        folderName: 'Book',
+        format: 'MP3',
+        fileCount: 1,
+        selectedMatch: { title: 'Book', authors: [] } as unknown as SearchResult,
+        hasSearched: true,
+        isSearching: false,
+        selected: true,
+      },
+    }
+
+    await store.importSelected('/audiobooks', 'Audiobook')
+
+    expect(startManualImport).toHaveBeenCalledTimes(1)
+    expect(importEbookFiles).not.toHaveBeenCalled()
   })
 })

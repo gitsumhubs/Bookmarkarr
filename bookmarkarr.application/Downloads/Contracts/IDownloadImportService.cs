@@ -1,10 +1,16 @@
 
 namespace Bookmarkarr.Application.Downloads.Contracts
 {
+    /// <param name="CompletedFileActionOverride">
+    /// Overrides the configured completed-file action for this import only. Library
+    /// import lets the user choose copy/move per batch; downloads leave this null and
+    /// keep using the configured default.
+    /// </param>
     public sealed record DownloadImportOptions(
         bool ForceArchiveExtraction = false,
         string ContentType = DownloadContentTypes.Audiobook,
-        string? LibraryRoot = null);
+        string? LibraryRoot = null,
+        FileAction? CompletedFileActionOverride = null);
 
     /// <summary>
     /// Download import responsible for processing a given download importation

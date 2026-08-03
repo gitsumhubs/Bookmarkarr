@@ -141,7 +141,14 @@ async function handleImport() {
   isImporting.value = true
 
   try {
-    const { imported, errors } = await store.importSelected(destinationPath.value)
+    // Route by the destination root's media type so ebooks are filed as ebook
+    // editions rather than through the audiobook manual-import path.
+    const destinationMediaType =
+      props.folders.find((f) => f.id === destinationFolderId.value)?.mediaType ?? 'Audiobook'
+    const { imported, errors } = await store.importSelected(
+      destinationPath.value,
+      destinationMediaType,
+    )
 
     if (imported > 0) {
       let msg = `${imported} book${imported !== 1 ? 's' : ''} imported`
