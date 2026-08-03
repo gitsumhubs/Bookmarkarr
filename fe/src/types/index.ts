@@ -346,7 +346,7 @@ export interface ApplicationSettings {
     id: string
     name: string
     url: string
-    type: 'Pushbullet' | 'Telegram' | 'Slack' | 'Discord' | 'Pushover' | 'NTFY' | 'Zapier'
+    type: 'Pushbullet' | 'Telegram' | 'Slack' | 'Discord' | 'Pushover' | 'NTFY' | 'Gotify' | 'Zapier'
     triggers: string[]
     isEnabled: boolean
   }>

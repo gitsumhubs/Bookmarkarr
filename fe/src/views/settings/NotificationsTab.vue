@@ -32,7 +32,7 @@
         <h3>No webhooks configured</h3>
         <p>Webhooks allow you to receive real-time notifications when important events occur.</p>
         <p class="empty-help">
-          Supported services include Slack, Discord, Telegram, Pushover, and more.
+          Supported services include Slack, Discord, Telegram, Pushover, Gotify, and more.
         </p>
       </div>
 
@@ -204,6 +204,7 @@
                 <option value="Pushover">Pushover</option>
                 <option value="Pushbullet">Pushbullet</option>
                 <option value="NTFY">NTFY</option>
+                <option value="Gotify">Gotify</option>
                 <option value="Zapier">Zapier / Generic</option>
               </select>
               <small v-if="webhookFormErrors.type" class="error-text">{{
@@ -432,7 +433,7 @@ const editingWebhook = ref<{
   id: string
   name: string
   url: string
-  type: 'Pushbullet' | 'Telegram' | 'Slack' | 'Discord' | 'Pushover' | 'NTFY' | 'Zapier'
+  type: 'Pushbullet' | 'Telegram' | 'Slack' | 'Discord' | 'Pushover' | 'NTFY' | 'Gotify' | 'Zapier'
   triggers: string[]
   isEnabled: boolean
 } | null>(null)
@@ -444,7 +445,7 @@ const webhooks = ref<
     id: string
     name: string
     url: string
-    type: 'Pushbullet' | 'Telegram' | 'Slack' | 'Discord' | 'Pushover' | 'NTFY' | 'Zapier'
+    type: 'Pushbullet' | 'Telegram' | 'Slack' | 'Discord' | 'Pushover' | 'NTFY' | 'Gotify' | 'Zapier'
     triggers: string[]
     isEnabled: boolean
   }>
@@ -454,7 +455,7 @@ const webhookForm = reactive({
   id: '',
   name: '',
   url: '',
-  type: '' as 'Pushbullet' | 'Telegram' | 'Slack' | 'Discord' | 'Pushover' | 'NTFY' | 'Zapier' | '',
+  type: '' as 'Pushbullet' | 'Telegram' | 'Slack' | 'Discord' | 'Pushover' | 'NTFY' | 'Gotify' | 'Zapier' | '',
   triggers: [] as string[],
   isEnabled: true,
   telegramChatId: '',
@@ -531,6 +532,7 @@ const getWebhookTypeIcon = (type: string) => {
     pushover: PhBell,
     pushbullet: PhPushPinSimple,
     ntfy: PhBell,
+    gotify: PhBell,
     zapier: PhPaperPlaneTilt,
   }
   return map[t] || PhLink
@@ -667,6 +669,8 @@ const getServiceHelp = (): string => {
     Pushover: 'Get your User Key and API Token from pushover.net/apps/build',
     Pushbullet: 'Get your Access Token from Settings → Account → Access Tokens',
     NTFY: 'Use format: https://ntfy.sh/{topic} or your self-hosted instance URL',
+    Gotify:
+      'Create an application in Gotify (Apps → Create Application) and copy its token. Use format: https://your-gotify-host/message?token={appToken}',
     Zapier: 'Create a Zap with "Webhooks by Zapier" and copy the webhook URL',
   }
   return webhookForm.type ? helpText[webhookForm.type] || '' : ''

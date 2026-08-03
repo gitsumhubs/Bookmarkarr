@@ -141,6 +141,13 @@ namespace Bookmarkarr.Infrastructure.Notifications.Delivery
 
             }
 
+            // Gotify (self-hosted). Delivery lives in NotificationService.Gotify.cs.
+            if (IsGotifyWebhook(webhookUrl))
+            {
+                await SendGotifyNotificationAsync(trigger, data, webhookUrl);
+                return;
+            }
+
             // Pushover (https://pushover.net/api)
             // Expect webhookUrl like: https://api.pushover.net/1/messages.json?token=<app_token>&user=<user_key>
             if (webhookUrl.IndexOf("api.pushover.net/1/messages.json", StringComparison.OrdinalIgnoreCase) >= 0)
@@ -444,5 +451,6 @@ namespace Bookmarkarr.Infrastructure.Notifications.Delivery
             }
 #pragma warning restore CA1031
         }
+
     }
 }

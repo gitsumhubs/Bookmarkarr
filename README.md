@@ -230,6 +230,24 @@ qBittorrent/RDT are handled automatically when the outer path is mapped correctl
 - Bookmarkarr, Ocean, Forest, and Plum themes with System/Light/Dark modes and a top-bar
   toggle
 
+## Notifications
+
+**Settings → Notifications → Add Webhook**. Slack, Discord, Telegram, Pushover,
+Pushbullet, NTFY, Gotify, and generic webhooks are supported. Pick your triggers, then use
+**Test** to confirm delivery.
+
+### Gotify
+
+Works the same way Radarr and Sonarr do it:
+
+1. In Gotify, go to **Apps → Create Application** and copy the application token.
+2. In Bookmarkarr, add a webhook of type **Gotify** with the URL
+   `https://your-gotify-host/message?token=<appToken>`.
+3. Choose your triggers and hit **Test**.
+
+Self-hosted instances are detected by the endpoint shape, so your Gotify hostname can be
+anything — it doesn't need "gotify" in the name.
+
 ## Configuration
 
 | Variable | What it does | Default |
