@@ -140,16 +140,35 @@ namespace Bookmarkarr.Application.Downloads.Submission
                 };
             }
 
-            // Build search query from audiobook metadata
-            var searchQuery = DownloadSearchQueryBuilder.Build(audiobook);
-            logger.LogInformation("Searching for audiobook '{Title}' with query: {Query}", LogRedaction.SanitizeText(audiobook.Title), LogRedaction.SanitizeText(searchQuery));
+            // Progressively broader queries. Catalogue titles carry series suffixes,
+            // numbering, and punctuation that indexers do not, so a single literal query
+            // can return nothing for a book a broader search finds immediately. The first
+            // query to return anything wins, so a precise match is still preferred.
+            var searchCandidates = DownloadSearchQueryBuilder.BuildCandidates(audiobook);
+            List<SearchResult>? searchResults = null;
 
-            // Search using the working search service. This is an automatic search (triggered
-            // by the background/manual 'search-and-download' endpoint), so set isAutomaticSearch
-            // to true to ensure only indexers are queried (no Amazon/Audible scraping).
-            var searchResults = await searchService.SearchAsync(searchQuery, isAutomaticSearch: true);
+            foreach (var searchQuery in searchCandidates)
+            {
+                logger.LogInformation(
+                    "Searching for audiobook '{Title}' with query: {Query}",
+                    LogRedaction.SanitizeText(audiobook.Title),
+                    LogRedaction.SanitizeText(searchQuery));
 
-            if (searchResults == null || !searchResults.Any())
+                // Automatic search (background/'search-and-download'), so only indexers are
+                // queried - no Amazon/Audible scraping.
+                var attempt = await searchService.SearchAsync(searchQuery, isAutomaticSearch: true);
+                if (attempt != null && attempt.Count > 0)
+                {
+                    searchResults = attempt;
+                    break;
+                }
+
+                logger.LogInformation(
+                    "No results for query '{Query}'; trying a broader query if one remains",
+                    LogRedaction.SanitizeText(searchQuery));
+            }
+
+            if (searchResults == null || searchResults.Count == 0)
             {
                 return new SearchAndDownloadResult
                 {
