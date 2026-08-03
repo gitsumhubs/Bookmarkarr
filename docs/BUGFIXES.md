@@ -84,6 +84,7 @@ This append-only ledger tracks inherited and production regressions. Resolved en
 - 2026-08-02: isolated empty-volume startup using the final image completed healthy with zero restarts, no error log entries, and exactly one canonical `ApplicationSettings` row (`Id=1`).
 - 2026-08-02: reported download-client/root-folder/add-response/queue-polling regression group passed 60/60 in .NET 10; architecture-inclusive follow-up passed 78/78.
 - 2026-08-02: final current-source backend suite passed 1,247/1,247; Vue TypeScript checking passed; Vitest passed 397/397 tests across 76 files (1 file intentionally skipped).
+- 2026-08-03: redacted download-client credential regression run passed 9/9; final backend suite passed 1,249/1,249.
 
 ## BF-009 — Fresh-start application-settings initialization race
 
@@ -124,3 +125,11 @@ This append-only ledger tracks inherited and production regressions. Resolved en
 - Implementation: an infrastructure queue fetcher creates and owns an asynchronous dependency scope for each client poll and resolves its own gateway/repositories/DbContext. A timed-out task retains its scope until cancellation completes, while poll concurrency and stale-snapshot behavior remain intact.
 - Regression tests: `ScopedDownloadClientQueueFetcherTests.GetQueueAsync_CreatesIndependentScopeForEachConcurrentClientPoll` starts simultaneous clients and requires two distinct scoped gateway instances; queue reconciliation coverage continues to pass.
 - Validation: focused reported-defect regression group passed 60/60 and the architecture-inclusive follow-up passed 78/78 in .NET 10; full backend suite passed 1,247/1,247.
+
+## BF-014 — Redacted download-client credentials could overwrite stored values
+
+- Status: Resolved and validated
+- Root cause: remote API responses intentionally return `REDACTED` for download-client usernames and passwords, but save/test endpoints treated only blank values as placeholders. Reposting a redacted configuration could persist the literal placeholder as the username or attempt authentication with it.
+- Implementation: download-client save, PUT upsert, and connection-test flows now treat both blank values and the canonical redaction marker as requests to preserve stored username/password values. Redacted API-key settings receive the same preservation behavior.
+- Regression tests: `SaveDownloadClientConfiguration_RedactedCredentials_PreservesStoredValues` and `TestDownloadClientConfiguration_RedactedCredentials_UsesStoredValues` cover persistence and live connection testing.
+- Validation: focused controller regression run passed 9/9 and the complete backend suite passed 1,249/1,249 in .NET 10.

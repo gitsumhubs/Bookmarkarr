@@ -310,6 +310,82 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Configuration
         }
 
         [Fact]
+        public async Task SaveDownloadClientConfiguration_RedactedCredentials_PreservesStoredValues()
+        {
+            var existing = new DownloadClientConfiguration
+            {
+                Id = "client-1",
+                Username = "real-user",
+                Password = "real-password"
+            };
+            var configurationService = new Mock<IConfigurationService>(MockBehavior.Strict);
+            configurationService
+                .Setup(service => service.GetDownloadClientConfigurationAsync("client-1"))
+                .ReturnsAsync(existing);
+            configurationService
+                .Setup(service => service.SaveDownloadClientConfigurationAsync(
+                    It.Is<DownloadClientConfiguration>(client =>
+                        client.Username == "real-user" && client.Password == "real-password")))
+                .ReturnsAsync("client-1");
+
+            var controller = new DownloadClientController(
+                configurationService.Object,
+                Mock.Of<IDownloadClientGateway>(),
+                NullLogger<DownloadClientController>.Instance);
+
+            var result = await controller.SaveDownloadClientConfiguration(new DownloadClientConfiguration
+            {
+                Id = "client-1",
+                Username = ApiResponseRedactor.RedactedValue,
+                Password = ApiResponseRedactor.RedactedValue
+            });
+
+            Assert.IsType<OkObjectResult>(result.Result);
+            configurationService.VerifyAll();
+        }
+
+        [Fact]
+        public async Task TestDownloadClientConfiguration_RedactedCredentials_UsesStoredValues()
+        {
+            var configurationService = new Mock<IConfigurationService>(MockBehavior.Strict);
+            configurationService
+                .Setup(service => service.GetDownloadClientConfigurationAsync("client-1"))
+                .ReturnsAsync(new DownloadClientConfiguration
+                {
+                    Id = "client-1",
+                    Username = "real-user",
+                    Password = "real-password"
+                });
+            var gateway = new Mock<IDownloadClientGateway>(MockBehavior.Strict);
+            gateway
+                .Setup(service => service.TestConnectionAsync(
+                    It.Is<DownloadClientConfiguration>(client =>
+                        client.Username == "real-user" && client.Password == "real-password"),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync((true, "connected"));
+
+            var controller = new DownloadClientController(
+                configurationService.Object,
+                gateway.Object,
+                NullLogger<DownloadClientController>.Instance)
+            {
+                ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+            };
+
+            var result = await controller.TestDownloadClientConfiguration(new DownloadClientConfiguration
+            {
+                Id = "client-1",
+                Username = ApiResponseRedactor.RedactedValue,
+                Password = ApiResponseRedactor.RedactedValue
+            });
+
+            var ok = Assert.IsType<OkObjectResult>(result.Result);
+            Assert.True((bool)ok.Value!.GetType().GetProperty("success")!.GetValue(ok.Value)!);
+            configurationService.VerifyAll();
+            gateway.VerifyAll();
+        }
+
+        [Fact]
         public void DownloadClientDetailResponse_IncludesDownloadPathAndCategory()
         {
             var response = ApiResponseRedactor.ToDownloadClientDetailResponse(new DownloadClientConfiguration

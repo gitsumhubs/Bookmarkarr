@@ -118,12 +118,12 @@ namespace Bookmarkarr.Api.Features.DownloadClients
                     var existing = await _configurationService.GetDownloadClientConfigurationAsync(config.Id);
                     if (existing != null)
                     {
-                        if (string.IsNullOrWhiteSpace(config.Username) && !string.IsNullOrWhiteSpace(existing.Username))
+                        if (IsMissingOrRedacted(config.Username) && !string.IsNullOrWhiteSpace(existing.Username))
                         {
                             config.Username = existing.Username;
                         }
 
-                        if (string.IsNullOrWhiteSpace(config.Password) && !string.IsNullOrWhiteSpace(existing.Password))
+                        if (IsMissingOrRedacted(config.Password) && !string.IsNullOrWhiteSpace(existing.Password))
                         {
                             config.Password = existing.Password;
                         }
@@ -137,7 +137,7 @@ namespace Bookmarkarr.Api.Features.DownloadClients
                                     if (existing.Settings.TryGetValue("apiKey", out var existingApiKeyObj))
                                     {
                                         var existingApiKey = existingApiKeyObj?.ToString();
-                                        if (!string.IsNullOrWhiteSpace(existingApiKey))
+                                            if (!string.IsNullOrWhiteSpace(existingApiKey))
                                         {
                                             config.Settings ??= new Dictionary<string, object>();
                                             config.Settings["apiKey"] = existingApiKey;
@@ -147,7 +147,7 @@ namespace Bookmarkarr.Api.Features.DownloadClients
                                 else if (config.Settings != null && config.Settings.TryGetValue("apiKey", out var incomingApiKeyObj))
                                 {
                                     var incomingApiKey = incomingApiKeyObj?.ToString();
-                                    if (string.IsNullOrWhiteSpace(incomingApiKey) && existing.Settings.TryGetValue("apiKey", out var exKey))
+                                    if (IsMissingOrRedacted(incomingApiKey) && existing.Settings.TryGetValue("apiKey", out var exKey))
                                     {
                                         var existingApiKey = exKey?.ToString();
                                         if (!string.IsNullOrWhiteSpace(existingApiKey))
@@ -233,12 +233,12 @@ namespace Bookmarkarr.Api.Features.DownloadClients
                     var existing = await _configurationService.GetDownloadClientConfigurationAsync(config.Id);
                     if (existing != null)
                     {
-                        if (string.IsNullOrWhiteSpace(config.Username) && !string.IsNullOrWhiteSpace(existing.Username))
+                        if (IsMissingOrRedacted(config.Username) && !string.IsNullOrWhiteSpace(existing.Username))
                         {
                             config.Username = existing.Username;
                         }
 
-                        if (string.IsNullOrWhiteSpace(config.Password) && !string.IsNullOrWhiteSpace(existing.Password))
+                        if (IsMissingOrRedacted(config.Password) && !string.IsNullOrWhiteSpace(existing.Password))
                         {
                             config.Password = existing.Password;
                         }
@@ -276,5 +276,9 @@ namespace Bookmarkarr.Api.Features.DownloadClients
                 return StatusCode(500, new { success = false, message = ex.Message });
             }
         }
+
+        private static bool IsMissingOrRedacted(string? value)
+            => string.IsNullOrWhiteSpace(value)
+               || string.Equals(value, ApiResponseRedactor.RedactedValue, StringComparison.Ordinal);
     }
 }
