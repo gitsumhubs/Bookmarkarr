@@ -225,6 +225,7 @@ qBittorrent/RDT are handled automatically when the outer path is mapped correctl
   and RDT Client
 - Live Wanted status — Queued, Downloading, Import Pending, Import Blocked — matched to
   downloads by stable edition ID
+- Bulk import of existing audiobook and ebook libraries already on disk
 - Read-only-source, dry-run-first, transactional Listenarr migration utility
 - Responsive UI, history, notifications, backups, and multi-arch release automation
 - Bookmarkarr, Ocean, Forest, and Plum themes with System/Light/Dark modes and a top-bar
@@ -284,10 +285,17 @@ Full details in [.env.example](.env.example).
 - [Releases and GHCR](docs/RELEASES.md)
 - [Recreating this project](RECREATE.md)
 
-## Roadmap
+## Importing an existing library
 
-- A Radarr-style bulk import for existing ebook libraries: scan the ebook root, match files
-  to editions, review ambiguous matches, and import without a new download.
+Already have books on disk? **Library → Import**, pick a root folder, and scan. Bookmarkarr
+lists everything not already in your library, you match each entry, and it files them.
+
+This works for both media types. Scanning an **audiobook** root finds audio files and groups
+multi-part books together; scanning an **ebook** root finds EPUB/MOBI/AZW3/PDF and treats
+each file as its own book. Files already imported are skipped, so you can rescan freely.
+
+Choose **Copy** to leave your originals untouched, or **Move** to relocate them into the
+library layout.
 
 ## Development
 
