@@ -224,6 +224,8 @@ with `dryRun=false`. An absent source becomes terminal `Source Missing` history 
 edition returns to **Missing**, making it eligible to search again. Bookmarkarr never clears
 the blocked state from a cached, stale, unavailable, or unknown client snapshot; if the
 source later reappears, reconciliation restores **Import Blocked** so it can be retried.
+Completed and import-pending handoff rows on an already blocked edition are checked too, so
+stale terminal rows cannot keep it blocked after every exact client source has disappeared.
 
 **Bookmarkarr can't reach Prowlarr or the download client.** The URL has to resolve from
 *inside* the container — `localhost` only works if the service is in the same container.

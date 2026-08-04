@@ -47,7 +47,7 @@ public sealed class LibraryStatusReconciliationWorkflow(
                     .Where(download => BelongsToEdition(download, edition))
                     .ToList();
                 var sourceStateDownloads = relatedDownloads
-                    .Where(download => download.Status is DownloadStatus.ImportBlocked or DownloadStatus.SourceMissing)
+                    .Where(download => ShouldReconcileSourceState(download.Status, edition.Status))
                     .ToList();
                 var editionMarkedSourceMissing = 0;
                 var editionRestoredBlocked = 0;
@@ -63,13 +63,17 @@ public sealed class LibraryStatusReconciliationWorkflow(
                         editionRestoredBlocked++;
                         restoredImportBlocked++;
                     }
-                    else if (!sourceIsVisible && clientIsAuthoritative && download.Status == DownloadStatus.ImportBlocked)
+                    else if (!sourceIsVisible &&
+                        clientIsAuthoritative &&
+                        download.Status != DownloadStatus.SourceMissing)
                     {
                         plannedDownloadStatuses[download.Id] = DownloadStatus.SourceMissing;
                         editionMarkedSourceMissing++;
                         markedSourceMissing++;
                     }
-                    else if (!sourceIsVisible && !clientIsAuthoritative && download.Status == DownloadStatus.ImportBlocked)
+                    else if (!sourceIsVisible &&
+                        !clientIsAuthoritative &&
+                        download.Status != DownloadStatus.SourceMissing)
                     {
                         skippedUnavailable++;
                     }
@@ -169,6 +173,24 @@ public sealed class LibraryStatusReconciliationWorkflow(
 
         return edition.MediaType == EditionMediaType.Audiobook &&
             download.AudiobookId == edition.BookId;
+    }
+
+    private static bool ShouldReconcileSourceState(
+        DownloadStatus downloadStatus,
+        EditionWantedStatus editionStatus)
+    {
+        if (downloadStatus is DownloadStatus.ImportBlocked or DownloadStatus.SourceMissing)
+        {
+            return true;
+        }
+
+        // A prior blocked attempt can leave a newer terminal handoff row behind. If that
+        // completed/import-pending source is also absent, it must not keep the edition
+        // pinned to ImportBlocked after the older blocked rows are reconciled.
+        return editionStatus == EditionWantedStatus.ImportBlocked && downloadStatus is
+            DownloadStatus.Completed or
+            DownloadStatus.Ready or
+            DownloadStatus.ImportPending;
     }
 
     private static EditionWantedStatus ResolveEditionStatus(

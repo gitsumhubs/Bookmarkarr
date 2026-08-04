@@ -40,6 +40,22 @@ public sealed class LibraryStatusReconciliationWorkflowTests
         Assert.Contains("no longer available", download.ErrorMessage);
     }
 
+    [Fact]
+    public async Task Commit_ClearsAbsentCompletedRowThatWouldOtherwisePinBlockedEdition()
+    {
+        await using var db = CreateDb();
+        var (book, edition) = await SeedBookAsync(db, EditionWantedStatus.ImportBlocked);
+        var blocked = await SeedDownloadAsync(db, book, edition, DownloadStatus.ImportBlocked);
+        var completed = await SeedDownloadAsync(db, book, edition, DownloadStatus.Completed);
+
+        var result = await CreateWorkflow(db, LiveSnapshot()).ReconcileAsync(dryRun: false);
+
+        Assert.Equal(2, result.DownloadsMarkedSourceMissing);
+        Assert.Equal(EditionWantedStatus.Missing, edition.Status);
+        Assert.Equal(DownloadStatus.SourceMissing, blocked.Status);
+        Assert.Equal(DownloadStatus.SourceMissing, completed.Status);
+    }
+
     [Theory]
     [InlineData("cached", true, false)]
     [InlineData("unavailable", false, true)]
