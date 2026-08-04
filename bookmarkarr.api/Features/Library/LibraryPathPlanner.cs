@@ -16,7 +16,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System.Text.RegularExpressions;
+using Bookmarkarr.Application.Common;
 using Bookmarkarr.Domain.Common;
 
 namespace Bookmarkarr.Api.Features.Library
@@ -29,62 +29,11 @@ namespace Bookmarkarr.Api.Features.Library
             string fileNamingPattern,
             IFileNamingService fileNamingService)
         {
-            string directoryPattern;
-            if (!string.IsNullOrWhiteSpace(fileNamingPattern))
-            {
-                directoryPattern = fileNamingPattern;
-                directoryPattern = Regex.Replace(directoryPattern, @"\{DiskNumber[^}]*\}", "", RegexOptions.IgnoreCase);
-                directoryPattern = Regex.Replace(directoryPattern, @"\{ChapterNumber[^}]*\}", "", RegexOptions.IgnoreCase);
-                directoryPattern = CleanDirectoryPattern(directoryPattern);
-
-                if (string.IsNullOrWhiteSpace(directoryPattern) || !directoryPattern.Contains("/"))
-                {
-                    directoryPattern = "{Author}/{Title}";
-                }
-            }
-            else
-            {
-                directoryPattern = "{Author}/{Title}";
-            }
-
-            if (!string.IsNullOrWhiteSpace(audiobook.Series) && !directoryPattern.Contains("{Series}"))
-            {
-                if (directoryPattern.Contains("{Author}/{Title}"))
-                {
-                    directoryPattern = directoryPattern.Replace("{Author}/{Title}", "{Author}/{Series}/{Title}");
-                }
-                else if (directoryPattern.Contains("{Author}/"))
-                {
-                    directoryPattern = directoryPattern.Replace("{Author}/", "{Author}/{Series}/");
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(audiobook.Series))
-            {
-                directoryPattern = Regex.Replace(directoryPattern, @"\{Series[^}]*\}", string.Empty, RegexOptions.IgnoreCase);
-                directoryPattern = CleanDirectoryPattern(directoryPattern);
-            }
-
-            var variables = new Dictionary<string, object>
-            {
-                { "Author", SanitizeDirectoryName(audiobook.Authors?.FirstOrDefault() ?? "Unknown Author") },
-                { "Series", SanitizeDirectoryName(!string.IsNullOrWhiteSpace(audiobook.Series) ? audiobook.Series! : string.Empty) },
-                { "Title", SanitizeDirectoryName(audiobook.Title ?? "Unknown Title") },
-                { "Subtitle", SanitizeDirectoryName(audiobook.Subtitle ?? string.Empty) },
-                { "Edition", SanitizeDirectoryName(audiobook.Edition ?? string.Empty) },
-                { "Narrator", SanitizeDirectoryName((audiobook.Narrators != null && audiobook.Narrators.Any()) ? string.Join(", ", audiobook.Narrators.Where(n => !string.IsNullOrWhiteSpace(n))) : string.Empty) },
-                { "Publisher", SanitizeDirectoryName(audiobook.Publisher ?? string.Empty) },
-                { "Language", SanitizeDirectoryName(audiobook.Language ?? string.Empty) },
-                { "Asin", SanitizeDirectoryName(audiobook.Asin ?? string.Empty) },
-                { "SeriesNumber", audiobook.SeriesNumber ?? string.Empty },
-                { "Year", audiobook.PublishYear ?? string.Empty },
-                { "Quality", string.Empty },
-                { "DiskNumber", string.Empty },
-                { "ChapterNumber", string.Empty }
-            };
-
-            var relative = fileNamingService.ApplyNamingPattern(directoryPattern, variables, false);
-            return ResolvePathWithOptionalBase(rootPath, relative);
+            return AudiobookPathPlanner.ComputeBasePath(
+                audiobook,
+                rootPath,
+                fileNamingPattern,
+                fileNamingService);
         }
 
         public static string CalculateBasePath(List<string> filePaths, IFileSystem fileSystem, ILogger logger)
@@ -138,18 +87,6 @@ namespace Bookmarkarr.Api.Features.Library
             return commonPath;
         }
 
-        internal static string SanitizeDirectoryName(string name)
-        {
-            var invalidChars = Path.GetInvalidFileNameChars();
-            foreach (var c in invalidChars)
-            {
-                name = name.Replace(c, '_');
-            }
-
-            name = name.Replace(":", "_").Replace("*", "_").Replace("?", "_").Replace("\"", "_").Replace("<", "_").Replace(">", "_").Replace("|", "_");
-            return name.Trim();
-        }
-
         private static string GetCommonPath(List<string> paths, IFileSystem fileSystem)
         {
             if (!paths.Any())
@@ -191,16 +128,5 @@ namespace Bookmarkarr.Api.Features.Library
             return commonPath;
         }
 
-        private static string CleanDirectoryPattern(string pattern)
-        {
-            pattern = Regex.Replace(pattern, @"[\\/]\s*[\\/]", "/");
-            pattern = Regex.Replace(pattern, @"^\s*[\\/]", "");
-            return Regex.Replace(pattern, @"[\\/]\s*$", "");
-        }
-
-        private static string ResolvePathWithOptionalBase(string? basePath, string candidatePath)
-        {
-            return FileUtils.CombineWithOptionalBase(basePath, candidatePath);
-        }
     }
 }

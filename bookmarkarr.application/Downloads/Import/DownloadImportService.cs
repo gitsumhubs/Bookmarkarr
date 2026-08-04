@@ -16,6 +16,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 using Bookmarkarr.Domain.Common;
+using Bookmarkarr.Application.Common;
 using Microsoft.Extensions.Logging;
 
 namespace Bookmarkarr.Application.Downloads.Import
@@ -42,12 +43,25 @@ namespace Bookmarkarr.Application.Downloads.Import
                 return await ImportEbookFilesAsync(audiobook, files, options!, ct);
             }
 
-            if (string.IsNullOrEmpty(audiobook.BasePath))
-            {
-                throw new InvalidOperationException($"Audiobook {audiobook.Id} basePath cannot be empty or null");
-            }
-
             var settings = await configurationService.GetApplicationSettingsAsync();
+            if (string.IsNullOrWhiteSpace(audiobook.BasePath))
+            {
+                if (!AudiobookPathPlanner.TryResolveBasePath(
+                        audiobook,
+                        settings,
+                        fileNamingService,
+                        out var derivedBasePath))
+                {
+                    throw new InvalidOperationException(
+                        $"Audiobook {audiobook.Id} has no BasePath and no audiobook edition destination to derive one from");
+                }
+
+                audiobook.BasePath = derivedBasePath;
+                logger.LogWarning(
+                    "Audiobook {AudiobookId} had no BasePath; derived import destination {BasePath} from its audiobook edition",
+                    audiobook.Id,
+                    audiobook.BasePath);
+            }
 
             try
             {

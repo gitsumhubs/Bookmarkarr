@@ -17,5 +17,6 @@ internal static class AudiobookQueryExtensions
     public static IQueryable<Audiobook> IncludeEditionDetails(this IQueryable<Audiobook> query) =>
         query
             .Include(a => a.Editions).ThenInclude(e => e.Files)
-            .Include(a => a.Editions).ThenInclude(e => e.QualityProfile);
+            .Include(a => a.Editions).ThenInclude(e => e.QualityProfile)
+            .Include(a => a.Editions).ThenInclude(e => e.RootFolder);
 }

@@ -180,7 +180,8 @@ an ebook search only returns ebooks.
    the ebook edition, or both.
 
 Importing is **additive** and starts no searches. Nothing downloads until you press Search,
-or tick *search after import*. Your CSV isn't retained.
+or tick *search after import*. Your CSV isn't retained. Audiobook imports record their
+per-book destination from the selected root and folder naming pattern when they are created.
 
 ---
 
@@ -209,6 +210,11 @@ Management**.
 
 **Downloads finish but never import.** Almost always a path mismatch. Compare the path your
 client reports with Bookmarkarr's `/downloads` and add a remote path mapping if they differ.
+If Activity reports **Import Blocked** because an older book has no destination, restart the
+current Bookmarkarr release once. Startup repair derives the missing per-book path without
+overwriting custom paths, and the importer independently derives it from the audiobook
+edition if a legacy creation path ever omits it again. Retry the existing import; the files
+do not need to be downloaded again.
 
 **Bookmarkarr can't reach Prowlarr or the download client.** The URL has to resolve from
 *inside* the container — `localhost` only works if the service is in the same container.
@@ -237,6 +243,8 @@ qBittorrent/RDT are handled automatically when the outer path is mapped correctl
 - Strict server-side release filtering, so ebook searches never surface audiobooks
 - Separate file registries; mixed audio bundles route ebook sidecars to the ebook edition
 - Goodreads CSV upload, preview, match resolution, format selection, and additive commit
+- Shared audiobook destination planning across Goodreads creation, startup repair, previews,
+  bulk edits, and completed-download import
 - Prowlarr (including AudiobookBay), direct Newznab/Torznab, NZBGet, SABnzbd, qBittorrent,
   and RDT Client
 - Live Wanted status — Queued, Downloading, Import Pending, Import Blocked — matched to

@@ -37,6 +37,9 @@ public sealed class MediaDefaultsSeederTests : IAsyncLifetime
         var services = new ServiceCollection();
         services.AddDbContextFactory<BookmarkarrDbContext>(options =>
             options.UseSqlite($"Data Source={_databasePath};Pooling=False"));
+        services.AddLogging();
+        services.AddSingleton(Mock.Of<IConfigurationService>());
+        services.AddSingleton<IFileNamingService, FileNamingService>();
         _provider = services.BuildServiceProvider();
 
         using var scope = _provider.CreateScope();
@@ -277,6 +280,82 @@ public sealed class MediaDefaultsSeederTests : IAsyncLifetime
         await using var db = CreateContext();
         var untouched = await db.Audiobooks.SingleAsync(b => b.Id == bookId);
         Assert.Equal(deliberateProfileId, untouched.QualityProfileId);
+    }
+
+    [Fact]
+    public async Task BooksMissingBasePath_AreDerivedFromTheirAudiobookEditionRoot()
+    {
+        int bookId;
+        await using (var seed = CreateContext())
+        {
+            seed.ApplicationSettings.Add(new ApplicationSettings
+            {
+                FolderNamingPattern = "{Author}/{Series}/{Title}"
+            });
+            var book = new Audiobook
+            {
+                Title = "A Summoner Awakens: Origins: (A Deck Building LitRPG)",
+                Authors = ["Kerberos"],
+                Series = "A Summoner Awakens",
+                Editions = []
+            };
+            seed.Audiobooks.Add(book);
+            await seed.SaveChangesAsync();
+            bookId = book.Id;
+
+            seed.BookEditions.Add(new BookEdition
+            {
+                BookId = book.Id,
+                MediaType = EditionMediaType.Audiobook,
+                RootPath = _audiobookRoot
+            });
+            await seed.SaveChangesAsync();
+        }
+
+        await RunSeederAsync();
+
+        await using var db = CreateContext();
+        var repaired = await db.Audiobooks.SingleAsync(book => book.Id == bookId);
+        Assert.Equal(
+            Path.Join(
+                _audiobookRoot,
+                "Kerberos",
+                "A Summoner Awakens",
+                "A Summoner Awakens_ Origins_ (A Deck Building LitRPG)"),
+            repaired.BasePath);
+    }
+
+    [Fact]
+    public async Task BooksWithExistingBasePath_AreNotRepointed()
+    {
+        var customPath = Path.Join(_rootDirectory, "custom", "Keep This Path");
+        int bookId;
+        await using (var seed = CreateContext())
+        {
+            var book = new Audiobook
+            {
+                Title = "Configured Book",
+                Authors = ["Someone"],
+                BasePath = customPath,
+                Editions = []
+            };
+            seed.Audiobooks.Add(book);
+            await seed.SaveChangesAsync();
+            bookId = book.Id;
+            seed.BookEditions.Add(new BookEdition
+            {
+                BookId = book.Id,
+                MediaType = EditionMediaType.Audiobook,
+                RootPath = _audiobookRoot
+            });
+            await seed.SaveChangesAsync();
+        }
+
+        await RunSeederAsync();
+
+        await using var db = CreateContext();
+        var untouched = await db.Audiobooks.SingleAsync(book => book.Id == bookId);
+        Assert.Equal(customPath, untouched.BasePath);
     }
 
     [Fact]

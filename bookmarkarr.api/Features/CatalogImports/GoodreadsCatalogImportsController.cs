@@ -1,5 +1,6 @@
 /* Bookmarkarr is licensed under the GNU AGPL v3 or later. */
 using System.Text.Json;
+using Bookmarkarr.Application.Common;
 using Bookmarkarr.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,8 @@ public sealed class GoodreadsCatalogImportsController(
     GoodreadsCatalogImportAutoDownloadWorkflow autoDownloadWorkflow,
     IQualityProfileService qualityProfileService,
     IRootFolderService rootFolderService,
+    IConfigurationService configurationService,
+    IFileNamingService fileNamingService,
     ILogger<GoodreadsCatalogImportsController> logger) : ControllerBase
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
@@ -66,7 +69,10 @@ public sealed class GoodreadsCatalogImportsController(
 
         var storedRows = JsonSerializer.Deserialize<List<GoodreadsPreviewRow>>(batch.NormalizedRowsJson, JsonOptions) ?? [];
         var choices = (request.Rows ?? []).ToDictionary(r => r.RowId);
-        var books = await db.Audiobooks.Include(b => b.ExternalIdentifiers).Include(b => b.Editions).ToListAsync(ct);
+        var books = await db.Audiobooks
+            .Include(b => b.ExternalIdentifiers)
+            .Include(b => b.Editions).ThenInclude(e => e.RootFolder)
+            .ToListAsync(ct);
         var createdBooks = 0;
         var createdEditions = 0;
         var unchanged = 0;
@@ -85,6 +91,7 @@ public sealed class GoodreadsCatalogImportsController(
             [EditionMediaType.Audiobook] = await rootFolderService.GetDefaultAsync(EditionMediaType.Audiobook),
             [EditionMediaType.Ebook] = await rootFolderService.GetDefaultAsync(EditionMediaType.Ebook)
         };
+        var settings = await configurationService.GetApplicationSettingsAsync();
 
         foreach (var row in storedRows)
         {
@@ -164,6 +171,21 @@ public sealed class GoodreadsCatalogImportsController(
                     audiobookIdsToAutoDownload.Add(book.Id);
                 }
             }
+
+            // Books.BasePath remains the import boundary for inherited audiobook code.
+            // Set it from the same edition root and naming pattern used everywhere else,
+            // including when a matched legacy book gains its first audiobook edition.
+            if (media.Contains(EditionMediaType.Audiobook)
+                && string.IsNullOrWhiteSpace(book.BasePath)
+                && AudiobookPathPlanner.TryResolveBasePath(
+                    book,
+                    settings,
+                    fileNamingService,
+                    out var derivedBasePath))
+            {
+                book.BasePath = derivedBasePath;
+            }
+
             if (addedForBook == 0) unchanged++;
         }
 

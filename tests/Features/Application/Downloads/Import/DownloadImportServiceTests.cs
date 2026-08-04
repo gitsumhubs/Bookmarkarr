@@ -17,6 +17,7 @@
  */
 using Bookmarkarr.Tests.Common;
 using Bookmarkarr.Tests.Builders;
+using Bookmarkarr.Domain.Books;
 using System.Runtime.InteropServices;
 using System.IO.Compression;
 using Bookmarkarr.Tests.Mocks;
@@ -182,6 +183,47 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Import
             Assert.Single(results);
             Assert.False(results[0].Success);
             Assert.Empty(Directory.EnumerateFiles(ebookRoot, "*", SearchOption.AllDirectories));
+        }
+
+        [Fact]
+        public async Task AudiobookImport_MissingBasePath_DerivesDestinationFromEditionRoot()
+        {
+            var libraryRoot = FileService.GetTempDirectory("derived-library");
+            var sourceRoot = FileService.GetTempDirectory("derived-download");
+            var sourceFile = await FileService.GetFileAsync(sourceRoot, "release.mp3");
+            var audiobook = new AudiobookBuilder()
+                .WithTitle("Fallback: Title")
+                .WithAuthor("Fallback Author")
+                .WithSeries("Fallback Series")
+                .Build();
+            audiobook.Editions.Add(new BookEdition
+            {
+                MediaType = EditionMediaType.Audiobook,
+                RootPath = libraryRoot
+            });
+            await _audiobookRepository.AddAsync(audiobook);
+
+            await _applicationSettingsRepository.SaveAsync(new ApplicationSettingsBuilder()
+                .WithOutputPath(libraryRoot)
+                .WithCopyFileOnCompleted()
+                .WithoutMetadataProcessing()
+                .WithFolderNamingPattern("{Author}/{Series}/{Title}")
+                .WithFileNamingPattern("{Title}")
+                .Build());
+
+            var service = _provider.GetRequiredService<IDownloadImportService>();
+            var results = await service.ImportDownloadFilesAsync(audiobook, [sourceFile]);
+
+            var expectedBasePath = Path.Join(
+                libraryRoot,
+                "Fallback Author",
+                "Fallback Series",
+                "Fallback_ Title");
+            Assert.Equal(expectedBasePath, audiobook.BasePath);
+            var result = Assert.Single(results);
+            Assert.True(result.Success);
+            Assert.Equal(Path.Join(expectedBasePath, "Fallback - Title.mp3"), result.FinalPath);
+            Assert.True(File.Exists(result.FinalPath));
         }
 
         [Theory]

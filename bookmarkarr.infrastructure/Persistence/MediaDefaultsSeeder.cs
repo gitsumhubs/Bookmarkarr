@@ -57,6 +57,7 @@ namespace Bookmarkarr.Infrastructure.Persistence
             {
                 using var scope = _provider.CreateScope();
                 var factory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<BookmarkarrDbContext>>();
+                var fileNamingService = scope.ServiceProvider.GetRequiredService<IFileNamingService>();
                 await using var db = await factory.CreateDbContextAsync(cancellationToken);
 
                 // One transaction so a fresh install either gets a complete set of
@@ -70,7 +71,9 @@ namespace Bookmarkarr.Infrastructure.Persistence
                 // just added, and they need real keys before editions can point at them.
                 await db.SaveChangesAsync(cancellationToken);
 
-                await RepairEditionDefaultsAsync(db, cancellationToken);
+                var settings = await db.ApplicationSettings.AsNoTracking().FirstOrDefaultAsync(cancellationToken)
+                    ?? new ApplicationSettings();
+                await RepairEditionDefaultsAsync(db, settings, fileNamingService, cancellationToken);
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -251,7 +254,11 @@ namespace Bookmarkarr.Infrastructure.Persistence
         /// <summary>
         /// Backfills editions that were created before media-aware defaults existed.
         /// </summary>
-        private async Task RepairEditionDefaultsAsync(BookmarkarrDbContext db, CancellationToken ct)
+        private async Task RepairEditionDefaultsAsync(
+            BookmarkarrDbContext db,
+            ApplicationSettings settings,
+            IFileNamingService fileNamingService,
+            CancellationToken ct)
         {
             var editions = await db.BookEditions
                 .Where(edition => edition.QualityProfileId == null || edition.RootFolderId == null)
@@ -264,7 +271,15 @@ namespace Bookmarkarr.Infrastructure.Persistence
                 .Where(book => book.QualityProfileId == null)
                 .ToListAsync(ct);
 
-            if (editions.Count == 0 && booksMissingProfile.Count == 0)
+            var booksMissingBasePath = await db.Audiobooks
+                .Where(book => string.IsNullOrWhiteSpace(book.BasePath))
+                .Include(book => book.Editions)
+                .ThenInclude(edition => edition.RootFolder)
+                .ToListAsync(ct);
+
+            if (editions.Count == 0
+                && booksMissingProfile.Count == 0
+                && booksMissingBasePath.Count == 0)
             {
                 return;
             }
@@ -323,11 +338,25 @@ namespace Bookmarkarr.Infrastructure.Persistence
                 }
             }
 
-            if (repaired > 0 || booksRepaired > 0)
+            var pathsRepaired = 0;
+            foreach (var book in booksMissingBasePath)
+            {
+                if (AudiobookPathPlanner.TryResolveBasePath(
+                        book,
+                        settings,
+                        fileNamingService,
+                        out var derivedBasePath))
+                {
+                    book.BasePath = derivedBasePath;
+                    pathsRepaired++;
+                }
+            }
+
+            if (repaired > 0 || booksRepaired > 0 || pathsRepaired > 0)
             {
                 _logger.LogInformation(
-                    "MediaDefaultsSeeder: filled {EditionCount} edition and {BookCount} book profile/root assignment(s)",
-                    repaired, booksRepaired);
+                    "MediaDefaultsSeeder: filled {EditionCount} edition, {BookCount} book profile, and {BasePathCount} book path assignment(s)",
+                    repaired, booksRepaired, pathsRepaired);
             }
         }
 

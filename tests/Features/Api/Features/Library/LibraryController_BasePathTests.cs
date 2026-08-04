@@ -71,5 +71,30 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Library
             // Then
             Assert.Equal(Path.Join(RootPath, "Stephen King", "The Dark Tower", "The Gunslinger"), result);
         }
+
+        [Fact]
+        public void ComputeAudiobookBaseDirectoryFromPattern_MatchesExistingColonSanitization()
+        {
+            var audiobook = new AudiobookBuilder()
+                .WithTitle("A Summoner Awakens: Origins: (A Deck Building LitRPG)")
+                .WithAuthor("Kerberos")
+                .WithSeries("A Summoner Awakens")
+                .Build();
+            var fileNamingService = _provider.GetRequiredService<IFileNamingService>();
+
+            var result = LibraryPathPlanner.ComputeAudiobookBaseDirectoryFromPattern(
+                audiobook,
+                RootPath,
+                FileNamingPattern,
+                fileNamingService);
+
+            Assert.Equal(
+                Path.Join(
+                    RootPath,
+                    "Kerberos",
+                    "A Summoner Awakens",
+                    "A Summoner Awakens_ Origins_ (A Deck Building LitRPG)"),
+                result);
+        }
     }
 }

@@ -6,7 +6,9 @@ Bookmarkarr is a standalone full-source Listenarr 1.2.2 fork for managing audiob
 
 Normal operators deploy from the public `ghcr.io/gitsumhubs/bookmarkarr:latest` image with the standalone root `docker-compose.yml`. The file contains no build configuration and requires neither a source checkout nor `.env`; environment-variable overrides and external Docker networks remain optional. This private working tree preserves the existing `BOOKMARKARR_IMAGE` override used by the hosted local-image instance, while the exported public Compose pins GHCR directly.
 
-Library adds require either a configured root folder or an explicit destination. Empty and legacy application-directory output paths are never used for media storage. Download-client API compatibility maps a top-level category into `SettingsJson`, exposes category/download path on reads, accepts both POST upsert and `PUT /download-clients/{id}`, and preserves stored credentials when redacted placeholders are submitted. Goodreads commits now auto-queue audiobook downloads after the commit transaction when a default quality profile is available, and the Wanted view keeps active downloads visible through queued/downloading edition status plus queue-snapshot edition identity. Concurrent client queue polls resolve an isolated scoped gateway per client so EF Core contexts are not shared across parallel work.
+Library adds require either a configured root folder or an explicit destination. Empty and legacy application-directory output paths are never used for media storage. Download-client API compatibility maps a top-level category into `SettingsJson`, exposes category/download path on reads, accepts both POST upsert and `PUT /download-clients/{id}`, and preserves stored credentials when redacted placeholders are submitted. Goodreads commits are additive, create media-aware editions, record an audiobook's derived per-book `BasePath`, and only schedule searches when `searchAfterImport` is explicitly enabled. The Wanted view keeps active downloads visible through queued/downloading edition status plus queue-snapshot edition identity. Concurrent client queue polls resolve an isolated scoped gateway per client so EF Core contexts are not shared across parallel work.
+
+Audiobook destination derivation is centralized in `AudiobookPathPlanner`. It combines the audiobook edition's registered root with `ApplicationSettings.FolderNamingPattern`, recognizes edition rows that already contain a full per-book path, and preserves any existing custom `Books.BasePath`. Goodreads creation, library previews/bulk edits, startup repair, and completed-download import all use this derivation. This prevents legacy books with an empty `BasePath` from leaving completed files in `Import Blocked`.
 
 Appearance preferences are frontend-only and stored per browser in local storage. The canonical polished mark is `fe/public/bookmarkarr-logo.png`; the Bookmarkarr, Ocean, Forest, and Plum palettes and System/Light/Dark modes are implemented in `fe/src/services/appearance.ts` and `fe/src/styles/appearance.css`.
 
@@ -150,7 +152,7 @@ For host-published services, the root Compose file maps `host.docker.internal` t
 
 ## Database and Migration
 
-Runtime data is in `${BOOKMARKARR_CONFIG_PATH}/database/bookmarkarr.db`. EF migrations run at startup. Never edit a live SQLite file; back up the config directory first. The Listenarr migration is never automatic. Follow [docs/MIGRATION.md](docs/MIGRATION.md), complete a successful dry run, review its plan, and explicitly supply the generated confirmation token for commit.
+Runtime data is in `${BOOKMARKARR_CONFIG_PATH}/database/bookmarkarr.db`. EF migrations run at startup. `MediaDefaultsSeeder` also performs additive repairs for missing edition defaults, legacy book quality profiles, and missing audiobook `BasePath` values; it never replaces an existing path. Never edit a live SQLite file; back up the config directory first. The Listenarr migration is never automatic. Follow [docs/MIGRATION.md](docs/MIGRATION.md), complete a successful dry run, review its plan, and explicitly supply the generated confirmation token for commit.
 
 ## Verification
 
@@ -167,7 +169,7 @@ curl --fail http://localhost:3018/api/v1/system/ready
 
 Filesystem-mutating tests create unique paths below the operating system temporary directory. They must never require write access to a host-root media or mount path in local or CI runs.
 
-The download-client/root/add/queue regression group covers top-level category normalization, PUT upsert, download-path responses, rejection without a root, cleanup of persisted application-directory output, non-cyclic add DTOs, selected-root containment, Goodreads audiobook auto-download handoff, Wanted active-download state, and independent scopes for concurrent client polls.
+The download-client/root/add/queue regression group covers top-level category normalization, PUT upsert, download-path responses, rejection without a root, cleanup of persisted application-directory output, non-cyclic add DTOs, selected-root containment, opt-in Goodreads audiobook search handoff, Goodreads `BasePath` creation, startup path repair, resilient import derivation, Wanted active-download state, and independent scopes for concurrent client polls.
 
 ## Troubleshooting
 
@@ -188,6 +190,8 @@ Use a URL routable from inside the Bookmarkarr container. `localhost` points to 
 Ensure the download client and Bookmarkarr see the same download data through the configured mount or a remote path mapping. Check that audio files use recognized audio extensions and ebooks use recognized ebook extensions.
 
 For qBittorrent/RDT single-file torrents reported as `Book.m4b/Book.m4b` or `Book.epub/Book.epub`, map the outer download directory normally. Bookmarkarr resolves only the exact same-named nested media file, rejects reparse-point escape, and does not select unrelated sibling files. Exhausted imports can be safely queued again from the Activity UI or with authenticated `POST /api/v1/downloads/{id}/retry-import` after correcting the path or mount.
+
+Older database rows may have a populated audiobook edition root but an empty legacy `Books.BasePath`. On startup, Bookmarkarr derives the missing per-book path using the current folder naming pattern. Existing custom paths are never repointed. Completed-download import uses the same derivation as a fallback, so after upgrading, retry an `Import Blocked` job instead of downloading the release again.
 
 ### Port conflict
 

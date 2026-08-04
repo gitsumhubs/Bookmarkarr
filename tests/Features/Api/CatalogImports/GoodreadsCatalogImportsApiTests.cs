@@ -55,9 +55,12 @@ public sealed class GoodreadsCatalogImportsApiTests : IClassFixture<BookmarkarrW
                     }
                 }
             });
-        Assert.Equal(HttpStatusCode.OK, firstCommit.StatusCode);
+        var firstCommitBody = await firstCommit.Content.ReadAsStringAsync();
+        Assert.True(
+            firstCommit.StatusCode == HttpStatusCode.OK,
+            $"Goodreads commit failed: {(int)firstCommit.StatusCode} {firstCommitBody}");
 
-        using (var firstSummary = JsonDocument.Parse(await firstCommit.Content.ReadAsStringAsync()))
+        using (var firstSummary = JsonDocument.Parse(firstCommitBody))
         {
             // A plain import is additive: nothing is searched or grabbed until the user asks.
             Assert.Equal(0, firstSummary.RootElement.GetProperty("searchesScheduled").GetInt32());
@@ -74,6 +77,9 @@ public sealed class GoodreadsCatalogImportsApiTests : IClassFixture<BookmarkarrW
             Assert.True(ebookEdition.Monitored);
             Assert.Equal(2, imported.Editions.Count);
             Assert.Equal(0, await db.Downloads.CountAsync(download => download.AudiobookId == imported.Id));
+            Assert.Equal(
+                Path.Join(audiobookEdition.RootPath!, "API Author", "API Import Book"),
+                imported.BasePath);
 
             // An audiobook profile scores codecs and bitrates that mean nothing for an
             // ebook, so the ebook edition must never inherit the audiobook default.
