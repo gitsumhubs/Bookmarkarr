@@ -10,6 +10,8 @@ Library adds require either a configured root folder or an explicit destination.
 
 Audiobook destination derivation is centralized in `AudiobookPathPlanner`. It combines the audiobook edition's registered root with `ApplicationSettings.FolderNamingPattern`, recognizes edition rows that already contain a full per-book path, and preserves any existing custom `Books.BasePath`. Goodreads creation, library previews/bulk edits, startup repair, and completed-download import all use this derivation. This prevents legacy books with an empty `BasePath` from leaving completed files in `Import Blocked`.
 
+Library status reconciliation is explicit and dry-run-first at authenticated `POST /api/v1/library/status/reconcile?dryRun=true`. It compares edition file registrations and tracked blocked downloads with fresh per-client queue snapshots. A blocked download whose exact source is absent becomes terminal `SourceMissing` history and its edition returns to `Missing`; registered files take precedence and set the edition to `Imported`. Cached, stale, unavailable, and unknown client snapshots never clear a blocked state. Reconciliation with `dryRun=false` commits the reviewed plan, and a later snapshot containing the exact source restores `ImportBlocked`.
+
 Appearance preferences are frontend-only and stored per browser in local storage. The canonical polished mark is `fe/public/bookmarkarr-logo.png`; the Bookmarkarr, Ocean, Forest, and Plum palettes and System/Light/Dark modes are implemented in `fe/src/services/appearance.ts` and `fe/src/styles/appearance.css`.
 
 ## Tech Stack
@@ -169,7 +171,7 @@ curl --fail http://localhost:3018/api/v1/system/ready
 
 Filesystem-mutating tests create unique paths below the operating system temporary directory. They must never require write access to a host-root media or mount path in local or CI runs.
 
-The download-client/root/add/queue regression group covers top-level category normalization, PUT upsert, download-path responses, rejection without a root, cleanup of persisted application-directory output, non-cyclic add DTOs, selected-root containment, opt-in Goodreads audiobook search handoff, Goodreads `BasePath` creation, startup path repair, resilient import derivation, Wanted active-download state, and independent scopes for concurrent client polls.
+The download-client/root/add/queue regression group covers top-level category normalization, PUT upsert, download-path responses, rejection without a root, cleanup of persisted application-directory output, non-cyclic add DTOs, selected-root containment, opt-in Goodreads audiobook search handoff, Goodreads `BasePath` creation, startup path repair, resilient import derivation, Wanted active-download state, fresh-snapshot-only library status reconciliation, and independent scopes for concurrent client polls.
 
 ## Troubleshooting
 
@@ -192,6 +194,8 @@ Ensure the download client and Bookmarkarr see the same download data through th
 For qBittorrent/RDT single-file torrents reported as `Book.m4b/Book.m4b` or `Book.epub/Book.epub`, map the outer download directory normally. Bookmarkarr resolves only the exact same-named nested media file, rejects reparse-point escape, and does not select unrelated sibling files. Exhausted imports can be safely queued again from the Activity UI or with authenticated `POST /api/v1/downloads/{id}/retry-import` after correcting the path or mount.
 
 Older database rows may have a populated audiobook edition root but an empty legacy `Books.BasePath`. On startup, Bookmarkarr derives the missing per-book path using the current folder naming pattern. Existing custom paths are never repointed. Completed-download import uses the same derivation as a fallback, so after upgrading, retry an `Import Blocked` job instead of downloading the release again.
+
+If the source for a blocked import is no longer present in its download client, first run authenticated `POST /api/v1/library/status/reconcile?dryRun=true`. Only commit the reviewed result with `dryRun=false` when every relevant client reports a healthy live snapshot. The commit preserves the download as `SourceMissing` history and returns the edition to `Missing`; it does not delete or move media. If the response reports skipped unavailable downloads, restore client connectivity and rerun rather than changing the database manually.
 
 ### Port conflict
 

@@ -419,6 +419,7 @@ namespace Bookmarkarr.Application.Downloads.Queue
             DownloadStatus.ImportBlocked => "importblocked",
             DownloadStatus.Failed => "failed",
             DownloadStatus.Moved => "moved",
+            DownloadStatus.SourceMissing => "sourcemissing",
             _ => status.ToString().ToLowerInvariant()
         };
 

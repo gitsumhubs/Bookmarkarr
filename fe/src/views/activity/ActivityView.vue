@@ -451,6 +451,7 @@ const convertDownloadToQueueItem = (download: Download): QueueItem => {
     Ready: 'completed',
     ImportPending: 'importpending',
     ImportBlocked: 'importblocked',
+    SourceMissing: 'sourcemissing',
     Moved: 'imported',
     Failed: 'failed',
   }
@@ -671,6 +672,7 @@ const formatStatus = (status: string): string => {
     processing: 'Processing',
     importpending: 'Importing',
     importblocked: 'Import Blocked',
+    sourcemissing: 'Source Missing',
     imported: 'Imported',
   }
   return labels[status] ?? status.charAt(0).toUpperCase() + status.slice(1)
@@ -1090,6 +1092,11 @@ onUnmounted(() => {
 .status-badge.importblocked {
   background-color: rgba(250, 82, 82, 0.15);
   color: #fa5252;
+}
+
+.status-badge.sourcemissing {
+  background: rgba(156, 163, 175, 0.16);
+  color: var(--text-secondary);
 }
 
 .status-badge.imported {

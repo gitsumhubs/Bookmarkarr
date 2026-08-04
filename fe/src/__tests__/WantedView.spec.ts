@@ -137,6 +137,43 @@ describe('WantedView image recache behavior', () => {
     expect(vm.getStatusText({ id: 202 })).toBe('Import Blocked')
   })
 
+  it('treats SourceMissing history as terminal so the book is wanted again', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+
+    const libraryStore = useLibraryStore()
+    libraryStore.audiobooks = [
+      { id: 203, title: 'Missing Source Book', monitored: true, files: [] },
+    ] as unknown as ReturnType<typeof useLibraryStore>['audiobooks']
+    libraryStore.fetchLibrary = vi.fn(async () => undefined)
+
+    const downloadsStore = useDownloadsStore()
+    downloadsStore.downloads = [
+      {
+        id: 'd-source-missing',
+        title: 'Missing Source Book',
+        status: 'SourceMissing',
+        progress: 100,
+        totalSize: 1000,
+        downloadedSize: 1000,
+        audiobookId: 203,
+        startedAt: new Date().toISOString(),
+        metadata: {},
+      },
+    ] as ReturnType<typeof useDownloadsStore>['downloads']
+
+    const wrapper = mount(WantedView, { global: { plugins: [pinia] } })
+    await new Promise((r) => setTimeout(r, 10))
+
+    const vm = wrapper.vm as unknown as {
+      hasActiveDownload: (audiobook: { id: number }) => boolean
+      getStatusText: (audiobook: { id: number }) => string
+    }
+
+    expect(vm.hasActiveDownload({ id: 203 })).toBe(false)
+    expect(vm.getStatusText({ id: 203 })).toBe('Missing')
+  })
+
   it('renders the full wanted list without virtualization on mobile', async () => {
     const pinia = createPinia()
     setActivePinia(pinia)

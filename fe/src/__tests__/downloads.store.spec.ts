@@ -190,4 +190,40 @@ describe('downloads store queue snapshot reconciliation', () => {
     expect(store.downloads[0]?.audiobookId).toBe(44)
     expect(store.downloads[0]?.editionId).toBe(12)
   })
+
+  it('surfaces SourceMissing history as a terminal activity item', async () => {
+    vi.doMock('@/services/signalr', () => ({
+      signalRService: {
+        onDownloadUpdate: vi.fn(() => () => undefined),
+        onDownloadsList: vi.fn(() => () => undefined),
+        onQueueUpdate: vi.fn(() => () => undefined),
+        onAudiobookUpdate: vi.fn(() => () => undefined),
+      },
+    }))
+
+    vi.doMock('@/services/api', () => ({
+      apiService: {
+        getDownloads: vi.fn(async () => [
+          {
+            id: 'missing-source',
+            title: 'Gone From Client',
+            status: 'SourceMissing',
+            progress: 100,
+            totalSize: 1000,
+            downloadedSize: 1000,
+            downloadClientId: 'client-1',
+            metadata: {},
+          },
+        ]),
+      },
+    }))
+
+    const { useDownloadsStore } = await import('@/stores/downloads')
+    const store = useDownloadsStore()
+    await store.loadDownloads()
+
+    expect(store.downloads[0]?.status).toBe('SourceMissing')
+    expect(store.activeDownloads).toHaveLength(0)
+    expect(store.failedDownloads.map((download) => download.id)).toEqual(['missing-source'])
+  })
 })

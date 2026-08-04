@@ -361,7 +361,7 @@ describe('ActivityView', () => {
     expect(downloadsStore.loadDownloads).toHaveBeenCalled()
   })
 
-  it('maps ImportPending and ImportBlocked downloads to activity rows', async () => {
+  it('maps import lifecycle downloads to activity rows', async () => {
     mockSignalR()
     mockApi()
     mockConfigurationStore(false)
@@ -390,6 +390,16 @@ describe('ActivityView', () => {
           downloadClientId: 'qbittorrent',
           startedAt: new Date().toISOString(),
         },
+        {
+          id: 'd-sourcemissing',
+          title: 'Source Missing',
+          status: 'SourceMissing',
+          progress: 100,
+          totalSize: 1000,
+          downloadedSize: 1000,
+          downloadClientId: 'qbittorrent',
+          startedAt: new Date().toISOString(),
+        },
       ],
     })
 
@@ -401,6 +411,9 @@ describe('ActivityView', () => {
     )
     expect(vm.allActivityItems.find((item) => item.id === 'd-importblocked')?.status).toBe(
       'importblocked',
+    )
+    expect(vm.allActivityItems.find((item) => item.id === 'd-sourcemissing')?.status).toBe(
+      'sourcemissing',
     )
   })
 

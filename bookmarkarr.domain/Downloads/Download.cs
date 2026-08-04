@@ -33,7 +33,12 @@ namespace Bookmarkarr.Domain.Downloads
         Ready,
         Moved,           // Added to track completed moves
         ImportBlocked,   // Added: Block re-processing of bad imports
-        ImportPending    // Added: Explicitly waiting on import completion/manual interaction
+        ImportPending,   // Added: Explicitly waiting on import completion/manual interaction
+        /// <summary>
+        /// Import history remains, but the completed payload is no longer exposed by its
+        /// download client. This is terminal until reconciliation sees the source again.
+        /// </summary>
+        SourceMissing
     }
 
     public class Download
@@ -278,7 +283,8 @@ namespace Bookmarkarr.Domain.Downloads
                 DownloadStatus.ImportBlocked => Status is DownloadStatus.ImportPending
                     or DownloadStatus.Processing
                     or DownloadStatus.Completed
-                    or DownloadStatus.Downloading,
+                    or DownloadStatus.Downloading
+                    or DownloadStatus.SourceMissing,
 
                 DownloadStatus.Moved => Status is DownloadStatus.ImportPending
                     or DownloadStatus.Completed

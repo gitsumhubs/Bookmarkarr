@@ -403,7 +403,7 @@ watch(
 )
 
 // Work is finished for these; the row should fall through to its library state.
-const TERMINAL_DOWNLOAD_STATES = ['Completed', 'Moved']
+const TERMINAL_DOWNLOAD_STATES = ['Completed', 'Moved', 'SourceMissing']
 
 // Still in flight from the user's point of view, including the post-transfer stages.
 const ACTIVE_DOWNLOAD_STATES = [
@@ -475,11 +475,6 @@ function getDownloadForItem(item: WantedItem): Download | undefined {
 function hasActiveDownload(item: WantedItem): boolean {
   const download = getDownloadForItem(item)
   return !!download && ACTIVE_DOWNLOAD_STATES.includes(download.status)
-}
-
-function getActiveDownload(item: WantedItem): Download | undefined {
-  const download = getDownloadForItem(item)
-  return download && ACTIVE_DOWNLOAD_STATES.includes(download.status) ? download : undefined
 }
 
 function getStatusClass(item: WantedItem): string {

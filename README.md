@@ -216,6 +216,15 @@ overwriting custom paths, and the importer independently derives it from the aud
 edition if a legacy creation path ever omits it again. Retry the existing import; the files
 do not need to be downloaded again.
 
+**A book still says "Import Blocked," but its completed download is gone.** Import Blocked
+means Bookmarkarr knows the download completed but could not place any files in the library.
+Use authenticated `POST /api/v1/library/status/reconcile?dryRun=true` to compare these rows
+with registered files and fresh download-client snapshots. Review the result, then repeat
+with `dryRun=false`. An absent source becomes terminal `Source Missing` history and its
+edition returns to **Missing**, making it eligible to search again. Bookmarkarr never clears
+the blocked state from a cached, stale, unavailable, or unknown client snapshot; if the
+source later reappears, reconciliation restores **Import Blocked** so it can be retried.
+
 **Bookmarkarr can't reach Prowlarr or the download client.** The URL has to resolve from
 *inside* the container — `localhost` only works if the service is in the same container.
 If you're addressing services by name, see
@@ -249,6 +258,8 @@ qBittorrent/RDT are handled automatically when the outer path is mapped correctl
   and RDT Client
 - Live Wanted status — Queued, Downloading, Import Pending, Import Blocked — matched to
   downloads by stable edition ID
+- Dry-run-first library status reconciliation that distinguishes a blocked import from a
+  completed source that no longer exists in its download client
 - Bulk import of existing audiobook and ebook libraries already on disk
 - Read-only-source, dry-run-first, transactional Listenarr migration utility
 - Responsive UI, history, notifications, backups, and multi-arch release automation
