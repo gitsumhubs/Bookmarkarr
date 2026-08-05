@@ -42,6 +42,19 @@ namespace Bookmarkarr.Infrastructure.Persistence
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
+        /// <summary>
+        /// Foreign-language editions a default English-preferring install almost never wants,
+        /// and which indexers return in volume for popular titles. Seeded as an instant reject
+        /// so a fresh deployment does not silently grab them; removing a word in
+        /// Settings &gt; Quality Profiles is the deliberate opt-in.
+        /// </summary>
+        /// <remarks>
+        /// These match as case-insensitive substrings of the release title, so an
+        /// English-language title that happens to name a language is rejected too. That is the
+        /// intended trade: a missed grab is visible and recoverable, an unwanted one is not.
+        /// </remarks>
+        internal static readonly string[] DefaultBlockedLanguageWords = ["hindi", "arabic", "spanish"];
+
         private static string AudiobookRoot =>
             Environment.GetEnvironmentVariable("BOOKMARKARR_AUDIOBOOK_ROOT") ?? "/audiobooks";
 
@@ -144,6 +157,7 @@ namespace Bookmarkarr.Infrastructure.Persistence
             // install is not silently rejecting perfectly good releases.
             PreferredFormats = ["m4b", "mp3", "m4a", "flac", "opus", "ogg"],
             PreferredLanguages = ["English"],
+            MustNotContain = [.. DefaultBlockedLanguageWords],
             MinimumSize = 0,
             MaximumSize = 0,
             MaximumAge = 0,
@@ -176,6 +190,7 @@ namespace Bookmarkarr.Infrastructure.Persistence
             // the least reflowable.
             PreferredFormats = ["epub", "azw3", "mobi", "pdf"],
             PreferredLanguages = ["English"],
+            MustNotContain = [.. DefaultBlockedLanguageWords],
             MinimumSize = 0,
             MaximumSize = 0,
             MaximumAge = 0,

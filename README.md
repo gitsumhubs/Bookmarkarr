@@ -78,7 +78,14 @@ Bookmarkarr creates these on first start, **only if missing**:
 - Library roots for `/audiobooks` and `/ebooks`
 - Staging folders `/downloads/audiobooks` and `/downloads/ebooks`
 
-Nothing you've configured is overwritten. If something looks missing, check
+Both default profiles ship with `hindi`, `arabic`, and `spanish` in **Must Not Contain**, so a
+new install does not silently grab foreign-language editions of popular titles. This is a
+case-insensitive substring match on the release title, so an English release whose title names
+one of those languages is rejected too. Remove a word in **Settings → Quality Profiles** to
+allow it — the block is deliberately opt-out rather than opt-in.
+
+Nothing you've configured is overwritten, and this includes the blocklist: profiles that
+already exist are never given these words on upgrade. If something looks missing, check
 `docker logs bookmarkarr` for mount warnings.
 
 ---

@@ -32,8 +32,8 @@
         class="security-warning-dismiss"
         type="button"
         @click="dismissSecurityWarning"
-        aria-label="Dismiss security warning"
-        title="Dismiss"
+        aria-label="Dismiss security warning permanently on this browser"
+        title="Dismiss permanently. Restore it in Settings > Authentication."
       >
         <PhX />
       </button>
@@ -597,6 +597,7 @@ import {
   SECURITY_WARNING_BANNER_PREF_EVENT,
   SECURITY_WARNING_BANNER_PREF_KEY,
   getSecurityWarningBannerHiddenPreference,
+  setSecurityWarningBannerHiddenPreference,
 } from '@/utils/securityWarningBannerPreference'
 
 const STARTUP_CONFIG_UPDATED_EVENT = 'bookmarkarr-startup-config-updated'
@@ -1419,6 +1420,10 @@ const showSecurityWarningBanner = computed(
 
 const dismissSecurityWarning = () => {
   securityWarningDismissed.value = true
+  // Closing the banner is a permanent decision on this browser. Re-warning every reload
+  // trains people to dismiss without reading; Settings > Authentication brings it back.
+  securityWarningPermanentlyHidden.value = true
+  setSecurityWarningBannerHiddenPreference(true)
 }
 
 const appShellCssVars = computed(() => {

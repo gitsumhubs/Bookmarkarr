@@ -154,7 +154,7 @@ For host-published services, the root Compose file maps `host.docker.internal` t
 
 ## Database and Migration
 
-Runtime data is in `${BOOKMARKARR_CONFIG_PATH}/database/bookmarkarr.db`. EF migrations run at startup. `MediaDefaultsSeeder` also performs additive repairs for missing edition defaults, legacy book quality profiles, and missing audiobook `BasePath` values; it never replaces an existing path. Never edit a live SQLite file; back up the config directory first. The Listenarr migration is never automatic. Follow [docs/MIGRATION.md](docs/MIGRATION.md), complete a successful dry run, review its plan, and explicitly supply the generated confirmation token for commit.
+Runtime data is in `${BOOKMARKARR_CONFIG_PATH}/database/bookmarkarr.db`. EF migrations run at startup. `MediaDefaultsSeeder` also performs additive repairs for missing edition defaults, legacy book quality profiles, and missing audiobook `BasePath` values; it never replaces an existing path. Seeded default quality profiles carry `MustNotContain = ["hindi", "arabic", "spanish"]` so a fresh deployment rejects foreign-language editions until an operator removes a word; existing profiles are never modified on upgrade. The words match as case-insensitive substrings of the release title. Never edit a live SQLite file; back up the config directory first. The Listenarr migration is never automatic. Follow [docs/MIGRATION.md](docs/MIGRATION.md), complete a successful dry run, review its plan, and explicitly supply the generated confirmation token for commit.
 
 ## Verification
 

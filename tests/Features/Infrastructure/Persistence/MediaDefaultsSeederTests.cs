@@ -102,6 +102,65 @@ public sealed class MediaDefaultsSeederTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task SeededProfiles_BlockForeignLanguageEditionsByDefault()
+    {
+        await RunSeederAsync();
+
+        await using var db = CreateContext();
+        var profiles = await db.QualityProfiles.ToListAsync();
+
+        Assert.Equal(2, profiles.Count);
+        Assert.All(profiles, profile =>
+        {
+            Assert.Contains("hindi", profile.MustNotContain);
+            Assert.Contains("arabic", profile.MustNotContain);
+            Assert.Contains("spanish", profile.MustNotContain);
+        });
+    }
+
+    [Fact]
+    public async Task SeededBlocklist_RejectsAMatchingRelease()
+    {
+        await RunSeederAsync();
+
+        await using var db = CreateContext();
+        var profile = await db.QualityProfiles.FirstAsync(p => p.MediaType == EditionMediaType.Audiobook);
+        var scorer = new SearchResultScorer(null, NullLogger<SearchResultScorer>.Instance);
+
+        var blocked = await scorer.Score(
+            new SearchResult { Title = "Some Book [Hindi] AUDIOBOOK", Seeders = 10 },
+            profile);
+        var kept = await scorer.Score(
+            new SearchResult { Title = "Some Book AUDIOBOOK", Seeders = 10 },
+            profile);
+
+        Assert.True(blocked.IsRejected);
+        Assert.Contains(blocked.RejectionReasons, reason => reason.Contains("hindi", StringComparison.OrdinalIgnoreCase));
+        Assert.False(kept.IsRejected);
+    }
+
+    [Fact]
+    public async Task ExistingProfiles_DoNotGainTheBlocklistOnUpgrade()
+    {
+        await using (var seed = CreateContext())
+        {
+            seed.QualityProfiles.Add(new QualityProfile
+            {
+                Name = "My Audiobook Profile",
+                MediaType = EditionMediaType.Audiobook,
+                IsDefault = true
+            });
+            await seed.SaveChangesAsync();
+        }
+
+        await RunSeederAsync();
+
+        await using var db = CreateContext();
+        var existing = await db.QualityProfiles.SingleAsync(p => p.Name == "My Audiobook Profile");
+        Assert.Empty(existing.MustNotContain);
+    }
+
+    [Fact]
     public async Task RunningTwice_IsIdempotent()
     {
         await RunSeederAsync();
