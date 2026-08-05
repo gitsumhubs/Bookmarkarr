@@ -224,8 +224,17 @@ with `dryRun=false`. An absent source becomes terminal `Source Missing` history 
 edition returns to **Missing**, making it eligible to search again. Bookmarkarr never clears
 the blocked state from a cached, stale, unavailable, or unknown client snapshot; if the
 source later reappears, reconciliation restores **Import Blocked** so it can be retried.
-Completed and import-pending handoff rows on an already blocked edition are checked too, so
-stale terminal rows cannot keep it blocked after every exact client source has disappeared.
+Completed, ready, and import-pending handoff rows are checked whatever the edition currently
+reads, so stale terminal rows cannot keep it blocked after every exact client source has
+disappeared.
+
+**A book sits on "Downloading" forever and is never searched again.** A completed handoff
+whose source has vanished from its client still counts as an *active* download, and an active
+download suppresses automatic search for that book indefinitely. The same reconciliation
+clears it: the absent handoff becomes `Source Missing` history and the edition falls back to
+**Missing**, so automatic search picks it up on the next pass. A handoff the client still
+exposes is left strictly alone, and an edition whose import is genuinely in flight keeps its
+live status instead of being claimed as **Imported** underneath the running import.
 
 **Bookmarkarr can't reach Prowlarr or the download client.** The URL has to resolve from
 *inside* the container — `localhost` only works if the service is in the same container.

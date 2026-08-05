@@ -47,7 +47,7 @@ public sealed class LibraryStatusReconciliationWorkflow(
                     .Where(download => BelongsToEdition(download, edition))
                     .ToList();
                 var sourceStateDownloads = relatedDownloads
-                    .Where(download => ShouldReconcileSourceState(download.Status, edition.Status))
+                    .Where(download => ShouldReconcileSourceState(download.Status))
                     .ToList();
                 var editionMarkedSourceMissing = 0;
                 var editionRestoredBlocked = 0;
@@ -84,7 +84,8 @@ public sealed class LibraryStatusReconciliationWorkflow(
                     book,
                     edition,
                     relatedDownloads,
-                    plannedDownloadStatuses);
+                    plannedDownloadStatuses,
+                    liveQueueDownloadIds);
 
                 if (desiredEditionStatus != originalEditionStatus)
                 {
@@ -175,29 +176,22 @@ public sealed class LibraryStatusReconciliationWorkflow(
             download.AudiobookId == edition.BookId;
     }
 
-    private static bool ShouldReconcileSourceState(
-        DownloadStatus downloadStatus,
-        EditionWantedStatus editionStatus)
-    {
-        if (downloadStatus is DownloadStatus.ImportBlocked or DownloadStatus.SourceMissing)
-        {
-            return true;
-        }
-
-        // A prior blocked attempt can leave a newer terminal handoff row behind. If that
-        // completed/import-pending source is also absent, it must not keep the edition
-        // pinned to ImportBlocked after the older blocked rows are reconciled.
-        return editionStatus == EditionWantedStatus.ImportBlocked && downloadStatus is
-            DownloadStatus.Completed or
-            DownloadStatus.Ready or
-            DownloadStatus.ImportPending;
-    }
+    private static bool ShouldReconcileSourceState(DownloadStatus downloadStatus) => downloadStatus is
+        DownloadStatus.ImportBlocked or
+        DownloadStatus.SourceMissing or
+        // A completed handoff whose source has vanished never imports on its own, whatever
+        // the edition currently reads. Left behind it counts as an active download, which
+        // pins the edition to Downloading and suppresses automatic search indefinitely.
+        DownloadStatus.Completed or
+        DownloadStatus.Ready or
+        DownloadStatus.ImportPending;
 
     private static EditionWantedStatus ResolveEditionStatus(
         Audiobook book,
         BookEdition edition,
         IReadOnlyCollection<Download> relatedDownloads,
-        IReadOnlyDictionary<string, DownloadStatus> plannedDownloadStatuses)
+        IReadOnlyDictionary<string, DownloadStatus> plannedDownloadStatuses,
+        IReadOnlySet<string> liveQueueDownloadIds)
     {
         if (!edition.Monitored)
         {
@@ -208,7 +202,13 @@ public sealed class LibraryStatusReconciliationWorkflow(
             (edition.MediaType == EditionMediaType.Audiobook && book.Files?.Count > 0);
         if (hasFiles)
         {
-            return EditionWantedStatus.Imported;
+            // An import the client is still exposing owns the edition status until it lands.
+            // Claiming Imported underneath it only fights DownloadService, which mirrors the
+            // in-flight download straight back onto the edition.
+            var hasLiveImport = relatedDownloads.Any(download =>
+                liveQueueDownloadIds.Contains(download.Id) &&
+                IsInFlight(plannedDownloadStatuses.GetValueOrDefault(download.Id, download.Status)));
+            return hasLiveImport ? edition.Status : EditionWantedStatus.Imported;
         }
 
         var effectiveStatuses = relatedDownloads
@@ -224,7 +224,13 @@ public sealed class LibraryStatusReconciliationWorkflow(
             return edition.Status;
         }
 
-        return edition.Status is EditionWantedStatus.ImportBlocked or EditionWantedStatus.Imported
+        // Nothing is in flight and nothing landed, so any state implying otherwise is stale.
+        // Wanted states must fall back to Missing or the edition is never searched again.
+        return edition.Status is
+            EditionWantedStatus.ImportBlocked or
+            EditionWantedStatus.Imported or
+            EditionWantedStatus.Downloading or
+            EditionWantedStatus.Queued
             ? EditionWantedStatus.Missing
             : edition.Status;
     }

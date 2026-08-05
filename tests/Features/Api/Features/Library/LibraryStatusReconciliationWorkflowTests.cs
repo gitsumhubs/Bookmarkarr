@@ -119,6 +119,81 @@ public sealed class LibraryStatusReconciliationWorkflowTests
         Assert.Equal(EditionWantedStatus.Imported, edition.Status);
     }
 
+    [Theory]
+    [InlineData(DownloadStatus.ImportPending)]
+    [InlineData(DownloadStatus.Completed)]
+    [InlineData(DownloadStatus.Ready)]
+    public async Task Commit_ClearsAbsentHandoffThatWouldSuppressAutomaticSearch(DownloadStatus status)
+    {
+        await using var db = CreateDb();
+        var (book, edition) = await SeedBookAsync(db, EditionWantedStatus.Downloading);
+        var download = await SeedDownloadAsync(db, book, edition, status);
+
+        var result = await CreateWorkflow(db, LiveSnapshot()).ReconcileAsync(dryRun: false);
+
+        Assert.Equal(1, result.DownloadsMarkedSourceMissing);
+        Assert.Equal(DownloadStatus.SourceMissing, download.Status);
+        Assert.Equal(EditionWantedStatus.Missing, edition.Status);
+    }
+
+    [Fact]
+    public async Task Commit_LeavesHandoffAloneWhileClientStillExposesTheSource()
+    {
+        await using var db = CreateDb();
+        var (book, edition) = await SeedBookAsync(db, EditionWantedStatus.Downloading);
+        var download = await SeedDownloadAsync(db, book, edition, DownloadStatus.ImportPending);
+
+        var result = await CreateWorkflow(db, LiveSnapshot(download.Id)).ReconcileAsync(dryRun: false);
+
+        Assert.Equal(0, result.DownloadsMarkedSourceMissing);
+        Assert.Equal(DownloadStatus.ImportPending, download.Status);
+        Assert.Equal(EditionWantedStatus.Downloading, edition.Status);
+    }
+
+    [Fact]
+    public async Task Commit_DoesNotClaimImportedWhileALiveImportIsStillRunning()
+    {
+        await using var db = CreateDb();
+        var (book, edition) = await SeedBookAsync(db, EditionWantedStatus.Downloading);
+        var download = await SeedDownloadAsync(db, book, edition, DownloadStatus.ImportPending);
+        edition.Files.Add(new EditionFile
+        {
+            Path = $"/library/{Guid.NewGuid():N}.m4b",
+            Extension = ".m4b",
+            Size = 42,
+        });
+        await db.SaveChangesAsync();
+
+        var result = await CreateWorkflow(db, LiveSnapshot(download.Id)).ReconcileAsync(dryRun: false);
+
+        // Reconciliation must stay idempotent against DownloadService, which mirrors the
+        // live ImportPending row back onto the edition as Downloading after every write.
+        Assert.Equal(0, result.EditionsMarkedImported);
+        Assert.Equal(EditionWantedStatus.Downloading, edition.Status);
+        Assert.Equal(DownloadStatus.ImportPending, download.Status);
+    }
+
+    [Fact]
+    public async Task Commit_MarksImportedOnceTheStaleImportIsSweptAway()
+    {
+        await using var db = CreateDb();
+        var (book, edition) = await SeedBookAsync(db, EditionWantedStatus.Downloading);
+        var download = await SeedDownloadAsync(db, book, edition, DownloadStatus.ImportPending);
+        edition.Files.Add(new EditionFile
+        {
+            Path = $"/library/{Guid.NewGuid():N}.m4b",
+            Extension = ".m4b",
+            Size = 42,
+        });
+        await db.SaveChangesAsync();
+
+        var result = await CreateWorkflow(db, LiveSnapshot()).ReconcileAsync(dryRun: false);
+
+        Assert.Equal(1, result.EditionsMarkedImported);
+        Assert.Equal(EditionWantedStatus.Imported, edition.Status);
+        Assert.Equal(DownloadStatus.SourceMissing, download.Status);
+    }
+
     [Fact]
     public async Task Commit_LegacyDownloadOnlyBlocksAudiobookEdition()
     {
