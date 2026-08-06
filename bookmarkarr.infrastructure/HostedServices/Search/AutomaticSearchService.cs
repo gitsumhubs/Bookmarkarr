@@ -16,6 +16,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using Bookmarkarr.Application.Audiobooks.Matching;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -75,6 +76,13 @@ namespace Bookmarkarr.Infrastructure.HostedServices.Search
             var searchService = scope.ServiceProvider.GetRequiredService<ISearchService>();
             var qualityProfileService = scope.ServiceProvider.GetRequiredService<IQualityProfileService>();
             var downloadService = scope.ServiceProvider.GetRequiredService<IDownloadService>();
+            var configurationService = scope.ServiceProvider.GetRequiredService<IConfigurationService>();
+            var fileSystem = scope.ServiceProvider.GetRequiredService<IFileSystem>();
+            var fileNamingService = scope.ServiceProvider.GetRequiredService<IFileNamingService>();
+            var blocklistService = scope.ServiceProvider.GetRequiredService<IBlocklistService>();
+
+            var settings = await configurationService.GetApplicationSettingsAsync();
+            var presenceInspector = new LibraryPresenceInspector(fileSystem, fileNamingService, _logger);
 
             // Get all monitored audiobooks that haven't been searched in the last 6 hours
             var cutoffTime = DateTime.UtcNow.AddHours(-6);
@@ -99,7 +107,8 @@ namespace Bookmarkarr.Infrastructure.HostedServices.Search
                 try
                 {
                     var downloadsQueuedForBook = await ProcessAudiobookAsync(
-                        audiobook, searchService, qualityProfileService, downloadService, audiobookRepository, downloadRepository, fileRepository, stoppingToken);
+                        audiobook, searchService, qualityProfileService, downloadService, audiobookRepository, downloadRepository, fileRepository,
+                        presenceInspector, settings, blocklistService, stoppingToken);
 
                     downloadsQueued += downloadsQueuedForBook;
                     processedCount++;
@@ -137,6 +146,9 @@ namespace Bookmarkarr.Infrastructure.HostedServices.Search
             IAudiobookRepository audiobookRepository,
             IDownloadRepository downloadRepository,
             IAudiobookFileRepository fileRepository,
+            LibraryPresenceInspector presenceInspector,
+            ApplicationSettings settings,
+            IBlocklistService blocklistService,
             CancellationToken stoppingToken)
         {
             if (audiobook.QualityProfile == null)
@@ -162,10 +174,33 @@ namespace Bookmarkarr.Infrastructure.HostedServices.Search
                 return 0;
             }
 
+            // Ask the filesystem, not just the database. A book whose files were imported before it
+            // was tracked, or whose import failed after the bytes landed, has no file rows at all —
+            // and a row-only check reads that as "missing" and grabs it again.
+            var diskPresence = presenceInspector.Inspect(audiobook, settings);
+            if (diskPresence.HasFiles)
+            {
+                _logger.LogInformation(
+                    "Audiobook '{Title}' already has {FileCount} audio file(s) on disk at {BasePath} (quality: {Quality})",
+                    audiobook.Title, diskPresence.AudioFileCount, diskPresence.BasePath, diskPresence.BestQuality ?? "unrecognised");
+            }
+
             // Check existing quality and decide whether to search
-            var (cutoffMet, bestExistingQuality) = await _qualityEvaluator.GetExistingQualityAsync(audiobook, downloadRepository, fileRepository, stoppingToken);
+            var (cutoffMet, bestExistingQuality) = await _qualityEvaluator.GetExistingQualityAsync(
+                audiobook, downloadRepository, fileRepository, diskPresence, stoppingToken);
             _logger.LogInformation("Audiobook '{Title}': cutoff met={CutoffMet}, best existing quality={BestQuality}",
                 audiobook.Title, cutoffMet, bestExistingQuality ?? "none");
+
+            // Files are present but none of them map to a rung in the profile, so there is no
+            // quality to compare a candidate against. Grabbing here would duplicate what is already
+            // on disk; the fix is to scan those files in, not to download the book twice.
+            if (diskPresence.HasFiles && string.IsNullOrEmpty(bestExistingQuality))
+            {
+                _logger.LogWarning(
+                    "Skipping automatic search for '{Title}': {FileCount} audio file(s) exist at {BasePath} but match no quality rung in profile '{Profile}'. Run a library scan so these files are tracked and can be evaluated for upgrades.",
+                    audiobook.Title, diskPresence.AudioFileCount, diskPresence.BasePath, audiobook.QualityProfile.Name);
+                return 0;
+            }
 
             // Skip automatic search if quality cutoff is already met
             if (cutoffMet)
@@ -256,14 +291,35 @@ namespace Bookmarkarr.Infrastructure.HostedServices.Search
                 }
             }
 
-            var topResult = scoredResults
-                .Where(s => !s.IsRejected) // Only non-rejected results
+            // Releases that already failed to download repeatedly are skipped rather than grabbed
+            // again. Selection then falls through to the next best candidate, which is what makes
+            // the library keep progressing instead of retrying one bad release forever.
+            var blocklist = await blocklistService.GetForAudiobookAsync(audiobook.Id, stoppingToken);
+
+            var eligibleResults = scoredResults
+                .Where(s => !s.IsRejected)
+                .Where(s => !IsBlocklisted(blocklist, s.SearchResult))
                 .OrderByDescending(s => s.TotalScore)
-                .FirstOrDefault(); // Pick only the top scoring result
+                .ToList();
+
+            var blocklistedCount = scoredResults.Count(s => !s.IsRejected) - eligibleResults.Count;
+            if (blocklistedCount > 0)
+            {
+                _logger.LogInformation(
+                    "Skipped {BlocklistedCount} blocklisted release(s) for audiobook '{Title}'",
+                    blocklistedCount, audiobook.Title);
+            }
+
+            var topResult = eligibleResults.FirstOrDefault(); // Pick only the top scoring result
 
             if (topResult == null)
             {
-                _logger.LogInformation("No acceptable search results found for audiobook '{Title}' after quality filtering", audiobook.Title);
+                // Exhausted: every acceptable release for this book is blocklisted, so there is
+                // nothing left to try until the blocklist is cleared or a new release appears.
+                _logger.LogInformation(
+                    "No acceptable search results found for audiobook '{Title}' after quality filtering{BlocklistNote}",
+                    audiobook.Title,
+                    blocklistedCount > 0 ? $" ({blocklistedCount} blocklisted)" : string.Empty);
                 return 0;
             }
 
@@ -320,5 +376,7 @@ namespace Bookmarkarr.Infrastructure.HostedServices.Search
             return downloadsQueued;
         }
 
+        private static bool IsBlocklisted(IReadOnlyList<BlocklistEntry> blocklist, SearchResult result) =>
+            blocklist.Any(entry => entry.Matches(result.Id, result.IndexerId, result.Title, result.Size));
     }
 }

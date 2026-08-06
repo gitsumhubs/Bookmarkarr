@@ -24,10 +24,15 @@ namespace Bookmarkarr.Infrastructure.HostedServices.Search
 {
     internal sealed class AutomaticSearchQualityEvaluator(ILogger logger)
     {
+        /// <param name="diskPresence">
+        /// What the book's destination directory actually holds. Passed in rather than looked up
+        /// here so the database-only answer stays testable on its own.
+        /// </param>
         public async Task<(bool cutoffMet, string? bestExistingQuality)> GetExistingQualityAsync(
             Audiobook audiobook,
             IDownloadRepository downloadRepository,
             IAudiobookFileRepository fileRepository,
+            LibraryPresence diskPresence = default,
             CancellationToken ct = default)
         {
             // Cutoff is evaluated by the shared QualityMatcher-backed evaluator so automatic search,
@@ -60,6 +65,15 @@ namespace Bookmarkarr.Infrastructure.HostedServices.Search
             {
                 if (bestQuality == null) bestQuality = fq;
                 else if (IsQualityBetter(fq, bestQuality, audiobook.QualityProfile)) bestQuality = fq;
+            }
+
+            // Files on disk that no row knows about still count as "already have it". Their quality
+            // is derived from extension alone and therefore rounds down, so folding it in here can
+            // only ever make an upgrade look more attractive, never less.
+            if (!string.IsNullOrEmpty(diskPresence.BestQuality)
+                && (bestQuality == null || IsQualityBetter(diskPresence.BestQuality, bestQuality, audiobook.QualityProfile)))
+            {
+                bestQuality = diskPresence.BestQuality;
             }
 
             return (cutoffMet, bestQuality);

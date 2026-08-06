@@ -1,3 +1,4 @@
+global using Bookmarkarr.Application.Downloads.Blocklisting;
 global using Bookmarkarr.Application.Downloads.Cleanup;
 global using Bookmarkarr.Application.Downloads.Common;
 global using Bookmarkarr.Application.Downloads.Processing;

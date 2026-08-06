@@ -39,6 +39,8 @@ namespace Bookmarkarr.Application.Downloads.Submission
                 Artist = candidate.Artist,
                 Album = candidate.Album,
                 Language = candidate.Language,
+                ReleaseGuid = candidate.Id,
+                IndexerId = candidate.SourceDescriptor.IndexerId,
                 OriginalUrl = submission.OriginalLocator,
                 Progress = 0,
                 TotalSize = candidate.Size,

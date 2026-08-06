@@ -7,9 +7,9 @@ namespace Bookmarkarr.Tests.Mocks
     {
         public static readonly string RemotePath = FileUtils.GetAbsolutePath("downloads", "complete", "audiobooks");
 
-        public string ClientType => "mock";
+        public virtual string ClientType => "mock";
 
-        public DownloadProtocol Protocol => DownloadProtocol.Torrent;
+        public virtual DownloadProtocol Protocol => DownloadProtocol.Torrent;
 
         public List<DownloadProtocol> Protocols => [
             DownloadProtocol.Torrent,
@@ -139,5 +139,17 @@ namespace Bookmarkarr.Tests.Mocks
         {
             return (true, "mock");
         }
+    }
+
+    /// <summary>
+    /// A mock adapter that declares the usenet protocol, so tests can exercise the gateway's
+    /// usenet-specific source-file discovery without reaching a real client.
+    /// </summary>
+    public class UsenetDownloadClientAdapterMock(IDownloadRepository downloadRepository)
+        : DownloadCLientAdapterMock(downloadRepository)
+    {
+        public override string ClientType => "mock-usenet";
+
+        public override DownloadProtocol Protocol => DownloadProtocol.Usenet;
     }
 }

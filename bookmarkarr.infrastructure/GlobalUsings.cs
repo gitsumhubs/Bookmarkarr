@@ -30,6 +30,7 @@ global using Bookmarkarr.Application.Downloads.Common;
 global using Bookmarkarr.Application.Downloads.Import;
 global using Bookmarkarr.Application.Downloads.Processing;
 global using Bookmarkarr.Application.Downloads.Queue;
+global using Bookmarkarr.Application.Downloads.Blocklisting;
 global using Bookmarkarr.Application.Downloads.Submission;
 global using Bookmarkarr.Application.Metadata.Audible;
 global using Bookmarkarr.Application.Metadata.Audnexus;

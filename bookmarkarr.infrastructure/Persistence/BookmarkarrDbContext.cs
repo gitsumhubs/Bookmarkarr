@@ -39,6 +39,7 @@ namespace Bookmarkarr.Infrastructure.Persistence
         public DbSet<Download> Downloads { get; set; } = null!;
         public DbSet<DownloadProcessingJob> DownloadProcessingJobs { get; set; } = null!;
         public DbSet<DownloadHistory> DownloadHistories { get; set; } = null!;
+        public DbSet<BlocklistEntry> BlocklistEntries { get; set; } = null!;
         public DbSet<QualityProfile> QualityProfiles { get; set; } = null!;
         public DbSet<RemotePathMapping> RemotePathMappings { get; set; } = null!;
         public DbSet<ProcessExecutionLog> ProcessExecutionLogs { get; set; } = null!;

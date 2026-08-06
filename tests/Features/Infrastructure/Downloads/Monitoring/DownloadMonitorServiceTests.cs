@@ -175,9 +175,11 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.Downloads.Monitoring
         [Trait("Method", "MonitorDownloadsAsync")]
         public async Task MonitorDownloadsAsync_OrphanCleanup_DoesNotRunEveryCycle()
         {
+            // Exact type: the usenet variant derives from this mock, so OfType would match both.
+            // Exact type: the usenet variant derives from this mock, so OfType alone matches both.
             var adapter = _provider.GetServices<IDownloadClientAdapter>()
                 .OfType<DownloadCLientAdapterMock>()
-                .Single();
+                .Single(a => a.GetType() == typeof(DownloadCLientAdapterMock));
             await _downloadRepository.AddAsync(new DownloadBuilder()
                 .WithDownloading(0)
                 .WithExternalId("1")
@@ -204,9 +206,11 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.Downloads.Monitoring
                 .WithType("mock")
                 .WithName("Mock")
                 .Build());
+            // Exact type: the usenet variant derives from this mock, so OfType would match both.
+            // Exact type: the usenet variant derives from this mock, so OfType alone matches both.
             var adapter = _provider.GetServices<IDownloadClientAdapter>()
                 .OfType<DownloadCLientAdapterMock>()
-                .Single();
+                .Single(a => a.GetType() == typeof(DownloadCLientAdapterMock));
             await _downloadRepository.AddAsync(new DownloadBuilder()
                 .WithDownloading(0)
                 .WithExternalId("1")

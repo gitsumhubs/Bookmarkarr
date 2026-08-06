@@ -412,5 +412,91 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Common
                 File.Delete(outsideFile);
             }
         }
+
+        [Fact]
+        [Trait("Method", "GetQueueItemAsync")]
+        [Trait("Scenario", "Usenet release named like a media file still resolves its nested payload")]
+        public async Task GetQueueItemAsync_UsenetExtensionShapedContentDirectory_RecursesIntoNestedReleaseFolder()
+        {
+            // Regression: a usenet release whose *name* ends in .m4b makes NZBGet create a
+            // destination directory that looks exactly like the qBittorrent single-file layout.
+            // The payload is nested under the unpacked release folder rather than repeated as a
+            // same-named file, so refusing to recurse stranded a complete download in Import
+            // Blocked. See the "{req}...m4b" release that never imported.
+            const string releaseName = "{req}.Example.Book.by.An.Author.m4b";
+            var localDownloadDirectory = Path.Join(localPath, releaseName);
+            var nestedReleaseDirectory = Path.Join(localDownloadDirectory, "{req} Example Book by An Author m4b");
+            var payload = Path.Join(nestedReleaseDirectory, "An Author - Example Book.m4b");
+            Directory.CreateDirectory(nestedReleaseDirectory);
+            await File.WriteAllTextAsync(payload, "audio");
+
+            try
+            {
+                var usenetClient = new DownloadClientConfigurationBuilder().WithType("mock-usenet").Build();
+                await _remotePathMappingRepository.SaveAsync(new RemotePathMappingBuilder()
+                    .WithDownloadClientConfiguration(usenetClient)
+                    .WithRemotePath(FileUtils.GetAbsolutePath("downloads"))
+                    .WithLocalPath(localMapping)
+                    .Build());
+
+                var remoteDownloadDirectory = Path.Join(DownloadCLientAdapterMock.RemotePath, releaseName);
+                var adapter = (DownloadCLientAdapterMock)((DownloadClientGateway)downloadClientGateway).ResolveAdapter(usenetClient);
+                adapter.QueueItemMock = new QueueItemBuilder()
+                    .WithContentPath(remoteDownloadDirectory)
+                    .WithStatus("completed")
+                    .Build();
+
+                var item = await downloadClientGateway.GetQueueItemAsync(
+                    usenetClient,
+                    new DownloadBuilder().Build(),
+                    new QueueItem());
+
+                Assert.Contains(FileUtils.NormalizeStoredPath(payload), item.SourceFiles);
+            }
+            finally
+            {
+                Directory.Delete(localDownloadDirectory, true);
+            }
+        }
+
+        [Fact]
+        [Trait("Method", "GetQueueItemAsync")]
+        [Trait("Scenario", "NZBGet _unpack working copies are not imported alongside the finished files")]
+        public async Task GetQueueItemAsync_ContentDirectory_ExcludesClientWorkingCopies()
+        {
+            // NZBGet unpacks into _unpack beneath the destination and leaves that copy behind, so
+            // a completed download exposes the same media twice. Importing both stores the book
+            // twice and doubles the space it occupies.
+            const string releaseName = "Example Unpacked Release";
+            var localDownloadDirectory = Path.Join(localPath, releaseName);
+            var finishedFile = Path.Join(localDownloadDirectory, "An Author - Example Book.m4b");
+            var unpackDirectory = Path.Join(localDownloadDirectory, "_unpack");
+            var workingCopy = Path.Join(unpackDirectory, "An Author - Example Book.m4b");
+            Directory.CreateDirectory(unpackDirectory);
+            await File.WriteAllTextAsync(finishedFile, "audio");
+            await File.WriteAllTextAsync(workingCopy, "audio");
+
+            try
+            {
+                var remoteDownloadDirectory = Path.Join(DownloadCLientAdapterMock.RemotePath, releaseName);
+                var adapter = (DownloadCLientAdapterMock)((DownloadClientGateway)downloadClientGateway).ResolveAdapter(client);
+                adapter.QueueItemMock = new QueueItemBuilder()
+                    .WithContentPath(remoteDownloadDirectory)
+                    .WithStatus("completed")
+                    .Build();
+
+                var item = await downloadClientGateway.GetQueueItemAsync(
+                    client,
+                    new DownloadBuilder().Build(),
+                    new QueueItem());
+
+                Assert.Contains(FileUtils.NormalizeStoredPath(finishedFile), item.SourceFiles);
+                Assert.DoesNotContain(FileUtils.NormalizeStoredPath(workingCopy), item.SourceFiles);
+            }
+            finally
+            {
+                Directory.Delete(localDownloadDirectory, true);
+            }
+        }
     }
 }

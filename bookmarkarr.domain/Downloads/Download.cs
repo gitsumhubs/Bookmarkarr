@@ -64,6 +64,12 @@ namespace Bookmarkarr.Domain.Downloads
         public string? Language { get; set; }
         public int? Runtime { get; set; } // Runtime in minutes
         public long? ExpectedFileSize { get; set; } // Expected file size from search result
+
+        // Release identity, so a later search can recognise this exact grab and count its
+        // failures. Null for indexers that expose no GUID and for rows predating these columns.
+        public string? ReleaseGuid { get; set; }
+        public int? IndexerId { get; set; } // Same release name on another indexer stays eligible
+
         public string OriginalUrl { get; set; } = string.Empty;
         public DownloadStatus Status
         {

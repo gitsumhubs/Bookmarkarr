@@ -68,10 +68,50 @@ public partial class DownloadService
                 await notificationService.OnDownloadImportedAsync(download);
                 return;
             case (_, DownloadStatus.Failed):
+                // A true download failure — the client could not fetch the bytes. This is the
+                // only transition that counts a strike toward the blocklist.
+                if (await blocklistService.RecordFailureAsync(download) is not null)
+                {
+                    await MakeEligibleForImmediateSearchAsync(download);
+                }
+
+                await notificationService.OnDownloadFailedAsync(download);
+                return;
             case (_, DownloadStatus.ImportBlocked):
+                // The bytes arrived and Bookmarkarr could not file them. The release is fine;
+                // blocklisting here would discard a good grab because of a fault on our side.
                 await notificationService.OnDownloadFailedAsync(download);
                 return;
         }
+    }
+
+    /// <summary>
+    /// Clears the book's last-search timestamp so the next automatic cycle searches it again
+    /// instead of waiting out the remainder of its six-hour window.
+    ///
+    /// Search now skips the release that was just blocklisted, so the re-search picks the next
+    /// best candidate. That is what makes the process terminate rather than spin: each pass
+    /// either grabs a different release or finds nothing left to try.
+    /// </summary>
+    private async Task MakeEligibleForImmediateSearchAsync(Download download)
+    {
+        if (download.AudiobookId is not int audiobookId || audiobookId <= 0)
+        {
+            return;
+        }
+
+        var audiobook = await audiobookRepository.GetByIdAsync(audiobookId);
+        if (audiobook is null)
+        {
+            return;
+        }
+
+        audiobook.LastSearchTime = null;
+        await audiobookRepository.UpdateAsync(audiobook);
+
+        logger.LogInformation(
+            "Audiobook {AudiobookId} is eligible for immediate re-search after a release was blocklisted",
+            audiobookId);
     }
 
     private async Task SyncEditionStatusAsync(Download download)

@@ -92,6 +92,8 @@ internal static class DownloadRegistrationExtensions
         services.AddScoped<IDownloadRepository, EfDownloadRepository>();
         services.AddScoped<IDownloadProcessingJobRepository, EfDownloadProcessingJobRepository>();
         services.AddScoped<IDownloadHistoryRepository, DownloadHistoryRepository>();
+        services.AddScoped<IBlocklistRepository, EfBlocklistRepository>();
+        services.AddScoped<IBlocklistService, BlocklistService>();
         services.AddScoped<IImportFinalizationService, ImportFinalizationService>();
         services.AddSingleton<IDownloadReferenceProtector, DataProtectionDownloadReferenceProtector>();
         services.AddScoped<IDownloadSubmissionPreparer, DownloadSubmissionPreparer>();

@@ -37,7 +37,8 @@ namespace Bookmarkarr.Application.Downloads.Submission
         DownloadCachedTorrentStore cachedTorrentStore,
         IDownloadSubmissionPreparer submissionPreparer,
         DirectDownloadWorkflow directDownloadWorkflow,
-        DownloadRemovalWorkflow downloadRemovalWorkflow) : IDownloadService
+        DownloadRemovalWorkflow downloadRemovalWorkflow,
+        IBlocklistService blocklistService) : IDownloadService
     {
         // Cache expiration constants
         private const int QueueCacheExpirationSeconds = 10;

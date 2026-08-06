@@ -243,6 +243,32 @@ clears it: the absent handoff becomes `Source Missing` history and the edition f
 exposes is left strictly alone, and an edition whose import is genuinely in flight keeps its
 live status instead of being claimed as **Imported** underneath the running import.
 
+**A release keeps being grabbed and keeps failing.** After a release fails to download twice
+for the same book, Bookmarkarr blocklists it and stops offering it to automatic search, which
+then falls through to the next best result. One failure never blocklists — stalled peers and
+transient client errors usually clear on a retry. Import blocks never count either: those mean
+the download succeeded and Bookmarkarr could not file it, which is not the release's fault.
+Blocklisting is per book, so the same release stays available for other titles. Review and
+clear entries with `GET /api/v1/blocklist` and `DELETE /api/v1/blocklist/{id}`, or clear a
+whole book with `DELETE /api/v1/blocklist/audiobook/{id}`.
+
+**A usenet download finished but sits in "Import Blocked".** If the release name itself ends
+in `.m4b`, `.mp3`, or another media extension, NZBGet creates a destination *directory* with
+that name, which looks exactly like the qBittorrent single-file layout. Bookmarkarr used to
+refuse to look inside it and reported no importable files. It now recurses for usenet clients
+and imports the nested payload, ignoring the `_unpack` copy NZBGet leaves behind so the book
+is not stored twice.
+
+**A book is never searched and the log says it "already has N audio file(s) on disk".**
+That is the duplicate guard working. Before grabbing, Bookmarkarr checks the book's
+destination directory on disk, not just its own database rows, because files imported before
+the book was tracked — or files whose import failed after the download finished — leave no
+file rows behind and would otherwise be downloaded a second time. If the message adds that
+the files "match no quality rung", Bookmarkarr can see the files but cannot tell how good
+they are, so it declines to guess: run a library scan to register them, after which normal
+upgrade comparison resumes. Quality inferred from the filename alone always rounds *down*, so
+a genuinely better release is still grabbed as an upgrade.
+
 **Bookmarkarr can't reach Prowlarr or the download client.** The URL has to resolve from
 *inside* the container — `localhost` only works if the service is in the same container.
 If you're addressing services by name, see

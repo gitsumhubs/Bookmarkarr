@@ -271,7 +271,7 @@ namespace Bookmarkarr.Application.Downloads.Common
                 {
                     item.SourceFiles = [nestedMediaFile];
                 }
-                else if (IsExtensionShapedMediaDirectory(item.ContentPath))
+                else if (IsExtensionShapedMediaDirectory(item.ContentPath) && !IsUsenetClient(client))
                 {
                     // An extension-shaped directory is a single-file client layout. If its
                     // exact nested file is unavailable or unsafe, do not widen discovery to
@@ -291,7 +291,8 @@ namespace Bookmarkarr.Application.Downloads.Common
                     {
                         item.SourceFiles = [.. fileSystem
                             .EnumerateFiles(item.ContentPath, "*.*", SearchOption.AllDirectories)
-                            .Select(f => FileUtils.NormalizeStoredPath(f))];
+                            .Select(f => FileUtils.NormalizeStoredPath(f))
+                            .Where(f => !IsClientWorkingCopy(item.ContentPath, f))];
                     }
                     catch (Exception exception) when (exception is not (OperationCanceledException or OutOfMemoryException or StackOverflowException))
                     {
@@ -382,6 +383,51 @@ namespace Bookmarkarr.Application.Downloads.Common
                 return null;
             }
         }
+
+        /// <summary>
+        /// Usenet clients name the completed directory after the release. A release whose name
+        /// ends in a media extension therefore produces a directory that looks identical to the
+        /// qBittorrent single-file layout, but its payload is nested under the unpacked release
+        /// folder rather than repeated as a same-named file. Refusing to recurse for those
+        /// clients strands a perfectly good download in Import Blocked.
+        ///
+        /// The adapter's declared protocol is the authority here rather than a hardcoded list of
+        /// client type names, so a newly added usenet client is covered without touching this.
+        /// </summary>
+        private bool IsUsenetClient(DownloadClientConfiguration client)
+        {
+            try
+            {
+                return ResolveAdapter(client).Protocol == DownloadProtocol.Usenet;
+            }
+            catch (InvalidOperationException)
+            {
+                // No adapter: keep the conservative single-file behaviour rather than widening
+                // discovery for a client we cannot identify.
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// True for files under a client's in-progress working directory.
+        ///
+        /// NZBGet unpacks into <c>_unpack</c> beneath the destination and leaves that copy behind,
+        /// so a completed download can expose the same media twice. Importing both stores the book
+        /// twice and doubles the space it occupies.
+        /// </summary>
+        private static bool IsClientWorkingCopy(string contentPath, string filePath)
+        {
+            var relative = Path.GetRelativePath(
+                FileUtils.NormalizeStoredPath(contentPath),
+                FileUtils.NormalizeStoredPath(filePath));
+
+            return relative
+                .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                .Any(segment => ClientWorkingDirectoryNames.Contains(segment));
+        }
+
+        private static readonly HashSet<string> ClientWorkingDirectoryNames =
+            new(StringComparer.OrdinalIgnoreCase) { "_unpack", "_failed" };
 
         private bool IsExtensionShapedMediaDirectory(string path)
         {

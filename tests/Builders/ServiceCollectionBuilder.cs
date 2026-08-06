@@ -259,6 +259,7 @@ namespace Bookmarkarr.Tests.Builders
                 .ConfigurePrimaryHttpMessageHandler<AudnexusServiceApiMock>();
 
             services.AddSingleton<IDownloadClientAdapter, DownloadCLientAdapterMock>();
+            services.AddSingleton<IDownloadClientAdapter, UsenetDownloadClientAdapterMock>();
             services.AddSingleton<IDirectDownloadImportSourceResolver, DirectDownloadImportSourceResolver>();
 
             // Background services
