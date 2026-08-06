@@ -60,7 +60,7 @@
       :class="['wanted-grid-container', { 'is-static': !useVirtualWantedList }]"
       @scroll="updateVisibleRange"
     >
-      <div class="wanted-header">
+      <div class="wanted-header" :style="gridTemplate ? { gridTemplateColumns: gridTemplate } : undefined">
         <div class="col-poster"></div>
         <div
           v-for="column in sortableColumns"
@@ -74,6 +74,13 @@
               <component :is="sortIconFor(column.key)" class="sort-icon" />
             </span>
           </button>
+          <span
+            class="resize-handle"
+            :class="{ active: resizingColumn === column.key }"
+            title="Drag to resize, double-click to reset"
+            @pointerdown="startResize(column.key, $event)"
+            @dblclick="resetWidths"
+          />
         </div>
         <div class="col-actions"></div>
       </div>
@@ -85,7 +92,12 @@
           :class="['wanted-body', { 'is-static': !useVirtualWantedList }]"
           :style="useVirtualWantedList ? { transform: `translateY(${topPadding}px)` } : undefined"
         >
-          <div v-for="item in visibleWanted" :key="item.wantedKey" class="wanted-row">
+          <div
+            v-for="item in visibleWanted"
+            :key="item.wantedKey"
+            class="wanted-row"
+            :style="gridTemplate ? { gridTemplateColumns: gridTemplate } : undefined"
+          >
             <div class="col-poster">
               <img
                 class="row-poster"
@@ -229,6 +241,7 @@ import {
   PhArrowsDownUp,
 } from '@phosphor-icons/vue'
 import { useTableSort } from '@/composables/useTableSort'
+import { useColumnResize } from '@/composables/useColumnResize'
 import { logger } from '@/utils/logger'
 import { useDownloadsStore } from '@/stores/downloads'
 import { useProtectedImages } from '@/composables/useProtectedImages'
@@ -406,6 +419,20 @@ function sortIconFor(key: WantedSortKey) {
   if (!direction) return PhArrowsDownUp
   return direction === 'asc' ? PhArrowUp : PhArrowDown
 }
+
+const { widths, resizingColumn, startResize, resetWidths } = useColumnResize<WantedSortKey>({
+  storageKey: 'bookmarkarr.wanted.columnWidths.v1',
+  defaults: { title: 340, author: 220, series: 200, quality: 120, status: 140 },
+  minWidths: { title: 160, author: 120, series: 100, quality: 80, status: 100 },
+  mobileBreakpoint: MOBILE_WANTED_BREAKPOINT,
+})
+
+// The leading 48px is the poster and the trailing 120px the action buttons; neither resizes.
+const gridTemplate = computed(() =>
+  isMobileWantedLayout.value
+    ? undefined
+    : `48px ${sortableColumns.map((column) => `${widths.value[column.key]}px`).join(' ')} 120px`,
+)
 
 const filteredWanted = computed(() => {
   const items = wantedAudiobooks.value
@@ -879,6 +906,50 @@ const markAsSkipped = async (item: WantedItem) => {
   opacity: 0.72;
   flex-shrink: 0;
 }
+
+.sortable-header {
+  position: relative;
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+  /* Sits above the sort button so a drag near the edge resizes instead of sorting. */
+  z-index: 1;
+}
+
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 20%;
+  right: 3px;
+  width: 2px;
+  height: 60%;
+  background: var(--border-color, rgba(128, 128, 128, 0.35));
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.resize-handle:hover::after,
+.resize-handle.active::after {
+  opacity: 1;
+  background: var(--brand-500, #6366f1);
+}
+
+.clear-count {
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(128, 128, 128, 0.18);
+}
+
 
 .wanted-body-spacer {
   position: relative;

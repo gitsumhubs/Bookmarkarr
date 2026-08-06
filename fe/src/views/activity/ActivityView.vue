@@ -35,6 +35,20 @@
             <PhX />
           </button>
         </div>
+        <button
+          class="btn btn-secondary"
+          @click="showClearModal = true"
+          :disabled="clearing || finishedItems.length === 0"
+          :title="
+            finishedItems.length === 0
+              ? 'Nothing finished to clear'
+              : `Clear ${finishedItems.length} finished item(s)`
+          "
+        >
+          <component :is="clearing ? PhSpinner : PhTrash" />
+          Clear
+          <span v-if="finishedItems.length > 0" class="clear-count">{{ finishedItems.length }}</span>
+        </button>
         <button class="btn btn-secondary" @click="refreshQueue" :disabled="loading">
           <component :is="loading ? PhSpinner : PhArrowClockwise" />
           Refresh
@@ -57,7 +71,7 @@
       :class="['queue-grid-container', { 'is-static': !useVirtualActivityList }]"
       @scroll="updateVisibleRange"
     >
-      <div class="queue-header">
+      <div class="queue-header" :style="gridTemplate ? { gridTemplateColumns: gridTemplate } : undefined">
         <div
           v-for="column in sortableColumns"
           :key="column.key"
@@ -70,6 +84,13 @@
               <component :is="sortIconFor(column.key)" class="sort-icon" />
             </span>
           </button>
+          <span
+            class="resize-handle"
+            :class="{ active: resizingColumn === column.key }"
+            :title="'Drag to resize, double-click to reset'"
+            @pointerdown="startResize(column.key, $event)"
+            @dblclick="resetWidths"
+          />
         </div>
         <div class="col-actions"></div>
       </div>
@@ -84,8 +105,9 @@
           <div
             v-for="item in visibleQueueItems"
             :key="item.id"
-            v-memo="[item.id, item.status, item.progress, item.eta, item.downloadSpeed]"
+            v-memo="[item.id, item.status, item.progress, item.eta, item.downloadSpeed, gridTemplate]"
             class="queue-row"
+            :style="gridTemplate ? { gridTemplateColumns: gridTemplate } : undefined"
           >
             <div class="col-title">
               <div class="title-cell">
@@ -171,6 +193,44 @@
     <!-- Loading State -->
     <LoadingState v-if="loading && queue.length === 0" message="Loading queue..." />
 
+    <!-- Clear Confirmation Modal -->
+    <div v-if="showClearModal" class="modal-overlay" @click="showClearModal = false">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>
+            <PhTrash />
+            Clear Finished
+          </h3>
+          <button class="modal-close" @click="showClearModal = false">
+            <PhX />
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>
+            Remove {{ finishedItems.length }} finished item{{
+              finishedItems.length === 1 ? '' : 's'
+            }}
+            from Activity? Anything still downloading is left running.
+          </p>
+          <div class="remove-item-info">
+            <div class="item-details">
+              <span><PhCheckCircle /> Completed, imported, and failed entries are removed</span>
+              <span><PhDownloadSimple /> Active and queued downloads are untouched</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" @click="showClearModal = false" :disabled="clearing">
+            Cancel
+          </button>
+          <button class="btn btn-danger" @click="clearFinished" :disabled="clearing">
+            <component :is="clearing ? PhSpinner : PhTrash" />
+            {{ clearing ? 'Clearing...' : 'Clear' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Remove Confirmation Modal -->
     <div v-if="showRemoveModal" class="modal-overlay" @click="showRemoveModal = false">
       <div class="modal-content" @click.stop>
@@ -251,8 +311,11 @@ import {
   PhArrowUp,
   PhArrowDown,
   PhArrowsDownUp,
+  PhCheckCircle,
+  PhDownloadSimple,
 } from '@phosphor-icons/vue'
 import { useTableSort } from '@/composables/useTableSort'
+import { useColumnResize } from '@/composables/useColumnResize'
 import { useToast } from '@/services/toastService'
 import { errorTracking } from '@/services/errorTracking'
 import { apiService } from '@/services/api'
@@ -276,6 +339,8 @@ const showRemoveModal = ref(false)
 const clientHasQueueEntry = ref<boolean | null>(null)
 const itemToRemove = ref<QueueItem | null>(null)
 const removing = ref(false)
+const showClearModal = ref(false)
+const clearing = ref(false)
 let unsubscribeQueue: (() => void) | null = null
 let queueRefreshInterval: ReturnType<typeof setInterval> | null = null
 
@@ -620,6 +685,20 @@ function sortIconFor(key: ActivitySortKey) {
   return direction === 'asc' ? PhArrowUp : PhArrowDown
 }
 
+const { widths, resizingColumn, startResize, resetWidths } = useColumnResize<ActivitySortKey>({
+  storageKey: 'bookmarkarr.activity.columnWidths.v1',
+  defaults: { title: 360, quality: 120, language: 120, progress: 220, eta: 100, status: 140 },
+  minWidths: { title: 160, quality: 80, language: 80, progress: 120, eta: 64, status: 100 },
+  mobileBreakpoint: MOBILE_ACTIVITY_BREAKPOINT,
+})
+
+// The trailing 40px is the actions column, which holds a single icon button and never resizes.
+const gridTemplate = computed(() =>
+  isMobileActivityLayout.value
+    ? undefined
+    : `${sortableColumns.map((column) => `${widths.value[column.key]}px`).join(' ')} 40px`,
+)
+
 const filteredQueue = computed(() => {
   const text = filterText.value.trim().toLowerCase()
   if (!text) return sortItems(allActivityItems.value)
@@ -705,6 +784,61 @@ const confirmRemove = async () => {
   } finally {
     removing.value = false
   }
+}
+
+/**
+ * Statuses that mean the item is no longer working. Clearing removes exactly these and
+ * leaves anything still in flight alone, so the button can never cancel a live download.
+ */
+const FINISHED_STATUSES = new Set([
+  'completed',
+  'failed',
+  'imported',
+  'importblocked',
+  'sourcemissing',
+])
+
+const finishedItems = computed(() =>
+  allActivityItems.value.filter((item) => FINISHED_STATUSES.has((item.status || '').toLowerCase())),
+)
+
+const clearFinished = async () => {
+  const targets = finishedItems.value
+  if (targets.length === 0) return
+
+  clearing.value = true
+  let removed = 0
+  let failed = 0
+
+  // Removed one at a time rather than in parallel: these hit the download clients, and a
+  // burst of concurrent deletes is what makes a client drop requests.
+  for (const item of targets) {
+    try {
+      await apiService.cancelDownload(item.id)
+      removed++
+    } catch (err) {
+      failed++
+      errorTracking.captureException(err as Error, {
+        component: 'ActivityView',
+        operation: 'clearFinished',
+      })
+    }
+  }
+
+  await Promise.all([downloadsStore.loadDownloads(), refreshQueue()])
+
+  const toast = useToast()
+  if (failed > 0) {
+    toast.error(
+      'Some items could not be cleared',
+      `Removed ${removed}, ${failed} failed. The remaining entries are still listed.`,
+    )
+  } else {
+    toast.success('Activity cleared', `Removed ${removed} finished item${removed === 1 ? '' : 's'}.`)
+  }
+
+  showClearModal.value = false
+  clearing.value = false
 }
 
 const formatStatus = (status: string): string => {
@@ -992,6 +1126,50 @@ onUnmounted(() => {
   opacity: 0.72;
   flex-shrink: 0;
 }
+
+.sortable-header {
+  position: relative;
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+  /* Sits above the sort button so a drag near the edge resizes instead of sorting. */
+  z-index: 1;
+}
+
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 20%;
+  right: 3px;
+  width: 2px;
+  height: 60%;
+  background: var(--border-color, rgba(128, 128, 128, 0.35));
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.resize-handle:hover::after,
+.resize-handle.active::after {
+  opacity: 1;
+  background: var(--brand-500, #6366f1);
+}
+
+.clear-count {
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(128, 128, 128, 0.18);
+}
+
 
 .queue-body-spacer {
   position: relative;
