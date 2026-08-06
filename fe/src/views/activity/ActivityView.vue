@@ -58,12 +58,19 @@
       @scroll="updateVisibleRange"
     >
       <div class="queue-header">
-        <div class="col-title">Title</div>
-        <div class="col-quality">Quality</div>
-        <div class="col-language">Language</div>
-        <div class="col-progress">Progress</div>
-        <div class="col-eta">ETA</div>
-        <div class="col-status">Status</div>
+        <div
+          v-for="column in sortableColumns"
+          :key="column.key"
+          :class="['sortable-header', column.class]"
+          :aria-sort="ariaSortFor(column.key)"
+        >
+          <button type="button" class="sort-button" @click="toggleSort(column.key)">
+            <span class="header-content">
+              {{ column.label }}
+              <component :is="sortIconFor(column.key)" class="sort-icon" />
+            </span>
+          </button>
+        </div>
         <div class="col-actions"></div>
       </div>
       <div
@@ -241,7 +248,11 @@ import {
   PhChartBar,
   PhTrash,
   PhMagnifyingGlass,
+  PhArrowUp,
+  PhArrowDown,
+  PhArrowsDownUp,
 } from '@phosphor-icons/vue'
+import { useTableSort } from '@/composables/useTableSort'
 import { useToast } from '@/services/toastService'
 import { errorTracking } from '@/services/errorTracking'
 import { apiService } from '@/services/api'
@@ -575,11 +586,45 @@ const getDisplayTitle = (item: QueueItem): string => {
 }
 
 // Filter by text search across title, client, status
+type ActivitySortKey = 'title' | 'quality' | 'language' | 'progress' | 'eta' | 'status'
+
+const sortableColumns: Array<{ key: ActivitySortKey; label: string; class: string }> = [
+  { key: 'title', label: 'Title', class: 'col-title' },
+  { key: 'quality', label: 'Quality', class: 'col-quality' },
+  { key: 'language', label: 'Language', class: 'col-language' },
+  { key: 'progress', label: 'Progress', class: 'col-progress' },
+  { key: 'eta', label: 'ETA', class: 'col-eta' },
+  { key: 'status', label: 'Status', class: 'col-status' },
+]
+
+// Progress and ETA sort on their raw numbers rather than the formatted strings shown in the
+// cell, so 9% precedes 10% and "2m" precedes "1h" instead of ordering alphabetically.
+const { toggleSort, directionFor, sortItems } = useTableSort<QueueItem, ActivitySortKey>({
+  title: (item) => getDisplayTitle(item),
+  quality: (item) => (item.quality && item.quality !== '*' ? item.quality : null),
+  language: (item) => item.language,
+  progress: (item) => item.progress,
+  eta: (item) => item.eta,
+  status: (item) => formatStatus(item.status),
+})
+
+function ariaSortFor(key: ActivitySortKey): 'ascending' | 'descending' | 'none' {
+  const direction = directionFor(key)
+  if (!direction) return 'none'
+  return direction === 'asc' ? 'ascending' : 'descending'
+}
+
+function sortIconFor(key: ActivitySortKey) {
+  const direction = directionFor(key)
+  if (!direction) return PhArrowsDownUp
+  return direction === 'asc' ? PhArrowUp : PhArrowDown
+}
+
 const filteredQueue = computed(() => {
   const text = filterText.value.trim().toLowerCase()
-  if (!text) return allActivityItems.value
+  if (!text) return sortItems(allActivityItems.value)
 
-  return allActivityItems.value.filter((item) => {
+  return sortItems(allActivityItems.value.filter((item) => {
     const displayTitle = getDisplayTitle(item)
     return (
       (displayTitle && displayTitle.toLowerCase().includes(text)) ||
@@ -588,7 +633,7 @@ const filteredQueue = computed(() => {
       (item.status && item.status.toLowerCase().includes(text)) ||
       (item.quality && item.quality.toLowerCase().includes(text))
     )
-  })
+  }))
 })
 
 const refreshQueue = async () => {
@@ -900,6 +945,52 @@ onUnmounted(() => {
   letter-spacing: 0.5px;
   color: #868e96;
   white-space: nowrap;
+}
+
+.queue-header > .sortable-header {
+  padding: 0;
+  min-width: 0;
+}
+
+.sortable-header:hover {
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.04));
+}
+
+.sortable-header[aria-sort='ascending'],
+.sortable-header[aria-sort='descending'] {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0.02));
+}
+
+.sort-button {
+  width: 100%;
+  height: 100%;
+  padding: 0 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+
+.sort-button:focus-visible {
+  outline: 2px solid var(--brand-500, #6366f1);
+  outline-offset: -2px;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.sort-icon {
+  opacity: 0.72;
+  flex-shrink: 0;
 }
 
 .queue-body-spacer {

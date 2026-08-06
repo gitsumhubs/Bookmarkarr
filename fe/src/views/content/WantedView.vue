@@ -62,11 +62,19 @@
     >
       <div class="wanted-header">
         <div class="col-poster"></div>
-        <div class="col-title">Title</div>
-        <div class="col-author">Author</div>
-        <div class="col-series">Series</div>
-        <div class="col-quality">Quality</div>
-        <div class="col-status">Status</div>
+        <div
+          v-for="column in sortableColumns"
+          :key="column.key"
+          :class="['sortable-header', column.class]"
+          :aria-sort="ariaSortFor(column.key)"
+        >
+          <button type="button" class="sort-button" @click="toggleSort(column.key)">
+            <span class="header-content">
+              {{ column.label }}
+              <component :is="sortIconFor(column.key)" class="sort-icon" />
+            </span>
+          </button>
+        </div>
         <div class="col-actions"></div>
       </div>
       <div
@@ -216,7 +224,11 @@ import {
   PhX,
   PhCheckCircle,
   PhDownloadSimple,
+  PhArrowUp,
+  PhArrowDown,
+  PhArrowsDownUp,
 } from '@phosphor-icons/vue'
+import { useTableSort } from '@/composables/useTableSort'
 import { logger } from '@/utils/logger'
 import { useDownloadsStore } from '@/stores/downloads'
 import { useProtectedImages } from '@/composables/useProtectedImages'
@@ -363,17 +375,51 @@ const categorizedWanted = computed(() => {
   }
 })
 
+type WantedSortKey = 'title' | 'author' | 'series' | 'quality' | 'status'
+
+const sortableColumns: Array<{ key: WantedSortKey; label: string; class: string }> = [
+  { key: 'title', label: 'Title', class: 'col-title' },
+  { key: 'author', label: 'Author', class: 'col-author' },
+  { key: 'series', label: 'Series', class: 'col-series' },
+  { key: 'quality', label: 'Quality', class: 'col-quality' },
+  { key: 'status', label: 'Status', class: 'col-status' },
+]
+
+// Sort on what the row actually displays, so the order matches what the user is reading —
+// the first author rather than the raw array, the resolved profile name rather than the id.
+const { toggleSort, directionFor, sortItems } = useTableSort<WantedItem, WantedSortKey>({
+  title: (item) => item.title,
+  author: (item) => item.authors?.[0],
+  series: (item) => (item.series ? `${item.series} ${item.seriesNumber ?? ''}`.trim() : null),
+  quality: (item) => getQualityProfileForAudiobook(item)?.name ?? item.quality,
+  status: (item) => getStatusText(item),
+})
+
+function ariaSortFor(key: WantedSortKey): 'ascending' | 'descending' | 'none' {
+  const direction = directionFor(key)
+  if (!direction) return 'none'
+  return direction === 'asc' ? 'ascending' : 'descending'
+}
+
+function sortIconFor(key: WantedSortKey) {
+  const direction = directionFor(key)
+  if (!direction) return PhArrowsDownUp
+  return direction === 'asc' ? PhArrowUp : PhArrowDown
+}
+
 const filteredWanted = computed(() => {
   const items = wantedAudiobooks.value
-  if (!filterText.value) return items
+  if (!filterText.value) return sortItems(items)
 
   const query = filterText.value.toLowerCase()
-  return items.filter((item) => {
+  const matches = items.filter((item) => {
     const title = (item.title || '').toLowerCase()
     const authors = (item.authors || []).join(' ').toLowerCase()
     const series = (item.series || '').toLowerCase()
     return title.includes(query) || authors.includes(query) || series.includes(query)
   })
+
+  return sortItems(matches)
 })
 
 const visibleWanted = computed(() => {
@@ -786,6 +832,52 @@ const markAsSkipped = async (item: WantedItem) => {
   letter-spacing: 0.5px;
   color: #868e96;
   white-space: nowrap;
+}
+
+.wanted-header > .sortable-header {
+  padding: 0;
+  min-width: 0;
+}
+
+.sortable-header:hover {
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.04));
+}
+
+.sortable-header[aria-sort='ascending'],
+.sortable-header[aria-sort='descending'] {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.08), rgba(99, 102, 241, 0.02));
+}
+
+.sort-button {
+  width: 100%;
+  height: 100%;
+  padding: 0 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+
+.sort-button:focus-visible {
+  outline: 2px solid var(--brand-500, #6366f1);
+  outline-offset: -2px;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.sort-icon {
+  opacity: 0.72;
+  flex-shrink: 0;
 }
 
 .wanted-body-spacer {
