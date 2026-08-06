@@ -229,11 +229,11 @@ namespace Bookmarkarr.Application.Configuration.Core
                         settings.ProwlarrPort = existing.ProwlarrPort;
                     if (settings.ProwlarrTagFilter == null)
                         settings.ProwlarrTagFilter = existing.ProwlarrTagFilter;
-                    if (string.IsNullOrWhiteSpace(settings.ProwlarrApiKeyEncrypted)
-                        || string.Equals(settings.ProwlarrApiKeyEncrypted, ApiResponseRedactor.RedactedValue, StringComparison.Ordinal))
-                    {
-                        settings.ProwlarrApiKeyEncrypted = existing.ProwlarrApiKeyEncrypted;
-                    }
+                    settings.AudiobookshelfUrl ??= existing.AudiobookshelfUrl;
+                    settings.AudiobookshelfApiKey =
+                        ApiResponseRedactor.KeepStoredSecret(settings.AudiobookshelfApiKey, existing.AudiobookshelfApiKey);
+                    settings.ProwlarrApiKeyEncrypted =
+                        ApiResponseRedactor.KeepStoredSecret(settings.ProwlarrApiKeyEncrypted, existing.ProwlarrApiKeyEncrypted);
                     if (settings.EnabledNotificationTriggers == null)
                         settings.EnabledNotificationTriggers = existing.EnabledNotificationTriggers;
                     if (settings.Webhooks == null)

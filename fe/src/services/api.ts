@@ -16,6 +16,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 import type {
+  BlocklistEntry,
   SearchResult,
   Download,
   ApiConfiguration,
@@ -1891,6 +1892,59 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(searchResults),
     })
+  }
+
+  // Blocklist — releases that failed to download enough times that automatic search skips them
+
+  async getBlocklist(): Promise<BlocklistEntry[]> {
+    return this.request<BlocklistEntry[]>('/blocklist')
+  }
+
+  async getBlocklistForAudiobook(audiobookId: number): Promise<BlocklistEntry[]> {
+    return this.request<BlocklistEntry[]>(`/blocklist/audiobook/${audiobookId}`)
+  }
+
+  async removeBlocklistEntry(id: number): Promise<void> {
+    await this.request<void>(`/blocklist/${id}`, { method: 'DELETE' })
+  }
+
+  async clearBlocklistForAudiobook(audiobookId: number): Promise<{ removed: number }> {
+    return this.request<{ removed: number }>(`/blocklist/audiobook/${audiobookId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  /**
+   * Asks the backend which of these releases are blocklisted.
+   *
+   * Matching lives server-side so manual search flags exactly what automatic search would
+   * skip — reimplementing the release-identity rules here would let the two drift apart.
+   */
+  async checkBlocklist(
+    audiobookId: number,
+    releases: Array<{ releaseId: string; indexerId?: number | null; title?: string; size?: number }>,
+  ): Promise<Set<string>> {
+    if (!audiobookId || releases.length === 0) return new Set()
+
+    try {
+      const response = await this.request<{ blocklistedReleaseIds: string[] }>('/blocklist/check', {
+        method: 'POST',
+        body: JSON.stringify({
+          audiobookId,
+          releases: releases.map((release) => ({
+            releaseId: release.releaseId,
+            indexerId: release.indexerId ?? null,
+            title: release.title ?? '',
+            size: release.size ?? 0,
+          })),
+        }),
+      })
+      return new Set(response?.blocklistedReleaseIds ?? [])
+    } catch {
+      // An unavailable check must not break the search results themselves; the badge is
+      // advisory, and a manual grab stays possible either way.
+      return new Set()
+    }
   }
 
   // Antiforgery token for SPA (calls /api/vX/antiforgery/token endpoint)

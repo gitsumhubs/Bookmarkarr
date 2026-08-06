@@ -30,6 +30,9 @@ internal static class MetadataRegistrationExtensions
         services.AddHttpClient<IAudnexusService, AudnexusService>()
             .ConfigurePrimaryHttpMessageHandler(PlatformRegistrationExtensions.CreateExternalHandler)
             .AddPolicyHandler(retryPolicy);
+        services.AddHttpClient<IAudiobookshelfClient, AudiobookshelfClient>()
+            .ConfigurePrimaryHttpMessageHandler(PlatformRegistrationExtensions.CreateExternalHandler)
+            .AddPolicyHandler(retryPolicy);
         return services;
     }
 

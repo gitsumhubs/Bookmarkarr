@@ -53,6 +53,7 @@ global using Bookmarkarr.Infrastructure.FileSystem;
 global using Bookmarkarr.Infrastructure.Ffmpeg.Installation;
 global using Bookmarkarr.Infrastructure.Ffmpeg.Metadata;
 global using Bookmarkarr.Infrastructure.Library.Files;
+global using Bookmarkarr.Infrastructure.Metadata;
 global using Bookmarkarr.Infrastructure.Metadata.Parsing;
 global using Bookmarkarr.Infrastructure.Security.Identity;
 global using Bookmarkarr.Infrastructure.Security.Protection;

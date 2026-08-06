@@ -43,6 +43,43 @@ public class BlocklistController(
     public async Task<ActionResult<List<BlocklistEntry>>> GetByAudiobook(int audiobookId, CancellationToken ct) =>
         Ok(await blocklistRepository.GetByAudiobookIdAsync(audiobookId, ct));
 
+    /// <summary>
+    /// Reports which of the supplied releases are blocklisted for a book.
+    ///
+    /// Exists so manual search can mark blocklisted results without reimplementing
+    /// <see cref="ReleaseIdentity"/> in the frontend, where it would drift from the matching
+    /// automatic search actually uses.
+    /// </summary>
+    /// <param name="request">Book identifier and the candidate releases to check.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The <c>releaseId</c> values that are blocklisted.</returns>
+    [HttpPost("check")]
+    public async Task<ActionResult<BlocklistCheckResponse>> Check(
+        [FromBody] BlocklistCheckRequest request,
+        CancellationToken ct)
+    {
+        if (request.Releases is null || request.Releases.Count == 0)
+        {
+            return Ok(new BlocklistCheckResponse([]));
+        }
+
+        var entries = await blocklistRepository.GetByAudiobookIdAsync(request.AudiobookId, ct);
+        if (entries.Count == 0)
+        {
+            return Ok(new BlocklistCheckResponse([]));
+        }
+
+        var blocked = request.Releases
+            .Where(release => entries.Any(entry =>
+                entry.Matches(release.ReleaseId, release.IndexerId, release.Title, release.Size)))
+            .Select(release => release.ReleaseId)
+            .Where(id => !string.IsNullOrEmpty(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return Ok(new BlocklistCheckResponse(blocked));
+    }
+
     /// <summary>Removes one entry, making that release eligible again.</summary>
     /// <param name="id">Blocklist entry identifier.</param>
     /// <param name="ct">Cancellation token.</param>
@@ -63,3 +100,19 @@ public class BlocklistController(
         return Ok(new { removed });
     }
 }
+
+/// <summary>One release to test against a book's blocklist.</summary>
+/// <param name="ReleaseId">Identifier the caller uses for this result; echoed back when blocklisted.</param>
+/// <param name="IndexerId">Indexer the release came from, when known.</param>
+/// <param name="Title">Release name exactly as the indexer reported it.</param>
+/// <param name="Size">Reported size in bytes.</param>
+public sealed record BlocklistCheckCandidate(string ReleaseId, int? IndexerId, string? Title, long Size);
+
+/// <summary>Blocklist check request for one book.</summary>
+/// <param name="AudiobookId">Book whose blocklist to test against.</param>
+/// <param name="Releases">Candidate releases.</param>
+public sealed record BlocklistCheckRequest(int AudiobookId, List<BlocklistCheckCandidate> Releases);
+
+/// <summary>Blocklist check result.</summary>
+/// <param name="BlocklistedReleaseIds">The supplied release ids that are blocklisted.</param>
+public sealed record BlocklistCheckResponse(List<string> BlocklistedReleaseIds);

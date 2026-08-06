@@ -106,6 +106,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/blocklist',
+    name: 'blocklist',
+    component: () => import('../views/activity/BlocklistView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/logs',
     name: 'logs',
     component: () => import('../views/activity/LogsView.vue'),

@@ -23,6 +23,18 @@ public static class ApiResponseRedactor
 {
     public const string RedactedValue = "REDACTED";
 
+    /// <summary>
+    /// A blank or redacted incoming secret means "unchanged", not "clear it".
+    ///
+    /// Settings are read back redacted, so saving an unmodified form would otherwise wipe every
+    /// stored credential the user never touched.
+    /// </summary>
+    public static string? KeepStoredSecret(string? incoming, string? stored) =>
+        string.IsNullOrWhiteSpace(incoming)
+        || string.Equals(incoming, RedactedValue, StringComparison.Ordinal)
+            ? stored
+            : incoming;
+
     public static ApiConfiguration RedactApiConfiguration(ApiConfiguration config)
     {
         var clone = Clone(config);
@@ -68,6 +80,11 @@ public static class ApiResponseRedactor
         if (!string.IsNullOrWhiteSpace(clone.DiscordBotToken))
         {
             clone.DiscordBotToken = RedactedValue;
+        }
+
+        if (!string.IsNullOrWhiteSpace(clone.AudiobookshelfApiKey))
+        {
+            clone.AudiobookshelfApiKey = RedactedValue;
         }
 
         if (!string.IsNullOrWhiteSpace(clone.ProwlarrApiKeyEncrypted))

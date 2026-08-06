@@ -1173,3 +1173,22 @@ export interface GoodreadsCommitSummary {
   unchangedRows: number
   committedAt: string
 }
+
+/** A release automatic search will no longer pick for a given book. */
+export interface BlocklistEntry {
+  id: number
+  audiobookId?: number | null
+  editionId?: number | null
+  releaseGuid?: string | null
+  indexerId?: number | null
+  title: string
+  normalizedTitle: string
+  size: number
+  source?: string | null
+  protocol?: string | null
+  /** How many failed grabs of this release were seen when it was blocklisted. */
+  failureCount: number
+  reason?: string | null
+  createdAt: string
+  updatedAt: string
+}

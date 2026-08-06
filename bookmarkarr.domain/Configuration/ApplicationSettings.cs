@@ -216,6 +216,19 @@ namespace Bookmarkarr.Domain.Configuration
         public string? ProwlarrApiKeyEncrypted { get; set; }
 
         /// <summary>
+        /// Audiobookshelf base URL, used only to borrow its completed metadata matching when
+        /// adopting existing library folders. Optional: adoption falls back to folder names and
+        /// embedded tags when this is unset.
+        /// </summary>
+        public string? AudiobookshelfUrl { get; set; }
+
+        /// <summary>
+        /// Audiobookshelf API key. Stored alongside the URL and redacted on read like every other
+        /// third-party credential.
+        /// </summary>
+        public string? AudiobookshelfApiKey { get; set; }
+
+        /// <summary>
         /// Optional Prowlarr tag filter used by the indexer import flow.
         /// When set, only indexers with this tag are imported and the audiobook category filter is bypassed.
         /// </summary>

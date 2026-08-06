@@ -192,6 +192,13 @@
                         {{ safeText(result.title) }}
                       </a>
                       <span v-else class="title-text">{{ safeText(result.title) }}</span>
+                      <span
+                        v-if="blocklistedIds.has(result.id)"
+                        class="blocklist-badge"
+                        title="This release failed to download before, so automatic search skips it. You can still grab it manually."
+                      >
+                        Blocklisted
+                      </span>
                     </div>
                   </td>
                   <td class="col-indexer">
@@ -332,6 +339,7 @@ const downloading = ref<Record<string, boolean>>({})
 const searchedIndexers = ref(0)
 const totalIndexers = ref(0)
 const qualityScores = ref<Map<string, QualityScore>>(new Map())
+const blocklistedIds = ref<Set<string>>(new Set())
 const qualityProfile = ref<QualityProfile | null>(null)
 const sortBy = ref<SearchSortBy | 'Score'>('Score')
 const sortDirection = ref<SearchSortDirection>('Descending')
@@ -742,6 +750,27 @@ async function loadQualityProfileAndScore() {
     }
   } catch (error) {
     logger.warn('Failed to load quality profile or score results:', error)
+  }
+
+  // Which of these has automatic search already given up on? Isolated from scoring and
+  // deliberately failure-tolerant: the badge is advisory, and losing it must never cost the
+  // user their quality scores. The row stays grabbable either way, because a manual pick may
+  // know something the failure history does not.
+  try {
+    blocklistedIds.value = props.audiobook?.id
+      ? await apiService.checkBlocklist(
+          props.audiobook.id,
+          results.value.map((result) => ({
+            releaseId: result.id,
+            indexerId: (result as { indexerId?: number | null }).indexerId ?? null,
+            title: result.title,
+            size: result.size,
+          })),
+        )
+      : new Set<string>()
+  } catch (error) {
+    logger.warn('Failed to check blocklist:', error)
+    blocklistedIds.value = new Set<string>()
   }
 }
 
@@ -1376,6 +1405,21 @@ function getScoreClass(score: number): string {
   background-color: rgba(26, 188, 156, 0.15);
   color: #1abc9c;
   border-color: rgba(26, 188, 156, 0.3);
+}
+
+.blocklist-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #fa5252;
+  background: rgba(250, 82, 82, 0.15);
+  flex-shrink: 0;
+  cursor: help;
 }
 
 .title-cell {
