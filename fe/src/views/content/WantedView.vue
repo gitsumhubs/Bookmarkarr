@@ -876,6 +876,9 @@ const markAsSkipped = async (item: WantedItem) => {
 }
 
 .sort-button {
+  /* Fills the now-flex header cell so the whole label area stays clickable. */
+  flex: 1;
+  min-width: 0;
   width: 100%;
   height: 100%;
   padding: 0 0.75rem;
@@ -909,30 +912,36 @@ const markAsSkipped = async (item: WantedItem) => {
 
 .sortable-header {
   position: relative;
+  /* The header grid centres its items, so without this the cell is only as tall as its
+     text and the resize handle collapses to an unhittable sliver. */
+  align-self: stretch;
+  display: flex;
+  align-items: center;
 }
 
 .resize-handle {
   position: absolute;
   top: 0;
-  right: 0;
-  width: 8px;
+  right: -5px;
+  width: 10px;
   height: 100%;
   cursor: col-resize;
   touch-action: none;
-  /* Sits above the sort button so a drag near the edge resizes instead of sorting. */
-  z-index: 1;
+  /* Above the sort button so a drag near the edge resizes instead of sorting. */
+  z-index: 3;
 }
 
 .resize-handle::after {
   content: '';
   position: absolute;
-  top: 20%;
-  right: 3px;
+  top: 15%;
+  left: 4px;
   width: 2px;
-  height: 60%;
-  background: var(--border-color, rgba(128, 128, 128, 0.35));
-  opacity: 0;
-  transition: opacity 0.12s ease;
+  height: 70%;
+  background: var(--border-color, rgba(128, 128, 128, 0.45));
+  /* Faintly visible at rest: an invisible handle cannot be discovered. */
+  opacity: 0.5;
+  transition: opacity 0.12s ease, background 0.12s ease;
 }
 
 .resize-handle:hover::after,
