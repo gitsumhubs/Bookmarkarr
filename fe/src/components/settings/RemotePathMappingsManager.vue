@@ -361,7 +361,7 @@ onMounted(() => {
 }
 
 .section-header h3 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.1rem;
   margin: 0 0 1rem 0;
   padding-bottom: 0.5rem;
@@ -482,7 +482,7 @@ onMounted(() => {
 
 .mapping-info h4 {
   margin: 0 0 0.25rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
   font-weight: 500;
 }
@@ -557,7 +557,7 @@ onMounted(() => {
 }
 
 .empty-state h4 {
-  color: #fff;
+  color: var(--text-primary);
   margin: 0 0 0.5rem 0;
   font-size: 1.1rem;
 }
@@ -580,7 +580,7 @@ onMounted(() => {
 
 .path-tester h4 {
   margin: 0 0 1rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
   font-weight: 500;
   display: flex;

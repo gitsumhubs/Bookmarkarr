@@ -611,7 +611,7 @@ const handleSubmit = async () => {
 
 .modal-header h2 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.5rem;
 }
 
@@ -633,7 +633,7 @@ const handleSubmit = async () => {
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
   font-size: 0.95rem;
 }
@@ -684,7 +684,7 @@ const handleSubmit = async () => {
 }
 
 .checkbox-group label strong {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 

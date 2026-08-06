@@ -117,4 +117,35 @@ public sealed class DownloadSearchQueryBuilderTests
             "Dune Frank Herbert",
             DownloadSearchQueryBuilder.Build(Book("Dune", "Frank Herbert")));
     }
+
+    [Fact]
+    public void BuildCandidates_KeepsApostrophisedWordsIntact()
+    {
+        // Regression: "Carl's" became "Carl s", and AudioBookBay tokenizes on whitespace, so the
+        // stray "Carl" + "s" never matched "Carls". Automatic search returned zero results for a
+        // book the manual path — which strips rather than spaces — found immediately.
+        var candidates = DownloadSearchQueryBuilder.BuildCandidates(
+            Book("Carl's Doomsday Scenario", "Matt Dinniman"));
+
+        Assert.Equal("Carls Doomsday Scenario Matt Dinniman", candidates[0]);
+        Assert.DoesNotContain(candidates, candidate => candidate.Contains("Carl s", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void BuildCandidates_TreatsSmartApostrophesTheSameWay()
+    {
+        var candidates = DownloadSearchQueryBuilder.BuildCandidates(Book("Carl\u2019s Doomsday Scenario"));
+
+        Assert.Equal("Carls Doomsday Scenario", candidates[0]);
+    }
+
+    [Fact]
+    public void BuildCandidates_StillSplitsOnGenuineSeparators()
+    {
+        // Colons and brackets divide words and must keep becoming spaces; only word-internal
+        // marks are dropped.
+        var candidates = DownloadSearchQueryBuilder.BuildCandidates(Book("World War Z: An Oral History"));
+
+        Assert.Equal("World War Z An Oral History", candidates[0]);
+    }
 }

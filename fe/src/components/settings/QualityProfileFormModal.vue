@@ -1257,7 +1257,7 @@ const handleSubmit = () => {
 
 .modal-header h2 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.5rem;
   display: flex;
   align-items: center;
@@ -1272,7 +1272,7 @@ const handleSubmit = () => {
 
 .form-section h4 {
   margin: 1rem 0 0.5rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1rem;
   display: flex;
   align-items: center;
@@ -1405,7 +1405,7 @@ const handleSubmit = () => {
 /* Subsection Titles */
 .subsection-title {
   margin: 1.5rem 0 1rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1rem;
   font-weight: 600;
 }
@@ -1450,7 +1450,7 @@ const handleSubmit = () => {
 
 .codec-label {
   flex: 1;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -1506,7 +1506,7 @@ const handleSubmit = () => {
 .group-title {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   flex: 1;
@@ -1594,7 +1594,7 @@ const handleSubmit = () => {
 
 .quality-label {
   flex: 1;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -1743,7 +1743,7 @@ const handleSubmit = () => {
   gap: 0.5rem;
   padding: 0.4rem 0.8rem;
   background-color: var(--brand-500);
-  color: #fff;
+  color: var(--text-primary);
   border-radius: var(--btn-radius);
   font-size: 0.9rem;
 }
@@ -1767,7 +1767,7 @@ const handleSubmit = () => {
 .tag-remove {
   background: none;
   border: none;
-  color: #fff;
+  color: var(--text-primary);
   cursor: pointer;
   padding: 0.2rem;
   display: flex;
@@ -1798,7 +1798,7 @@ const handleSubmit = () => {
 .add-button {
   padding: 0.6rem 1rem;
   background-color: var(--brand-500);
-  color: #fff;
+  color: var(--text-primary);
   border: none;
   border-radius: var(--btn-radius);
   cursor: pointer;
@@ -1839,7 +1839,7 @@ const handleSubmit = () => {
 
 .modal-header h2 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.5rem;
   display: flex;
   align-items: center;

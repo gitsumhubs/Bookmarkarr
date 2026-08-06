@@ -330,7 +330,7 @@ export default defineComponent({
   width: 26px !important;
   height: 20px;
   border: 2px solid rgba(255, 255, 255, 0.15);
-  border-top-color: white;
+  border-top-color: var(--text-primary);
   border-radius: 50%;
   margin-right: 0.5rem;
   animation: spin 0.8s linear infinite;

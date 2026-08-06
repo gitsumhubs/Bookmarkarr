@@ -1984,7 +1984,7 @@ function formatDate(dateString?: string): string {
   padding: 10px 14px;
   background: none;
   border: none;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 13px;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -2130,7 +2130,7 @@ function formatDate(dateString?: string): string {
 
 .info-section {
   flex: 1;
-  color: #fff;
+  color: var(--text-primary);
   min-width: 0;
 }
 
@@ -2138,7 +2138,7 @@ function formatDate(dateString?: string): string {
   font-size: 3rem;
   font-weight: 500;
   margin: 0 0 12px 0;
-  color: #fff;
+  color: var(--text-primary);
   line-height: 1.2;
 }
 
@@ -2298,7 +2298,7 @@ function formatDate(dateString?: string): string {
 
 .description :deep(strong),
 .description :deep(b) {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -2465,7 +2465,7 @@ function formatDate(dateString?: string): string {
 }
 
 .tab:hover {
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .tab.active {
@@ -2512,7 +2512,7 @@ function formatDate(dateString?: string): string {
 
 .detail-card h3 {
   margin: 0 0 16px 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 16px;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 12px;
@@ -2535,7 +2535,7 @@ function formatDate(dateString?: string): string {
 }
 
 .detail-row .value {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 14px;
   text-align: right;
 }
@@ -2619,7 +2619,7 @@ function formatDate(dateString?: string): string {
 }
 
 .identifier-link {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 14px;
   word-break: break-word;
 }
@@ -2712,7 +2712,7 @@ a.identifier-link:hover {
 .files-header h3,
 .history-header h3 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .action-btn {
@@ -2764,7 +2764,7 @@ a.identifier-link:hover {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #fff;
+  color: var(--text-primary);
   flex: 1;
 }
 
@@ -2839,7 +2839,7 @@ a.identifier-link:hover {
 }
 
 .metadata-value {
-  color: #fff;
+  color: var(--text-primary);
   padding: 8px 0;
   word-break: break-word;
 }
@@ -2848,7 +2848,7 @@ a.identifier-link:hover {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .file-info i {
@@ -3021,7 +3021,7 @@ a.identifier-link:hover {
   background-color: var(--brand-500);
   border: none;
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.2s;
@@ -3112,7 +3112,7 @@ a.identifier-link:hover {
 
 .event-type {
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 14px;
 }
 
@@ -3175,7 +3175,7 @@ a.identifier-link:hover {
 }
 
 .error-container h2 {
-  color: #fff;
+  color: var(--text-primary);
   margin: 0 0 8px 0;
 }
 
@@ -3188,7 +3188,7 @@ a.identifier-link:hover {
   background-color: var(--brand-500);
   border: none;
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.2s;

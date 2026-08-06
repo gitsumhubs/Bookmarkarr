@@ -185,7 +185,7 @@ h3 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 /* Modal-like card and local form styles for Download Settings */
@@ -200,7 +200,7 @@ h3 {
 .form-row-label {
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .form-group input[type='number'],

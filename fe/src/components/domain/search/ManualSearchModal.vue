@@ -1000,7 +1000,7 @@ function getScoreClass(score: number): string {
 
 .modal-header h2 {
   margin: 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 1.5rem;
   display: flex;
   align-items: center;
@@ -1088,7 +1088,7 @@ function getScoreClass(score: number): string {
 }
 
 .content-mode-button.active {
-  color: white;
+  color: var(--text-primary);
   background: var(--brand-600);
 }
 
@@ -1271,7 +1271,7 @@ function getScoreClass(score: number): string {
 
 /* Remove row background change on hover — underline title text instead */
 .title-text {
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
   text-decoration: none;
   transition: color 0.2s;
@@ -1549,7 +1549,7 @@ function getScoreClass(score: number): string {
 
 .btn-icon:hover:not(:disabled) {
   background-color: var(--brand-500);
-  color: white;
+  color: var(--text-primary);
 }
 
 .btn-icon:disabled {
@@ -1559,7 +1559,7 @@ function getScoreClass(score: number): string {
 
 .btn-download:hover:not(:disabled) {
   background-color: var(--brand-500);
-  color: white;
+  color: var(--text-primary);
 }
 
 @media (max-width: 1200px) {

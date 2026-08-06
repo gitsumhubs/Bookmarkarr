@@ -1610,7 +1610,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
   margin: 0;
   font-size: 1.5rem;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
   /* Use Figtree for the brand heading when available */
   font-family:
     'Figtree',
@@ -1671,7 +1671,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 
 .user-menu-item.username {
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .user-menu-item:hover {
@@ -1825,12 +1825,12 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 
 .nav-item.router-link-active {
   background-color: var(--brand-500);
-  color: white;
+  color: var(--text-primary);
 }
 
 .sidebar .nav-item.router-link-active svg,
 .sidebar .nav-item.router-link-active .ph {
-  color: white;
+  color: var(--text-primary);
 }
 
 .sidebar-footer {
@@ -2294,7 +2294,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 }
 
 .sidebar .nav-subitem.active {
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 500;
   border-left: 3px solid #2196f3; /* Highlighted border for active */
 }
@@ -2406,7 +2406,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 
 .result-title {
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
@@ -2559,7 +2559,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 }
 
 .dropdown-header strong {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 500;
 }
@@ -2624,7 +2624,7 @@ these are not present, the Google Fonts import in `fe/index.html` will be used a
 .notif-title {
   font-size: 13px;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 2px;
   overflow: hidden;
   text-overflow: ellipsis;

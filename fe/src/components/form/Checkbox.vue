@@ -76,7 +76,7 @@ defineProps({ modelValue: { type: Boolean, default: false } })
   height: 9px;
   border: solid transparent;
   border-width: 0 2px 2px 0;
-  border-color: #fff;
+  border-color: var(--text-primary);
   transform: translateY(-50%) rotate(45deg) scale(0.8);
   opacity: 0;
   transition:

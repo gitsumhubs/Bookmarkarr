@@ -191,7 +191,7 @@ const handleCancel = () => {
 
 .form-header h4 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1rem;
   font-weight: 500;
   display: flex;
@@ -233,7 +233,7 @@ label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 

@@ -842,7 +842,7 @@ const getItemIssues = (item: PreviewItem): string[] => {
 .col-check input[type='checkbox'] {
   width: 18px;
   height: 18px;
-  accent-color: #ffffff;
+  accent-color: var(--text-primary);
   border-radius: 6px;
 }
 
@@ -1028,7 +1028,7 @@ const getItemIssues = (item: PreviewItem): string[] => {
 
 .match-content h4 {
   margin: 0 0 1rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.2rem;
 }
 

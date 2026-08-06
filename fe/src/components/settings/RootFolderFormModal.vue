@@ -242,7 +242,7 @@ async function confirmChange(moveFiles: boolean) {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .form-row input {
@@ -400,7 +400,7 @@ async function confirmChange(moveFiles: boolean) {
 .confirm-body p {
   margin: 0 0 0.5rem 0;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .confirm-body pre {

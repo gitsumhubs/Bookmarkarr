@@ -743,7 +743,7 @@ const markAsSkipped = async (item: WantedItem) => {
 
 .page-header h1 {
   margin: 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 2rem;
   display: flex;
   align-items: center;
@@ -818,7 +818,7 @@ const markAsSkipped = async (item: WantedItem) => {
 }
 
 .filter-clear:hover {
-  color: white;
+  color: var(--text-primary);
 }
 
 .filter-clear svg {
@@ -1032,7 +1032,7 @@ const markAsSkipped = async (item: WantedItem) => {
 }
 
 .title-text {
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1040,7 +1040,7 @@ const markAsSkipped = async (item: WantedItem) => {
 }
 
 .title-link {
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
   text-decoration: none;
   overflow: hidden;

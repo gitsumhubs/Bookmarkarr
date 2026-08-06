@@ -120,5 +120,25 @@ namespace Bookmarkarr.Tests.Features.Application.Audiobooks.Matching
             Assert.Equal(FolderIdentitySource.None, identity.Source);
             Assert.False(identity.IsConfident);
         }
+        [Fact]
+        public void Identify_UsesTheAudiobookshelfItemForADiscSubfolder()
+        {
+            // A book stored as Disc 1 / Disc 2 is discovered as two folders by a deepest-folder
+            // walk. Audiobookshelf holds one item for the parent, and that boundary is the right
+            // one — otherwise the book is adopted twice.
+            const string item = "/audiobooks/Author/Long Book";
+            var index = new Dictionary<string, AudiobookshelfItem>(StringComparer.OrdinalIgnoreCase)
+            {
+                [item] = new(item, "Long Book", ["Author"], null, null, "ASIN9", null)
+            };
+
+            var parent = LibraryFolderIdentifier.Identify(item, Root, index);
+            var disc = LibraryFolderIdentifier.Identify($"{item}/Disc 1", Root, index);
+
+            Assert.Equal("ASIN9", parent.Asin);
+            // The subfolder itself is not an Audiobookshelf item, so identification alone cannot
+            // resolve it — the workflow collapses it onto the parent before identifying.
+            Assert.Equal(FolderIdentitySource.FolderName, disc.Source);
+        }
     }
 }

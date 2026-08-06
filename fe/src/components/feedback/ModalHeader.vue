@@ -79,7 +79,7 @@ const headingId = props.headingId || internalId
 
 .modal-title h3 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.125rem;
   display: flex;
   align-items: center;

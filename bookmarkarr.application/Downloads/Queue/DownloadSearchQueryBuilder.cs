@@ -83,6 +83,12 @@ namespace Bookmarkarr.Application.Downloads.Queue
                 .Replace('“', '"').Replace('”', '"')
                 .Replace('–', '-').Replace('—', '-');
 
+            // Apostrophes are removed rather than spaced out, because they sit *inside* a word.
+            // Spacing them turns "Carl's" into "Carl s", and indexers that tokenize on whitespace
+            // then never match "Carls" — an automatic search returns zero results for a book the
+            // manual path, which strips instead, finds immediately.
+            normalized = IntraWordPunctuationPattern().Replace(normalized, string.Empty);
+
             normalized = PunctuationPattern().Replace(normalized, " ");
             return CollapseWhitespacePattern().Replace(normalized, " ").Trim();
         }
@@ -106,7 +112,12 @@ namespace Bookmarkarr.Application.Downloads.Queue
             return stripped.Length > 0 ? stripped : title;
         }
 
-        [GeneratedRegex(@"[\[\]\(\)\{\}:;,""'`~!?*/\\|]+")]
+        // Word-internal marks: dropped outright so the surrounding letters stay one token.
+        [GeneratedRegex(@"['`\u2018\u2019]+")]
+        private static partial Regex IntraWordPunctuationPattern();
+
+        // Separators: flattened to a space, since they genuinely divide words.
+        [GeneratedRegex(@"[\[\]\(\)\{\}:;,""~!?*/\\|]+")]
         private static partial Regex PunctuationPattern();
 
         [GeneratedRegex(@"\s{2,}")]

@@ -351,7 +351,7 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   margin: 0 0 0.5rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 2rem;
   font-weight: 500;
 }
@@ -724,7 +724,7 @@ onMounted(() => {
 
 .page-button.active {
   background: var(--brand-500);
-  color: #fff;
+  color: var(--text-primary);
   border-color: var(--brand-500);
 }
 

@@ -504,7 +504,7 @@ watch(
 
 .detail-section h3 {
   margin: 0 0 0.5rem 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 1.75rem;
   line-height: 1.2;
 }
@@ -524,7 +524,7 @@ watch(
 
 .detail-section h4 {
   margin: 0 0 1rem 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 1.1rem;
   font-weight: 500;
   border-bottom: 1px solid var(--border-color);
@@ -557,7 +557,7 @@ watch(
 }
 
 .detail-item .value {
-  color: white;
+  color: var(--text-primary);
   font-weight: 400;
 }
 

@@ -647,7 +647,7 @@ defineExpose({ openAddIndexer, openProwlarrImport: openProwlarrModal })
 
 .section-header h3 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.5rem;
   font-weight: 500;
 }
@@ -663,7 +663,7 @@ defineExpose({ openAddIndexer, openProwlarrImport: openProwlarrModal })
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   background: var(--primary);
-  color: white;
+  color: var(--text-primary);
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
@@ -891,7 +891,7 @@ defineExpose({ openAddIndexer, openProwlarrImport: openProwlarrModal })
 
 .section-header h3 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.5rem;
   font-weight: 500;
 }
@@ -936,7 +936,7 @@ defineExpose({ openAddIndexer, openProwlarrImport: openProwlarrModal })
 
 .empty-state h3 {
   margin: 1rem 0 0.5rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.5rem;
   font-weight: 500;
 }
@@ -1009,7 +1009,7 @@ defineExpose({ openAddIndexer, openProwlarrImport: openProwlarrModal })
 
 .indexer-info h4 {
   margin: 0 0 0.5rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.1rem;
   font-weight: 500;
 }

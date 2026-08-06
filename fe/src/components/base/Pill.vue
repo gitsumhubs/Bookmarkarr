@@ -147,7 +147,7 @@ withDefaults(defineProps<Props>(), {
 /* Count variant (for notification counts) */
 .pill-count {
   background-color: var(--brand-500);
-  color: white;
+  color: var(--text-primary);
   border-color: var(--brand-500);
   font-weight: 500;
   min-width: 1.5rem;

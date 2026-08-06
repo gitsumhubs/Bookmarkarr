@@ -475,7 +475,7 @@ async function refreshRootFolders(newFolder: RootFolder) {
 
 .page-header h1 {
   margin: 0 0 0.25rem;
-  color: white;
+  color: var(--text-primary);
   font-size: 1.75rem;
 }
 

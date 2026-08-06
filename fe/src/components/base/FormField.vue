@@ -71,7 +71,7 @@ defineProps({
   align-items: center;
   gap: 0.25rem;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 

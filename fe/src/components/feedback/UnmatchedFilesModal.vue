@@ -571,7 +571,7 @@ async function addAllWithAsin() {
 
 .empty-state h4 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .results-summary {
@@ -620,7 +620,7 @@ async function addAllWithAsin() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #fff;
+  color: var(--text-primary);
   cursor: default;
 }
 

@@ -113,7 +113,7 @@ function onClose() {
 
 .notification-content {
   flex: 1;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .notification-content h3 {
@@ -146,7 +146,7 @@ function onClose() {
 }
 
 .notification-close:hover {
-  color: #fff;
+  color: var(--text-primary);
 }
 
 /* Animations */

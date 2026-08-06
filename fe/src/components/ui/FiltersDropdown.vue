@@ -189,7 +189,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 .trigger.active {
   background-color: var(--brand-500);
   border-color: var(--brand-500);
-  color: #fff;
+  color: var(--text-primary);
 }
 .dropdown {
   position: absolute;
@@ -226,11 +226,11 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 }
 .dropdown-item.create {
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
 }
 .dropdown-item.reset {
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
 }
 .check {
   color: #4dabf7;

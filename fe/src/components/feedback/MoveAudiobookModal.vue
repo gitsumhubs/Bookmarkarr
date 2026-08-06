@@ -316,7 +316,7 @@ function onSubmit() {
   gap: 0.25rem;
 }
 .warning-content strong {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 .warning-content p {

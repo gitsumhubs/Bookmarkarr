@@ -404,7 +404,7 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   margin: 0 0 0.5rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 2rem;
   font-weight: 500;
 }
@@ -431,7 +431,7 @@ onMounted(() => {
   gap: 0.5rem;
   padding: 0.6rem 1.2rem;
   background: var(--brand-focus);
-  color: white;
+  color: var(--text-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -522,7 +522,7 @@ onMounted(() => {
 
 .card-title h3 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.1rem;
   font-weight: 500;
 }
@@ -586,7 +586,7 @@ onMounted(() => {
 }
 
 .detail-row .value {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
   flex: 1;
 }
@@ -620,7 +620,7 @@ onMounted(() => {
 
 .client-name {
   flex: 1;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -693,7 +693,7 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.3rem;
   font-weight: 500;
 }

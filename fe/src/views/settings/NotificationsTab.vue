@@ -32,8 +32,15 @@
         <h3>No webhooks configured</h3>
         <p>Webhooks allow you to receive real-time notifications when important events occur.</p>
         <p class="empty-help">
-          Supported services include Slack, Discord, Telegram, Pushover, Gotify, and more.
+          Supported services include Slack, Discord, Telegram, Pushover, NTFY, Gotify, and any
+          generic webhook.
         </p>
+        <!-- The header's Add button lives in the parent, far from this empty state; without a
+             call to action here there is nothing on screen telling you how to start. -->
+        <button class="btn btn-primary" @click="openWebhookForm">
+          <PhPlus />
+          Add Webhook
+        </button>
       </div>
 
       <div v-else class="webhooks-grid">
@@ -1041,7 +1048,7 @@ defineExpose({ openWebhookForm })
 
 .section-header h3 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.5rem;
   font-weight: 500;
 }
@@ -1070,7 +1077,7 @@ defineExpose({ openWebhookForm })
 
 .empty-state h3 {
   margin: 1rem 0 0.5rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.5rem;
   font-weight: 500;
 }
@@ -1114,7 +1121,7 @@ defineExpose({ openWebhookForm })
   margin-top: 1.5rem;
   padding: 1rem 2rem;
   background: var(--brand-600);
-  color: white;
+  color: var(--text-primary);
   border: none;
   border-radius: var(--btn-radius);
   cursor: pointer;
@@ -1143,7 +1150,7 @@ defineExpose({ openWebhookForm })
 }
 
 .form-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.1rem;
   margin: 0 0 1rem 0;
   padding-bottom: 0.5rem;
@@ -1161,7 +1168,7 @@ defineExpose({ openWebhookForm })
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -1267,7 +1274,7 @@ defineExpose({ openWebhookForm })
 
 .webhook-info h4 {
   margin: 0 0 0.5rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.1rem;
   font-weight: 500;
   white-space: nowrap;

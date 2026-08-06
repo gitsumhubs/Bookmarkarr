@@ -232,7 +232,7 @@ const displaySize = computed(() => {
 
 .percentage {
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.9rem;
 }
 

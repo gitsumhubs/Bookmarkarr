@@ -1375,14 +1375,14 @@ const capitalizeFirst = (str: string): string => {
 
 .detail-section h3 {
   margin: 0 0 0.5rem 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 1.75rem;
   line-height: 1.2;
 }
 
 .detail-section h4 {
   margin: 0 0 1rem 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 1.1rem;
   font-weight: 500;
   border-bottom: 1px solid var(--border-color);
@@ -1441,7 +1441,7 @@ const capitalizeFirst = (str: string): string => {
 }
 
 .detail-item .value {
-  color: white;
+  color: var(--text-primary);
   font-weight: 400;
 }
 
@@ -1531,7 +1531,7 @@ const capitalizeFirst = (str: string): string => {
 
 .form-label {
   display: block;
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
   margin-bottom: 0.5rem;
 }

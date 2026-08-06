@@ -101,7 +101,7 @@ withDefaults(
 
 .card-title h3 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.1rem;
   font-weight: 500;
 }

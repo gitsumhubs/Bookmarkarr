@@ -230,7 +230,7 @@ const performSearch = async () => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: white;
+  color: var(--text-primary);
   font-size: 1.5rem;
 }
 
@@ -269,7 +269,7 @@ const performSearch = async () => {
 
 .form-group label {
   display: block;
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
   margin-bottom: 0.5rem;
   font-size: 0.875rem;

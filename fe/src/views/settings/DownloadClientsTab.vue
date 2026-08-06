@@ -627,7 +627,7 @@ defineExpose({
 
 .section-header h3 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.5rem;
   font-weight: 500;
 }
@@ -724,7 +724,7 @@ defineExpose({
 .indexer-info h4 {
   margin: 0;
   font-size: 1.1rem;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
 }
 

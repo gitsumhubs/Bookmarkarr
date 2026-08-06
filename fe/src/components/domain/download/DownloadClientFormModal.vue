@@ -716,7 +716,7 @@ const handleDelete = () => {
 }
 
 .form-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.1rem;
   margin: 0 0 1rem 0;
   padding-bottom: 0.5rem;
@@ -733,7 +733,7 @@ const handleDelete = () => {
 
 .form-group label {
   display: block;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
   font-size: 0.95rem;
 }

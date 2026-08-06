@@ -127,7 +127,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 .select-trigger.active {
   background-color: var(--brand-500);
   border-color: var(--brand-500);
-  color: #fff;
+  color: var(--text-primary);
 }
 .select-dropdown {
   position: absolute;

@@ -247,7 +247,7 @@ defineExpose({
   align-items: center;
   gap: 0.5rem;
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.5rem;
   font-weight: 500;
 }
@@ -310,7 +310,7 @@ defineExpose({
 
 .empty-state h4 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.6rem;
   font-weight: 500;
 }
@@ -389,7 +389,7 @@ defineExpose({
 .folder-info h4,
 .folder-header h4 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.1rem;
   font-weight: 500;
 }

@@ -2503,7 +2503,7 @@ defineExpose({
 .toolbar-btn.active {
   background-color: var(--brand-500);
   border-color: var(--brand-500);
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .toolbar-btn.edit-btn {
@@ -2675,7 +2675,7 @@ defineExpose({
   padding: 8px 12px;
   background-color: var(--brand-500);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 12px;
   transition: background-color 0.12s ease;
 }
@@ -2833,7 +2833,7 @@ defineExpose({
   top: 0.375em;
   right: 0.375em;
   background-color: var(--brand-500);
-  color: white;
+  color: var(--text-primary);
   padding: 0.1em 0.25em;
   border-radius: 0.5rem; /* rounded-lg like sample */
   font-size: 0.8rem;
@@ -2955,7 +2955,7 @@ defineExpose({
 /* Use same typography as grid-bottom-details to keep consistency */
 .series-bottom-title {
   font-size: 12px; /* match grid-bottom-details .detail-line.title */
-  color: #fff;
+  color: var(--text-primary);
   margin: 0 0 4px 0;
   font-weight: 500;
   text-align: center;
@@ -3259,8 +3259,8 @@ defineExpose({
 
 .audiobook-item.selected .selection-checkbox::after,
 .audiobook-list-item.selected .selection-checkbox::after {
-  border-right-color: #fff;
-  border-bottom-color: #fff;
+  border-right-color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
   transform: translate(-50%, -50%) rotate(45deg) scale(1);
 }
 
@@ -3493,7 +3493,7 @@ defineExpose({
 }
 .audiobook-extra-details .detail-line.title {
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
 }
 .audiobook-extra-details .detail-line.small {
   font-size: 11px;
@@ -3519,7 +3519,7 @@ defineExpose({
   text-align: center;
 }
 .grid-bottom-details .detail-line.title {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
   margin-bottom: 4px;
 }
@@ -3527,7 +3527,7 @@ defineExpose({
 .audiobook-title {
   font-size: 13px;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3725,7 +3725,7 @@ defineExpose({
 }
 
 .error-state h2 {
-  color: white;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 
@@ -3740,7 +3740,7 @@ defineExpose({
   gap: 0.5rem;
   padding: 12px 24px;
   background-color: var(--brand-500);
-  color: white;
+  color: var(--text-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -3753,7 +3753,7 @@ defineExpose({
 }
 
 .empty-state h2 {
-  color: white;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 
@@ -3767,7 +3767,7 @@ defineExpose({
   gap: 0.5rem;
   padding: 12px 24px;
   background-color: var(--brand-500);
-  color: white;
+  color: var(--text-primary);
   border-radius: 6px;
   text-decoration: none;
   font-weight: 500;
@@ -3848,7 +3848,7 @@ defineExpose({
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 14px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .list-details .audiobook-author {

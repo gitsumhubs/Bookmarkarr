@@ -3432,7 +3432,7 @@ onUnmounted(() => {
 
 .page-header h1 {
   margin: 0 0 2rem 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 2rem;
   display: flex;
   align-items: center;
@@ -3500,7 +3500,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
   font-size: 1.375rem;
   margin-bottom: 0.75rem;
@@ -3725,7 +3725,7 @@ onUnmounted(() => {
 
 .advanced-search-header h3 {
   margin: 0 0 0.75rem 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 1.25rem;
   font-weight: 500;
   display: flex;
@@ -3770,7 +3770,7 @@ onUnmounted(() => {
 }
 
 .form-group label {
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
   margin-bottom: 0.75rem;
   font-size: 0.9rem;
@@ -4003,7 +4003,7 @@ select.form-input:focus {
 
 .form-group label {
   display: block;
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
   margin-bottom: 0.5rem;
 }
@@ -4107,7 +4107,7 @@ select.form-input:focus {
 
 /* Results */
 .search-results h2 {
-  color: white;
+  color: var(--text-primary);
   margin-bottom: 1.5rem;
   font-size: 1.5rem;
   font-weight: 500;
@@ -4187,7 +4187,7 @@ select.form-input:focus {
 
 .result-info h3 {
   margin: 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 1.4rem;
   line-height: 1.3;
   font-weight: 500;
@@ -4515,7 +4515,7 @@ select.form-input:focus {
   margin: 0 0 0.5rem 0;
   font-size: 1.25rem;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--text-primary);
   line-height: 1.3;
 }
 
@@ -4550,7 +4550,7 @@ select.form-input:focus {
 .getting-started h2,
 .empty-state h2,
 .error-state h2 {
-  color: white;
+  color: var(--text-primary);
   margin-bottom: 1rem;
 }
 
@@ -4563,7 +4563,7 @@ select.form-input:focus {
 }
 
 .help-section h3 {
-  color: white;
+  color: var(--text-primary);
   margin-bottom: 1rem;
 }
 
@@ -4825,7 +4825,7 @@ select.form-input:focus {
 }
 
 .small-label {
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
   font-size: 0.875rem;
   margin: 0;

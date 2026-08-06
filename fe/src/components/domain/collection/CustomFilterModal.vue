@@ -357,7 +357,7 @@ function onClose() {
 .btn-close {
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 18px;
 }
 .form-row {

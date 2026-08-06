@@ -934,7 +934,7 @@ onUnmounted(() => {
 
 .page-header h1 {
   margin: 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 2rem;
   display: flex;
   align-items: center;
@@ -1256,7 +1256,7 @@ onUnmounted(() => {
 
 .title-text,
 .title-link {
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1304,7 +1304,7 @@ onUnmounted(() => {
 .progress-label {
   font-size: 0.8rem;
   font-weight: 500;
-  color: white;
+  color: var(--text-primary);
   white-space: nowrap;
   min-width: 40px;
   text-align: right;
@@ -1476,7 +1476,7 @@ onUnmounted(() => {
 
 .modal-header h3 {
   margin: 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 1.25rem;
   font-weight: 500;
   display: flex;
@@ -1532,7 +1532,7 @@ onUnmounted(() => {
 }
 
 .remove-item-info strong {
-  color: white;
+  color: var(--text-primary);
   display: block;
   margin-bottom: 0.5rem;
   font-size: 1rem;

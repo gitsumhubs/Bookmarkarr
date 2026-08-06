@@ -62,7 +62,7 @@ defineProps<{
 
 .form-section h3 {
   margin: 0 0 0.5rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.2rem;
   display: flex;
   align-items: center;

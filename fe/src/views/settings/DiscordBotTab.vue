@@ -535,7 +535,7 @@ const stopBot = async () => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .form-group {
@@ -550,7 +550,7 @@ const stopBot = async () => {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 
@@ -730,7 +730,7 @@ const stopBot = async () => {
 
 .section-header h3 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.5rem;
   font-weight: 500;
 }
@@ -809,7 +809,7 @@ const stopBot = async () => {
 }
 
 .status-text {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1rem;
 }
 

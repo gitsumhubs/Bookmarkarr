@@ -583,7 +583,7 @@ function close() {
 
 .modal-header h2 {
   margin: 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 1.5rem;
   display: flex;
   align-items: center;
@@ -685,7 +685,7 @@ function close() {
 }
 
 .info-section strong {
-  color: white;
+  color: var(--text-primary);
 }
 
 .edit-form {
@@ -704,7 +704,7 @@ function close() {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
   font-size: 0.95rem;
 }
@@ -747,7 +747,7 @@ function close() {
 }
 
 .radio-label input[type='radio']:checked + span {
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -838,7 +838,7 @@ function close() {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .confirm-body {
@@ -875,7 +875,7 @@ function close() {
   align-items: center;
   gap: 0.5rem;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 0.9rem;
 }
 
@@ -952,7 +952,7 @@ function close() {
 
 .checkbox-title {
   font-weight: 500;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 0.95rem;
 }
 

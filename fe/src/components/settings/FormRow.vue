@@ -34,7 +34,7 @@ defineProps<{ label?: string; help?: string; labelFor?: string }>()
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
 }
 .form-row-control {
   display: block;

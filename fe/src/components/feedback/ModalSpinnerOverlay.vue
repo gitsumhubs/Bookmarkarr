@@ -53,6 +53,6 @@ defineProps({
   height: 48px;
 }
 .spinner-message {
-  color: #fff;
+  color: var(--text-primary);
 }
 </style>

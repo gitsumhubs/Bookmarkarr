@@ -265,7 +265,7 @@ onMounted(load)
   align-items: center;
   gap: 0.5rem;
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 2rem;
   font-weight: 500;
 }
@@ -401,7 +401,7 @@ onMounted(load)
 }
 
 .title-text {
-  color: #fff;
+  color: var(--text-primary);
   word-break: break-word;
 }
 

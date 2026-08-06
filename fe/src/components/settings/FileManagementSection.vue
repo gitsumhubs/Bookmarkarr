@@ -368,7 +368,7 @@ h3 {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  color: #fff;
+  color: var(--text-primary);
   letter-spacing: 0.01em;
 }
 
@@ -414,7 +414,7 @@ h3 svg {
 .form-group label {
   margin-bottom: 0.5rem;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .input-group {
@@ -523,7 +523,7 @@ h3 svg {
 
 .modal-header h2 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.3rem;
 }
 
@@ -540,7 +540,7 @@ h3 svg {
 }
 
 .close-btn:hover {
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .modal-body {

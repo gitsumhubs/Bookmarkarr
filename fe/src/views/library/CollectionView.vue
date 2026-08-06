@@ -2392,7 +2392,7 @@ defineExpose({
   padding: 6px 12px;
   background-color: var(--brand-500);
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 12px;
   transition: background-color 0.12s ease;
 }
@@ -2599,7 +2599,7 @@ defineExpose({
 
 .info-section {
   flex: 1;
-  color: #fff;
+  color: var(--text-primary);
   min-width: 0;
 }
 
@@ -2607,7 +2607,7 @@ defineExpose({
   font-size: 3rem;
   font-weight: 500;
   margin: 0 0 12px 0;
-  color: #fff;
+  color: var(--text-primary);
   line-height: 1.15;
 }
 
@@ -3398,14 +3398,14 @@ defineExpose({
 .list-section-header.is-in-library .section-count {
   background: var(--brand-500);
   border-color: rgba(46, 204, 113, 0.32);
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .collection-section-header.is-not-added .section-count,
 .list-section-header.is-not-added .section-count {
   background: var(--brand-500);
   border-color: rgba(46, 204, 113, 0.32);
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .collection-card {
@@ -3558,7 +3558,7 @@ defineExpose({
 }
 .audiobook-extra-details .detail-line.title {
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
 }
 .audiobook-extra-details .detail-line.small {
   font-size: 11px;
@@ -3584,7 +3584,7 @@ defineExpose({
   text-align: center;
 }
 .grid-bottom-details .detail-line.title {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
   margin-bottom: 4px;
 }
@@ -3592,7 +3592,7 @@ defineExpose({
 .audiobook-title {
   font-size: 13px;
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
   margin-bottom: 4px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3735,7 +3735,7 @@ defineExpose({
 .action-btn {
   padding: 6px 8px;
   border-radius: 6px;
-  color: white;
+  color: var(--text-primary);
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.2s;
@@ -3797,7 +3797,7 @@ defineExpose({
 }
 
 .error-state h2 {
-  color: white;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 
@@ -3812,7 +3812,7 @@ defineExpose({
   gap: 0.5rem;
   padding: 12px 24px;
   background-color: var(--brand-500);
-  color: white;
+  color: var(--text-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -3825,7 +3825,7 @@ defineExpose({
 }
 
 .empty-state h2 {
-  color: white;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 
@@ -3839,7 +3839,7 @@ defineExpose({
   gap: 0.5rem;
   padding: 12px 24px;
   background-color: var(--brand-500);
-  color: white;
+  color: var(--text-primary);
   border-radius: 6px;
   text-decoration: none;
   font-weight: 500;
@@ -3914,7 +3914,7 @@ defineExpose({
 
 .series-bottom-title {
   font-size: 12px;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0 0 4px 0;
   font-weight: 500;
   text-align: center;
@@ -4025,8 +4025,8 @@ defineExpose({
 
 .audiobook-item.selected .selection-checkbox::after,
 .audiobook-list-item.selected .selection-checkbox::after {
-  border-right-color: #fff;
-  border-bottom-color: #fff;
+  border-right-color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
   transform: translate(-50%, -50%) rotate(45deg) scale(1);
 }
 
@@ -4114,7 +4114,7 @@ defineExpose({
   width: 32px;
   height: 32px;
   border-radius: 6px;
-  color: #fff;
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -4233,7 +4233,7 @@ defineExpose({
 }
 
 .grid-bottom-details .detail-line.title {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
   margin-bottom: 4px;
 }
@@ -4331,7 +4331,7 @@ defineExpose({
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 14px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .list-details .audiobook-author {

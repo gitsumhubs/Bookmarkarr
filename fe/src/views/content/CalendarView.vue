@@ -624,7 +624,7 @@ const allItemsSorted = computed(() => {
 
 .page-header h1 {
   margin: 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 2rem;
   display: flex;
   align-items: center;
@@ -709,7 +709,7 @@ const allItemsSorted = computed(() => {
 }
 
 .current-month {
-  color: white;
+  color: var(--text-primary);
   font-weight: 600;
   font-size: 1.1rem;
   padding: 0.875rem 1rem;
@@ -857,7 +857,7 @@ const allItemsSorted = computed(() => {
 .day-header {
   padding: 0.875rem;
   text-align: center;
-  color: white;
+  color: var(--text-primary);
   font-weight: 500;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 0.9rem;
@@ -901,7 +901,7 @@ const allItemsSorted = computed(() => {
 }
 
 .day-number {
-  color: white;
+  color: var(--text-primary);
   font-weight: 600;
   margin-bottom: 0.5rem;
   font-size: 0.95rem;
@@ -1029,7 +1029,7 @@ const allItemsSorted = computed(() => {
 }
 
 .upcoming-info h4 {
-  color: white;
+  color: var(--text-primary);
   margin: 0 0 0.35rem 0;
   font-size: 0.95rem;
   font-weight: 500;
@@ -1099,7 +1099,7 @@ const allItemsSorted = computed(() => {
 }
 
 .week-day-date {
-  color: white;
+  color: var(--text-primary);
   font-size: 1.5rem;
   font-weight: 600;
 }
@@ -1223,7 +1223,7 @@ const allItemsSorted = computed(() => {
 
 .forecast-content h3 {
   margin: 0 0 0.25rem 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 1rem;
   font-weight: 500;
 }
@@ -1244,7 +1244,7 @@ const allItemsSorted = computed(() => {
 }
 
 .day-title {
-  color: white;
+  color: var(--text-primary);
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0 0 1.5rem 0;
@@ -1292,7 +1292,7 @@ const allItemsSorted = computed(() => {
 
 .day-item-content h4 {
   margin: 0 0 0.25rem 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 1rem;
   font-weight: 500;
 }
@@ -1347,7 +1347,7 @@ const allItemsSorted = computed(() => {
 
 .agenda-content h3 {
   margin: 0 0 0.25rem 0;
-  color: white;
+  color: var(--text-primary);
   font-size: 1rem;
   font-weight: 500;
 }

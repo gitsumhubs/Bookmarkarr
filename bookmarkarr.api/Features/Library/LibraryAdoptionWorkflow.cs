@@ -95,7 +95,13 @@ public sealed class LibraryAdoptionWorkflow(
         var candidates = new List<AdoptionCandidate>();
         var matchedByAudiobookshelf = 0;
 
-        foreach (var folder in FindBookFolders(rootPath, ct).Take(limit))
+        // Audiobookshelf's own grouping wins where it has one. Walking for the deepest folders
+        // that hold audio splits a book stored as Disc 1/Disc 2 into two books; Audiobookshelf
+        // has already resolved that to a single item, so its path is the better boundary.
+        var folders = CollapseToAudiobookshelfItems(
+            [.. FindBookFolders(rootPath, ct)], audiobookshelf).Take(limit);
+
+        foreach (var folder in folders)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -335,6 +341,66 @@ public sealed class LibraryAdoptionWorkflow(
 
             yield return (current, audioFiles.Count, size);
         }
+    }
+
+    /// <summary>
+    /// Replaces folders that sit beneath a known Audiobookshelf item with that item's own folder.
+    ///
+    /// A book stored as <c>Book/Disc 1</c> and <c>Book/Disc 2</c> is discovered as two candidates
+    /// by a deepest-folder walk, and would be adopted as two books. Audiobookshelf has already
+    /// decided those are one item, so its boundary replaces ours and the parts are merged.
+    /// Folders it knows nothing about are left exactly as discovered.
+    /// </summary>
+    private static List<(string Path, int FileCount, long Size)> CollapseToAudiobookshelfItems(
+        List<(string Path, int FileCount, long Size)> discovered,
+        IReadOnlyDictionary<string, AudiobookshelfItem> audiobookshelf)
+    {
+        if (audiobookshelf.Count == 0)
+        {
+            return discovered;
+        }
+
+        var merged = new Dictionary<string, (string Path, int FileCount, long Size)>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var folder in discovered)
+        {
+            var owner = FindOwningItem(folder.Path, audiobookshelf) ?? folder.Path;
+            var key = NormalizePath(owner);
+
+            merged[key] = merged.TryGetValue(key, out var existing)
+                ? (owner, existing.FileCount + folder.FileCount, existing.Size + folder.Size)
+                : (owner, folder.FileCount, folder.Size);
+        }
+
+        return [.. merged.Values];
+    }
+
+    /// <summary>
+    /// The Audiobookshelf item that owns this folder — itself, or the nearest ancestor.
+    /// </summary>
+    private static string? FindOwningItem(
+        string folderPath,
+        IReadOnlyDictionary<string, AudiobookshelfItem> audiobookshelf)
+    {
+        var current = NormalizePath(folderPath);
+
+        while (!string.IsNullOrEmpty(current))
+        {
+            if (audiobookshelf.ContainsKey(current))
+            {
+                return current;
+            }
+
+            var parent = Path.GetDirectoryName(current);
+            if (string.IsNullOrEmpty(parent) || string.Equals(parent, current, StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            current = NormalizePath(parent);
+        }
+
+        return null;
     }
 
     private static string NormalizePath(string path) =>

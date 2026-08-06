@@ -180,7 +180,7 @@ const validationErrors = computed(() => {
 
 .section-header h3 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.5rem;
   font-weight: 500;
 }
@@ -236,7 +236,7 @@ const validationErrors = computed(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .form-section .form-body {
@@ -261,7 +261,7 @@ const validationErrors = computed(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .info-inline {

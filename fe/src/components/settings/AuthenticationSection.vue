@@ -123,7 +123,7 @@ h3 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .form-body {

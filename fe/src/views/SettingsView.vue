@@ -1419,7 +1419,7 @@ onMounted(async () => {
 
 .settings-header h1 {
   margin: 0 0 0.5rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 2rem;
   font-weight: 500;
   display: flex;
@@ -1633,7 +1633,7 @@ onMounted(async () => {
 
 .section-header h3 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.5rem;
   font-weight: 500;
 }
@@ -1661,7 +1661,7 @@ onMounted(async () => {
 
 .empty-state h3 {
   margin: 1rem 0 0.5rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.5rem;
   font-weight: 500;
 }
@@ -1796,7 +1796,7 @@ onMounted(async () => {
 
 .webhook-info h4 {
   margin: 0 0 0.25rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.1rem;
   font-weight: 500;
 }
@@ -2044,7 +2044,7 @@ onMounted(async () => {
 
 .config-info h4 {
   margin: 0 0 0.5rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.1rem;
   font-weight: 500;
 }
@@ -2132,7 +2132,7 @@ onMounted(async () => {
 }
 
 .form-section h3 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.1rem;
   margin: 0 0 1rem 0;
   padding-bottom: 0.5rem;
@@ -2141,7 +2141,7 @@ onMounted(async () => {
 
 .form-section h4 {
   margin: 0 0 1.5rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.1rem;
   font-weight: 500;
   display: flex;
@@ -2173,7 +2173,7 @@ onMounted(async () => {
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
   font-size: 0.95rem;
 }
@@ -2348,7 +2348,7 @@ onMounted(async () => {
 }
 
 .checkbox-group label strong {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
   font-weight: 500;
 }
@@ -2376,7 +2376,7 @@ onMounted(async () => {
 }
 
 .auth-row label {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
@@ -2633,7 +2633,7 @@ onMounted(async () => {
 
 .indexer-info h4 {
   margin: 0 0 0.5rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.1rem;
   font-weight: 500;
 }
@@ -2877,7 +2877,7 @@ onMounted(async () => {
 
 .profile-card h4 {
   margin: 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.1rem;
   font-weight: 500;
 }
@@ -2994,7 +2994,7 @@ onMounted(async () => {
 }
 
 .preference-value {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.9rem;
 }
 
@@ -3027,7 +3027,7 @@ onMounted(async () => {
 }
 
 .limit-value {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 0.9rem;
   font-weight: 500;
 }
@@ -3407,7 +3407,7 @@ onMounted(async () => {
 
 .status-button {
   background-color: var(--brand-500);
-  color: white;
+  color: var(--text-primary);
 }
 
 .status-button:hover:not(:disabled) {

@@ -2328,7 +2328,7 @@ function close() {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .confirm-body {
@@ -2364,7 +2364,7 @@ function close() {
   align-items: center;
   gap: 0.5rem;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 0.9rem;
 }
 
@@ -2482,7 +2482,7 @@ function close() {
 
 .confirm-actions .btn-primary {
   background: var(--brand-focus);
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .confirm-actions .btn-primary:hover:not(:disabled) {
@@ -2725,7 +2725,7 @@ function close() {
   justify-content: center;
   padding: 0.5rem;
   background-color: var(--brand-focus);
-  color: white;
+  color: var(--text-primary);
   border: none;
   border-radius: var(--btn-radius);
   font-size: 0.95rem;
@@ -2794,7 +2794,7 @@ function close() {
 }
 
 .checkbox-label:has(input[type='checkbox']:checked) .checkbox-title {
-  color: white;
+  color: var(--text-primary);
 }
 
 .checkbox-content small {
@@ -2855,7 +2855,7 @@ function close() {
 /* When combined with .btn-primary, use the shared primary visuals instead of the fallback */
 .btn-primary.btn-edit-destination {
   background-color: var(--brand-500);
-  color: #fff;
+  color: var(--text-primary);
   border: none;
 }
 .btn-primary.btn-edit-destination:hover:not(:disabled) {
@@ -2876,7 +2876,7 @@ function close() {
 .btn-edit-destination:hover {
   border-color: var(--brand-focus);
   background-color: var(--brand-focus);
-  color: #fff;
+  color: var(--text-primary);
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(var(--brand-rgb), 0.3);
 }

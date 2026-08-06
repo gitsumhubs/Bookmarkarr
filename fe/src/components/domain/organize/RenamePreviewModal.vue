@@ -394,7 +394,7 @@ function reset() {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
   margin: 0;
 }

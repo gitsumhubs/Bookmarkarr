@@ -870,7 +870,7 @@ defineExpose({
 }
 
 .profile-header svg {
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .profile-section h5 svg {

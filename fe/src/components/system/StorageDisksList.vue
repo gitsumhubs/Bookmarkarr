@@ -74,7 +74,7 @@ defineProps<{
 }
 
 .disk-label {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 500;
   white-space: nowrap;
 }

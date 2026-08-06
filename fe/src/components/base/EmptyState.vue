@@ -80,7 +80,7 @@ defineProps({
 
 .empty-title {
   margin: 0 0 0.5rem 0;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.25rem;
   font-weight: 500;
 }

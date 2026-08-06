@@ -102,7 +102,7 @@ withDefaults(
 }
 
 .info-content span {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1rem;
 }
 
