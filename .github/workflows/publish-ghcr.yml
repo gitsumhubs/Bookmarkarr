@@ -38,4 +38,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # mode=min caches only the final stage's layers. mode=max caches every intermediate
+          # layer of a multi-arch .NET build, which grew past GitHub's 10 GB per-repository cache
+          # limit; once over, buildx reports the cache failure as a push denial and the release
+          # never publishes.
+          cache-to: type=gha,mode=min

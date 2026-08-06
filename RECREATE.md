@@ -195,6 +195,18 @@ Filesystem-mutating tests create unique paths below the operating system tempora
 
 The download-client/root/add/queue regression group covers top-level category normalization, PUT upsert, download-path responses, rejection without a root, cleanup of persisted application-directory output, non-cyclic add DTOs, selected-root containment, opt-in Goodreads audiobook search handoff, Goodreads `BasePath` creation, startup path repair, resilient import derivation, Wanted active-download state, fresh-snapshot-only library status reconciliation, and independent scopes for concurrent client polls.
 
+## Release Publishing
+
+Pushing a `vX.Y.Z` tag builds linux/amd64 and linux/arm64 and pushes to GHCR.
+
+The build cache is `type=gha,mode=min`, deliberately not `mode=max`. Caching every intermediate
+layer of a multi-arch .NET build grows past GitHub's 10 GB per-repository cache limit within a few
+releases. Once over the limit the cache service starts failing, and buildx surfaces that as
+`denied: permission_denied ... 403` on the *image push* — so the symptom looks like a registry
+permission problem when the registry is fine. If a release fails that way, check
+`GET /repos/{owner}/{repo}/actions/cache/usage` before touching package permissions, and purge
+with `DELETE /repos/{owner}/{repo}/actions/caches/{id}`.
+
 ## Troubleshooting
 
 ### Readiness reports pending migrations
