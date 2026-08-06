@@ -13,15 +13,31 @@ using Microsoft.Extensions.Logging;
 
 namespace Bookmarkarr.Application.Downloads.Cleanup
 {
+    /// <param name="Removed">Whether the removal itself was considered successful.</param>
+    /// <param name="Blocklisted">
+    /// Whether a blocklist entry was actually recorded. Distinct from <paramref name="Removed"/>
+    /// because a torrent client answers a delete for an unknown hash with success, so removal
+    /// alone cannot tell a caller that Bookmarkarr recognised the release.
+    /// </param>
+    public readonly record struct DownloadRemovalResult(bool Removed, bool Blocklisted);
+
     public sealed class DownloadRemovalWorkflow(
         IConfigurationService _configurationService,
         IDownloadRepository _downloadRepository,
         IDownloadClientGateway _clientGateway,
         IDownloadQueueService _downloadQueueService,
+        IBlocklistService _blocklistService,
         ILogger<DownloadRemovalWorkflow> _logger)
     {
-        public async Task<bool> RemoveAsync(string downloadId, string? downloadClientId = null, bool force = false)
+        /// <param name="blocklist">
+        /// When true, the resolved release is blocklisted before removal so automatic search stops
+        /// offering it. Done here rather than at the call site because this is where a download is
+        /// resolved from any of its identifiers — Bookmarkarr id, client id, or torrent hash — and
+        /// an external caller only has the hash.
+        /// </param>
+        public async Task<DownloadRemovalResult> RemoveAsync(string downloadId, string? downloadClientId = null, bool force = false, bool blocklist = false)
         {
+            var blocklisted = false;
             try
             {
                 bool removedFromClient = false;
@@ -57,6 +73,12 @@ namespace Bookmarkarr.Application.Downloads.Cleanup
                             downloadRecord = clientDownloads.FirstOrDefault(d => TitleUtils.IsMatchingTitle(d.Title, queueItem.Title));
                         }
                     }
+                }
+
+                if (blocklist && downloadRecord != null)
+                {
+                    blocklisted = await _blocklistService.BlocklistReleaseAsync(
+                        downloadRecord, "Blocklisted on external request while removing from queue") is not null;
                 }
 
                 // If force=true, skip client removal and just remove from database
@@ -173,12 +195,12 @@ namespace Bookmarkarr.Application.Downloads.Cleanup
                         downloadRecord.Id, downloadRecord.Title);
                 }
 
-                return removedFromClient;
+                return new DownloadRemovalResult(removedFromClient, blocklisted);
             }
             catch (Exception ex) when (ex is not OperationCanceledException && ex is not OutOfMemoryException && ex is not StackOverflowException)
             {
                 _logger.LogError(ex, "Error removing from queue: {DownloadId}", downloadId);
-                return false;
+                return new DownloadRemovalResult(false, blocklisted);
             }
         }
 

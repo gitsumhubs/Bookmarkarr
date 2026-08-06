@@ -486,9 +486,9 @@ namespace Bookmarkarr.Application.Downloads.Submission
             }
         }
 
-        public async Task<bool> RemoveFromQueueAsync(string downloadId, string? downloadClientId = null, bool force = false)
+        public async Task<DownloadRemovalResult> RemoveFromQueueAsync(string downloadId, string? downloadClientId = null, bool force = false, bool blocklist = false)
         {
-            return await downloadRemovalWorkflow.RemoveAsync(downloadId, downloadClientId, force);
+            return await downloadRemovalWorkflow.RemoveAsync(downloadId, downloadClientId, force, blocklist);
         }
 
         //

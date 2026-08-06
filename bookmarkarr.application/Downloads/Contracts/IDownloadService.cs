@@ -49,7 +49,7 @@ namespace Bookmarkarr.Application.Downloads.Contracts
         /// <param name="downloadClientId">Optional specific client ID</param>
         /// <param name="force">If true, removes from database even if client removal fails</param>
         /// <returns>True if removed successfully, false otherwise</returns>
-        Task<bool> RemoveFromQueueAsync(string downloadId, string? downloadClientId = null, bool force = false);
+        Task<DownloadRemovalResult> RemoveFromQueueAsync(string downloadId, string? downloadClientId = null, bool force = false, bool blocklist = false);
 
         /// <summary>
         /// Reprocesses a previously completed download

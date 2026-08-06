@@ -27,6 +27,18 @@ namespace Bookmarkarr.Application.Downloads.Contracts
         /// <returns>The entry when the release is now blocklisted, otherwise null.</returns>
         Task<BlocklistEntry?> RecordFailureAsync(Download download, CancellationToken ct = default);
 
+        /// <summary>
+        /// Blocklists a release immediately, without waiting for
+        /// <see cref="BlocklistEntry.FailureThreshold"/> failures.
+        ///
+        /// For callers outside Bookmarkarr that have already established the release is bad —
+        /// a cleanup daemon that watched a torrent sit at zero bytes across several checks
+        /// knows more than a single client status poll does, so making it earn a second strike
+        /// would just mean grabbing the same dead release again.
+        /// </summary>
+        /// <returns>The new or pre-existing entry, or null when the download has no book.</returns>
+        Task<BlocklistEntry?> BlocklistReleaseAsync(Download download, string reason, CancellationToken ct = default);
+
         Task<IReadOnlyList<BlocklistEntry>> GetForAudiobookAsync(int audiobookId, CancellationToken ct = default);
     }
 }

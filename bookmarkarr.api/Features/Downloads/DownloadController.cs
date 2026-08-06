@@ -200,15 +200,30 @@ namespace Bookmarkarr.Api.Features.Downloads
         /// <param name="downloadId">Download ID to remove.</param>
         /// <param name="downloadClientId">Optional download client ID to target.</param>
         /// <param name="force">When true, remove the database record even if the download client removal fails.</param>
+        /// <param name="blocklist">
+        /// When true, blocklist the release before removing it so automatic search stops offering
+        /// it and moves to the next candidate. Mirrors Sonarr's
+        /// <c>DELETE /api/v3/queue/{id}?blocklist=true</c> so an external cleanup daemon can drive
+        /// Bookmarkarr the same way it drives the other *arrs. This blocklists on the first
+        /// request rather than counting strikes: a caller that has already watched the download
+        /// stall knows more than a single status poll does.
+        /// </param>
         [HttpDelete("queue/{downloadId}")]
-        public async Task<ActionResult> RemoveFromQueue(string downloadId, [FromQuery] string? downloadClientId = null, [FromQuery] bool force = false)
+        public async Task<ActionResult> RemoveFromQueue(
+            string downloadId,
+            [FromQuery] string? downloadClientId = null,
+            [FromQuery] bool force = false,
+            [FromQuery] bool blocklist = false)
         {
             try
             {
-                var removed = await _downloadService.RemoveFromQueueAsync(downloadId, downloadClientId, force);
-                if (removed)
+                var result = await _downloadService.RemoveFromQueueAsync(downloadId, downloadClientId, force, blocklist);
+                if (result.Removed)
                 {
-                    return Ok(new { message = "Removed from queue successfully" });
+                    // blocklisted is reported separately: a torrent client answers a delete for an
+                    // unknown hash with success, so a caller cannot infer from removal alone that
+                    // Bookmarkarr recognised the release.
+                    return Ok(new { message = "Removed from queue successfully", blocklisted = result.Blocklisted });
                 }
                 return NotFound(new { message = "Download not found in queue or removal failed. Try force=true to remove from database only." });
             }

@@ -120,6 +120,67 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Blocklisting
             Assert.Null(await service.RecordFailureAsync(failed));
         }
 
+        [Fact]
+        public async Task BlocklistReleaseAsync_BlocklistsImmediately_WithoutASecondStrike()
+        {
+            // An external caller that has already watched the download stall across several checks
+            // knows more than a single client status poll does, so making it earn a second strike
+            // would just mean grabbing the same dead release again.
+            var failed = CreateFailedDownload();
+            var service = CreateService([], [failed]);
+
+            var entry = await service.BlocklistReleaseAsync(failed, "stalled at 0 B/s");
+
+            Assert.NotNull(entry);
+            Assert.Equal(ReleaseTitle, entry!.Title);
+            Assert.Equal("stalled at 0 B/s", entry.Reason);
+        }
+
+        [Fact]
+        public async Task BlocklistReleaseAsync_ReusesAnExistingEntry()
+        {
+            var failed = CreateFailedDownload();
+            var existing = new BlocklistEntry
+            {
+                Id = 11,
+                AudiobookId = AudiobookId,
+                ReleaseGuid = failed.ReleaseGuid,
+                IndexerId = failed.IndexerId,
+                Title = ReleaseTitle,
+                NormalizedTitle = ReleaseIdentity.NormalizeReleaseName(ReleaseTitle),
+                Size = failed.TotalSize
+            };
+
+            var service = CreateService([existing], [failed]);
+
+            var entry = await service.BlocklistReleaseAsync(failed, "stalled");
+
+            Assert.Equal(11, entry!.Id);
+        }
+
+        [Fact]
+        public async Task BlocklistReleaseAsync_DoesNothing_WhenTheDownloadHasNoBook()
+        {
+            var failed = CreateFailedDownload();
+            failed.AudiobookId = null;
+
+            var service = CreateService([], [failed]);
+
+            Assert.Null(await service.BlocklistReleaseAsync(failed, "stalled"));
+        }
+
+        [Fact]
+        public async Task BlocklistReleaseAsync_RecordsTheRealFailureTally()
+        {
+            // The release may already have failed on its own before the external caller stepped in.
+            var failed = CreateFailedDownload();
+            var service = CreateService([], [CreateFailedDownload(id: "download-1"), failed]);
+
+            var entry = await service.BlocklistReleaseAsync(failed, "stalled");
+
+            Assert.Equal(2, entry!.FailureCount);
+        }
+
         private static BlocklistService CreateService(
             List<BlocklistEntry> blocklist,
             List<Download> downloads)

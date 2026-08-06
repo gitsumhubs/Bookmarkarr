@@ -71,7 +71,58 @@ namespace Bookmarkarr.Application.Downloads.Blocklisting
                 return null;
             }
 
-            var entry = await blocklistRepository.AddAsync(new BlocklistEntry
+            var entry = await AddEntryAsync(download, audiobookId, normalizedTitle, failureCount, download.ErrorMessage, ct);
+
+            logger.LogWarning(
+                "Blocklisted release '{Title}' for audiobook {AudiobookId} after {FailureCount} failed downloads: {Reason}",
+                LogRedaction.SanitizeText(download.Title),
+                audiobookId,
+                failureCount,
+                LogRedaction.SanitizeText(download.ErrorMessage ?? "no reason reported"));
+
+            return entry;
+        }
+
+        public async Task<BlocklistEntry?> BlocklistReleaseAsync(Download download, string reason, CancellationToken ct = default)
+        {
+            if (download.AudiobookId is not int audiobookId || audiobookId <= 0)
+            {
+                return null;
+            }
+
+            var existing = (await blocklistRepository.GetByAudiobookIdAsync(audiobookId, ct))
+                .FirstOrDefault(entry => entry.Matches(
+                    download.ReleaseGuid, download.IndexerId, download.Title, download.TotalSize));
+
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            // Counted rather than assumed to be 1: the release may already have failed on its own
+            // before the external caller stepped in, and the entry should reflect the real tally.
+            var failureCount = Math.Max(1, await CountFailuresAsync(audiobookId, download, ct));
+
+            var entry = await AddEntryAsync(
+                download, audiobookId, ReleaseIdentity.NormalizeReleaseName(download.Title), failureCount, reason, ct);
+
+            logger.LogWarning(
+                "Blocklisted release '{Title}' for audiobook {AudiobookId} on external request: {Reason}",
+                LogRedaction.SanitizeText(download.Title),
+                audiobookId,
+                LogRedaction.SanitizeText(reason));
+
+            return entry;
+        }
+
+        private Task<BlocklistEntry> AddEntryAsync(
+            Download download,
+            int audiobookId,
+            string normalizedTitle,
+            int failureCount,
+            string? reason,
+            CancellationToken ct) =>
+            blocklistRepository.AddAsync(new BlocklistEntry
             {
                 AudiobookId = audiobookId,
                 EditionId = download.EditionId,
@@ -83,18 +134,8 @@ namespace Bookmarkarr.Application.Downloads.Blocklisting
                 Source = download.GetMetadataString("Source"),
                 Protocol = download.GetMetadataString("DownloadType"),
                 FailureCount = failureCount,
-                Reason = download.ErrorMessage
+                Reason = reason
             }, ct);
-
-            logger.LogWarning(
-                "Blocklisted release '{Title}' for audiobook {AudiobookId} after {FailureCount} failed downloads: {Reason}",
-                LogRedaction.SanitizeText(download.Title),
-                audiobookId,
-                failureCount,
-                LogRedaction.SanitizeText(download.ErrorMessage ?? "no reason reported"));
-
-            return entry;
-        }
 
         public async Task<IReadOnlyList<BlocklistEntry>> GetForAudiobookAsync(int audiobookId, CancellationToken ct = default) =>
             await blocklistRepository.GetByAudiobookIdAsync(audiobookId, ct);
