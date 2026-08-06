@@ -243,7 +243,7 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
                 {
                     metrics.Increment("processing.source_missing");
                     await ScheduleRetryAsync(job, downloadProcessingJobService, historyRepository, download, audiobook,
-                        correlationId, $"Direct-download source path not found at processing time: {download.DownloadPath}", cancellationToken);
+                        correlationId, $"Direct-download source path not found at processing time: {download.DownloadPath}", cancellationToken, downloadService);
                     return;
                 }
 
@@ -261,7 +261,7 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
                         await ScheduleRetryAsync(job, downloadProcessingJobService, historyRepository, download, audiobook,
                             correlationId, isDirectDownload
                                 ? "Unable to resolve the local direct-download file"
-                                : "Unable to fetch the download from the download client", cancellationToken);
+                                : "Unable to fetch the download from the download client", cancellationToken, downloadService);
                         return;
                     }
 
@@ -295,14 +295,14 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
                                 ? $"{(isEbook ? "Ebook" : "Audio")} or archive files reported by the download client are missing on disk"
                                 : $"No {(isEbook ? "ebook" : "audio")} or archive files found on disk";
                         await ScheduleRetryAsync(job, downloadProcessingJobService, historyRepository, download, audiobook,
-                            correlationId, reason, cancellationToken);
+                            correlationId, reason, cancellationToken, downloadService);
                         return;
                     }
                 }
                 catch (DownloadProcessingException exception)
                 {
                     await ScheduleRetryAsync(job, downloadProcessingJobService, historyRepository, download, audiobook,
-                        correlationId, exception.Message, cancellationToken);
+                        correlationId, exception.Message, cancellationToken, downloadService);
                     return;
                 }
 

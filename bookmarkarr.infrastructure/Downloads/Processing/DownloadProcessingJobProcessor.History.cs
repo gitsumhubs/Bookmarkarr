@@ -12,6 +12,8 @@ public partial class DownloadProcessingJobProcessor
         Download download, Audiobook audiobook, DownloadClientConfiguration? client,
         string correlationId, bool isDirectDownload, bool isEbook, CancellationToken ct)
     {
+        var downloadService = services.GetRequiredService<IDownloadService>();
+
         if (!job.HasCheckpoint("ClientMarkedImported"))
         {
             if (isDirectDownload)
@@ -25,7 +27,7 @@ public partial class DownloadProcessingJobProcessor
                 if (!await gateway.MarkItemAsImportedAsync(client!, download, ct))
                 {
                     await ScheduleRetryAsync(job, jobService, historyRepository, download, audiobook,
-                        correlationId, $"Unable to mark the item imported in client {client!.Id}", ct);
+                        correlationId, $"Unable to mark the item imported in client {client!.Id}", ct, downloadService);
                     return;
                 }
                 job.SetCheckpoint("ClientMarkedImported");
@@ -55,7 +57,7 @@ public partial class DownloadProcessingJobProcessor
                 catch (Exception exception) when (exception is not (OperationCanceledException or OutOfMemoryException or StackOverflowException))
                 {
                     await ScheduleRetryAsync(job, jobService, historyRepository, download, audiobook,
-                        correlationId, $"Unable to enqueue the post-import library scan: {exception.Message}", ct);
+                        correlationId, $"Unable to enqueue the post-import library scan: {exception.Message}", ct, downloadService);
                     return;
                 }
                 job.SetCheckpoint("ScanEnqueued", scanJobId.ToString());
@@ -81,18 +83,32 @@ public partial class DownloadProcessingJobProcessor
         catch (InvalidOperationException exception)
         {
             await ScheduleRetryAsync(job, jobService, historyRepository, download, audiobook,
-                correlationId, $"Unable to commit import finalization: {exception.Message}", ct);
+                correlationId, $"Unable to commit import finalization: {exception.Message}", ct, downloadService);
         }
     }
 
+    /// <param name="downloadService">
+    /// Used to move the download out of its in-flight status once retries are exhausted. Without
+    /// this the job dies but the download row stays at <see cref="DownloadStatus.ImportPending"/>
+    /// forever, and because an import-pending row counts as an active download it silently
+    /// suppresses automatic search for that book.
+    /// </param>
     private static async Task ScheduleRetryAsync(
         DownloadProcessingJob job, IDownloadProcessingJobService jobService,
         IHistoryRepository historyRepository, Download download, Audiobook audiobook,
-        string correlationId, string reason, CancellationToken ct)
+        string correlationId, string reason, CancellationToken ct,
+        IDownloadService? downloadService = null)
     {
         job.ScheduleRetry(reason);
         await jobService.UpdateJobAsync(job);
         var exhausted = job.Status == ProcessingJobStatus.Failed;
+
+        if (exhausted && downloadService is not null)
+        {
+            await downloadService.UpdateAsync(
+                download.Blocked("ImportRetriesExhausted", $"Import gave up after {job.RetryCount} attempts: {reason}"));
+        }
+
         await RecordHistoryAsync(historyRepository, download, audiobook,
             exhausted ? HistoryEvents.ImportFailed : HistoryEvents.ImportRetry,
             exhausted ? HistoryOutcome.Failed : HistoryOutcome.Retrying, correlationId, reason,

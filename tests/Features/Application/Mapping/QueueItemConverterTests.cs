@@ -9,6 +9,60 @@ namespace Bookmarkarr.Tests.Features.Application.Mapping
     {
         [Fact]
         [Trait("Method", "UpdateFromQueueItem")]
+        public void UpdateFromQueueItem_DoesNotComplete_WhenClientSaysCompletedButBytesRemain()
+        {
+            // Regression: debrid-backed clients (RDT Client against AllDebrid and similar) report
+            // "completed" as soon as the *remote* side finishes, while the local transfer still has
+            // gigabytes to pull. Trusting the label started an import against files that were not
+            // on disk yet, which burned the job's retries and stranded the row at ImportPending.
+            var download = new Download
+            {
+                Status = DownloadStatus.Downloading,
+                TotalSize = 2_000_000_000,
+                DownloadedSize = 790_344_437
+            };
+            var item = new QueueItem
+            {
+                Status = "completed",
+                Progress = 39.5,
+                Size = 2_000_000_000,
+                Downloaded = 790_344_437
+            };
+
+            var updated = QueueItemConverter.UpdateFromQueueItem(download, item);
+
+            Assert.Equal(DownloadStatus.Downloading, updated.Status);
+            Assert.Equal(1_209_655_563L, updated.Metadata["AmountLeft"]);
+        }
+
+        [Fact]
+        [Trait("Method", "UpdateFromQueueItem")]
+        public void UpdateFromQueueItem_Completes_WhenClientSaysCompletedAndNoBytesRemain()
+        {
+            var download = new Download { Status = DownloadStatus.Downloading, TotalSize = 500, DownloadedSize = 500 };
+            var item = new QueueItem { Status = "completed", Progress = 100, Size = 500, Downloaded = 500 };
+
+            var updated = QueueItemConverter.UpdateFromQueueItem(download, item);
+
+            Assert.Equal(DownloadStatus.Completed, updated.Status);
+        }
+
+        [Fact]
+        [Trait("Method", "UpdateFromQueueItem")]
+        public void UpdateFromQueueItem_Completes_WhenClientSaysCompletedWithNoSizeTelemetry()
+        {
+            // Clients that expose no byte counts have nothing to contradict the label, so the
+            // terminal state still has to be honoured or those downloads never import.
+            var download = new Download { Status = DownloadStatus.Downloading };
+            var item = new QueueItem { Status = "completed", Progress = 100, Size = 0, Downloaded = 0 };
+
+            var updated = QueueItemConverter.UpdateFromQueueItem(download, item);
+
+            Assert.Equal(DownloadStatus.Completed, updated.Status);
+        }
+
+        [Fact]
+        [Trait("Method", "UpdateFromQueueItem")]
         public void UpdateFromQueueItem_DoesNotCompleteDownload_WhenClientReportsUnknownSizeWithPartialProgress()
         {
             var download = new Download

@@ -76,7 +76,28 @@ namespace Bookmarkarr.Application.Mapping
             // itself is not strong enough because clients can report partial or stale
             // progress while size/downloaded bytes are unknown.
             var isExplicitCompletedState = normalizedState is "completed" or "success";
-            if (isExplicitCompletedState || (hasReliableSize && amountLeft <= 0))
+
+            // Contract gate: reliable telemetry showing bytes still outstanding overrules a
+            // terminal state label. Debrid-backed clients (RDT Client against AllDebrid and
+            // similar) report "completed" the moment the *remote* side finishes, which can be
+            // minutes or gigabytes before the files exist locally. Trusting the label there
+            // starts an import against files that are not on disk yet, and the job burns its
+            // retries and dies while the transfer is still running.
+            var bytesStillOutstanding = hasReliableSize && amountLeft > 0;
+
+            if (bytesStillOutstanding)
+            {
+                // "completed" is not in the state map, so it would otherwise fall through to
+                // Queued and misreport a transfer that is actively moving bytes.
+                if (isExplicitCompletedState)
+                {
+                    download.Downloading();
+                }
+
+                return download;
+            }
+
+            if (isExplicitCompletedState || hasReliableSize)
             {
                 download.Completed();
             }

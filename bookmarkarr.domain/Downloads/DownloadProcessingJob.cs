@@ -93,7 +93,7 @@ namespace Bookmarkarr.Domain.Downloads
         /// <summary>
         /// Maximum number of retries allowed
         /// </summary>
-        public int MaxRetries { get; set; } = 3;
+        public int MaxRetries { get; set; } = 5;
 
         /// <summary>
         /// Error message if job failed
@@ -244,8 +244,11 @@ namespace Bookmarkarr.Domain.Downloads
             RetryCount++;
             Status = ProcessingJobStatus.Pending;
 
-            // Exponential backoff: 30s, 2m, 8m, etc.
-            var backoffMinutes = Math.Pow(2, RetryCount) * 0.5; // 0.5, 1, 2, 4, 8 minutes
+            // Exponential backoff: 2, 4, 8, 16, 32 minutes — roughly an hour across the default
+            // retry budget. The previous 0.5/1/2/4 schedule exhausted itself in about seven
+            // minutes, which is far less time than a large transfer needs to finish landing on
+            // disk after its client reports completion.
+            var backoffMinutes = Math.Pow(2, RetryCount);
             NextRetryAt = DateTime.UtcNow.AddMinutes(backoffMinutes);
 
             AddLogEntry($"Scheduled for retry #{RetryCount} at {NextRetryAt}");
