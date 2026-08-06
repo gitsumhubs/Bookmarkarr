@@ -693,11 +693,20 @@ const { widths, resizingColumn, startResize, resetWidths } = useColumnResize<Act
 })
 
 // The trailing 40px is the actions column, which holds a single icon button and never resizes.
-const gridTemplate = computed(() =>
-  isMobileActivityLayout.value
-    ? undefined
-    : `${sortableColumns.map((column) => `${widths.value[column.key]}px`).join(' ')} 40px`,
-)
+// Title is minmax(width, 1fr) rather than a fixed pixel width so the grid always fills the
+// container: all-fixed columns left dead space on a wide window and pushed the whole page
+// sideways on a narrow one. Its dragged width becomes the floor, and slack is absorbed here.
+const gridTemplate = computed(() => {
+  if (isMobileActivityLayout.value) return undefined
+
+  const columns = sortableColumns.map((column, index) =>
+    index === 0
+      ? `minmax(${widths.value[column.key]}px, 1fr)`
+      : `${widths.value[column.key]}px`,
+  )
+
+  return `${columns.join(' ')} 40px`
+})
 
 const filteredQueue = computed(() => {
   const text = filterText.value.trim().toLowerCase()
@@ -1039,6 +1048,9 @@ onUnmounted(() => {
 
 /* Grid container with virtual scrolling */
 .queue-grid-container {
+  /* Overflow scrolls inside the table. Without this a table wider than the viewport moves
+     the whole page sideways instead. */
+  overflow-x: auto;
   height: calc(100vh - 200px);
   overflow-y: auto;
   position: relative;

@@ -428,11 +428,20 @@ const { widths, resizingColumn, startResize, resetWidths } = useColumnResize<Wan
 })
 
 // The leading 48px is the poster and the trailing 120px the action buttons; neither resizes.
-const gridTemplate = computed(() =>
-  isMobileWantedLayout.value
-    ? undefined
-    : `48px ${sortableColumns.map((column) => `${widths.value[column.key]}px`).join(' ')} 120px`,
-)
+// Title is minmax(width, 1fr) rather than a fixed pixel width so the grid always fills the
+// container: all-fixed columns left dead space on a wide window and pushed the whole page
+// sideways on a narrow one. Its dragged width becomes the floor, and slack is absorbed here.
+const gridTemplate = computed(() => {
+  if (isMobileWantedLayout.value) return undefined
+
+  const columns = sortableColumns.map((column, index) =>
+    index === 0
+      ? `minmax(${widths.value[column.key]}px, 1fr)`
+      : `${widths.value[column.key]}px`,
+  )
+
+  return `48px ${columns.join(' ')} 120px`
+})
 
 const filteredWanted = computed(() => {
   const items = wantedAudiobooks.value
@@ -819,6 +828,9 @@ const markAsSkipped = async (item: WantedItem) => {
 
 /* Grid container with virtual scrolling */
 .wanted-grid-container {
+  /* Overflow scrolls inside the table. Without this a table wider than the viewport moves
+     the whole page sideways instead. */
+  overflow-x: auto;
   height: calc(100vh - 220px);
   overflow-y: auto;
   position: relative;
