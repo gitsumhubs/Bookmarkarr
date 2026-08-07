@@ -157,14 +157,19 @@
             </div>
             <div class="col-actions">
               <div class="actions-cell">
-                <label class="rename-toggle" :title="renameToggleLabel">
-                  <input
-                    type="checkbox"
-                    :checked="isRenameOverridden(item)"
-                    :disabled="renameSaving[item.wantedKey]"
-                    @change="(e) => toggleRenameOverride(item, (e.target as HTMLInputElement).checked)"
-                  />
-                </label>
+                <button
+                  type="button"
+                  class="btn-icon rename-toggle"
+                  :class="{ 'is-active': isRenameOverridden(item) }"
+                  :disabled="renameSaving[item.wantedKey]"
+                  :title="renameToggleTitle(item)"
+                  :aria-label="renameToggleTitle(item)"
+                  :aria-pressed="isRenameOverridden(item)"
+                  @click="toggleRenameOverride(item, !isRenameOverridden(item))"
+                >
+                  <PhPencilSimpleSlash v-if="keepsOriginalNames(item)" weight="fill" />
+                  <PhTextAa v-else />
+                </button>
                 <button
                   class="btn-icon"
                   @click="searchAudiobook(item)"
@@ -238,6 +243,8 @@ import { safeText } from '@/utils/textUtils'
 import {
   PhHeart,
   PhRobot,
+  PhTextAa,
+  PhPencilSimpleSlash,
   PhFolderPlus,
   PhSpinner,
   PhMagnifyingGlass,
@@ -315,11 +322,25 @@ const renamingDisabledGlobally = computed(
  * The box always means "do the opposite of the library default for this book", so its label
  * inverts with that default rather than the box meaning two different things silently.
  */
-const renameToggleLabel = computed(() =>
-  renamingDisabledGlobally.value
-    ? 'Enable renaming for this book'
-    : 'Disable renaming for this book',
-)
+/** What this book will actually do on import, after any override. */
+function keepsOriginalNames(item: WantedItem): boolean {
+  const override = item.disableFileRenamingOverride
+  if (override === null || override === undefined) return renamingDisabledGlobally.value
+  return override
+}
+
+/**
+ * Spells out the current behaviour and what clicking will change it to. The control means the
+ * opposite thing depending on the library default, so a fixed label would be wrong half the time.
+ */
+function renameToggleTitle(item: WantedItem): string {
+  const inherited = item.disableFileRenamingOverride === null
+    || item.disableFileRenamingOverride === undefined
+  const source = inherited ? 'following the library default' : 'set for this book'
+  return keepsOriginalNames(item)
+    ? `Keeping original file names (${source}) — click to rename files on import`
+    : `Renaming files on import (${source}) — click to keep original file names`
+}
 
 /** Checked only when this book actively differs from the library default. */
 function isRenameOverridden(item: WantedItem): boolean {
@@ -1307,19 +1328,15 @@ const markAsSkipped = async (item: WantedItem) => {
   align-items: center;
 }
 
-.rename-toggle {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  padding: 0 0.15rem;
+/* Active means this book differs from the library default, so it has to read as deliberate
+   rather than as one more idle icon in the row. */
+.rename-toggle.is-active {
+  color: #ffc107;
+  border-color: rgba(255, 193, 7, 0.45);
+  background: rgba(255, 193, 7, 0.12);
 }
 
-.rename-toggle input {
-  cursor: pointer;
-  margin: 0;
-}
-
-.rename-toggle input:disabled {
+.rename-toggle:disabled {
   cursor: wait;
   opacity: 0.5;
 }
