@@ -83,6 +83,10 @@
                   Ebooks
                 </button>
               </div>
+              <label class="collection-toggle" title="Place the release at the library root with its own folders and file names, and leave this book untouched. Use for box sets and collections, which the normal import would merge into this one book.">
+                <input type="checkbox" v-model="grabAsCollection" />
+                <span>Grab as collection</span>
+              </label>
               <div class="results-count">
                 {{ displayResults.length }} result{{ displayResults.length !== 1 ? 's' : '' }} found
               </div>
@@ -346,6 +350,12 @@ const sortDirection = ref<SearchSortDirection>('Descending')
 const searchQuery = ref('')
 type SearchContentMode = 'audiobook' | 'ebook'
 const contentMode = ref<SearchContentMode>('audiobook')
+
+/**
+ * Opt-in per grab, never remembered: it changes where files land and detaches the download from
+ * this book, so it must be a deliberate choice each time rather than a sticky mode.
+ */
+const grabAsCollection = ref(false)
 
 watch(
   () => props.isOpen,
@@ -801,7 +811,13 @@ async function downloadResult(result: SearchResult) {
 
     if (isDDL) {
       // For DDL, start download in background and add to activity
-      await apiService.sendToDownloadClient(result, undefined, audiobookId, contentMode.value)
+      await apiService.sendToDownloadClient(
+        result,
+        undefined,
+        audiobookId,
+        contentMode.value,
+        grabAsCollection.value,
+      )
 
       // Add to activity/downloads view (will be tracked there)
       // Show success message
@@ -813,7 +829,13 @@ async function downloadResult(result: SearchResult) {
       }, 1000)
     } else {
       // For torrents/NZB, send to download client (also pass audiobookId for future processing)
-      await apiService.sendToDownloadClient(result, undefined, audiobookId, contentMode.value)
+      await apiService.sendToDownloadClient(
+        result,
+        undefined,
+        audiobookId,
+        contentMode.value,
+        grabAsCollection.value,
+      )
       emit('downloaded', result)
 
       // Show success feedback briefly, then remove
@@ -1063,6 +1085,23 @@ function getScoreClass(score: number): string {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.collection-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #adb5bd);
+  white-space: nowrap;
+}
+
+.collection-toggle input {
+  cursor: pointer;
+  margin: 0;
 }
 
 .content-mode-toggle {

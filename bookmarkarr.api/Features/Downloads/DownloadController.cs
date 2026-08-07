@@ -70,7 +70,9 @@ namespace Bookmarkarr.Api.Features.Downloads
         /// </summary>
         /// <param name="request">The search result to download, optional download client ID, and optional audiobook ID to associate.</param>
         [HttpPost("send")]
-        public async Task<ActionResult<string>> SendToDownloadClient([FromBody] SendDownloadRequest request)
+        public async Task<ActionResult<string>> SendToDownloadClient(
+            [FromBody] SendDownloadRequest request,
+            [FromServices] IDownloadRepository downloadRepository)
         {
             try
             {
@@ -87,16 +89,29 @@ namespace Bookmarkarr.Api.Features.Downloads
                 _logger.LogInformation("Protocol: {Protocol}", candidate.SourceDescriptor.Protocol);
                 _logger.LogInformation("Source: {Source}", LogRedaction.SanitizeText(candidate.Source));
 
+                // A collection grab is deliberately detached from the book that was on screen. Were
+                // it attached, AutomaticSearchService would count it as that book's active download
+                // and stop searching for the book itself while the collection sat in the queue.
                 var downloadId = await _downloadService.SendToDownloadClientAsync(
                     candidate,
                     request.DownloadClientId,
-                    request.AudiobookId,
+                    request.AsCollection ? null : request.AudiobookId,
                     request.ContentType
                 );
 
                 if (string.IsNullOrEmpty(downloadId))
                 {
                     return Conflict(new { message = "A download for this audiobook is already active" });
+                }
+
+                if (request.AsCollection)
+                {
+                    // Marks the row as intentionally book-less; without it the processor cannot
+                    // tell a detached collection from a corrupt download and rejects it.
+                    await downloadRepository.UpdateMetadataAsync(
+                        downloadId,
+                        CollectionPassthroughMetadata.Key,
+                        bool.TrueString);
                 }
 
                 return Ok(new { downloadId, message = "Sent to download client successfully" });
@@ -360,6 +375,12 @@ namespace Bookmarkarr.Api.Features.Downloads
         public string? DownloadClientId { get; set; }
         public int? AudiobookId { get; set; }
         public SearchContentType ContentType { get; set; } = SearchContentType.Audiobook;
+
+        /// <summary>
+        /// Grab the release as a whole collection: place it at the library root with its own
+        /// folder structure and filenames intact, and leave the searched book untouched.
+        /// </summary>
+        public bool AsCollection { get; set; }
     }
 
     public class ReprocessRequest

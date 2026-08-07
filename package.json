@@ -1,6 +1,6 @@
 {
   "name": "bookmarkarr",
-  "version": "0.1.22",
+  "version": "0.1.23",
   "private": true,
   "description": "Bookmarkarr - Edition-aware audiobook and ebook automation",
   "engines": {

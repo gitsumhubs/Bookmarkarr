@@ -754,6 +754,8 @@ class ApiService {
     downloadClientId?: string,
     audiobookId?: number,
     contentType: 'audiobook' | 'ebook' = 'audiobook',
+    /** Grab as a whole collection: placed at the library root, the searched book untouched. */
+    asCollection = false,
   ): Promise<{
     downloadId: string
     message: string
@@ -774,6 +776,7 @@ class ApiService {
         downloadClientId,
         audiobookId,
         contentType,
+        asCollection,
       }),
     })
   }

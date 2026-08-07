@@ -190,14 +190,22 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
                 throw new DownloadProcessingException($"Inconsistency: Download {download.Id} has no path set");
             }
 
-            if (download.AudiobookId == null)
-            {
-                throw new DownloadProcessingException($"Inconsistency: Download {download.Id} has no audiobook related to it");
-            }
-
             if (download.DownloadClientId == null)
             {
                 throw new DownloadProcessingException($"Inconsistency: Download {download.Id} has no download client");
+            }
+
+            // Checked before the audiobook guard below: a collection carries no AudiobookId on
+            // purpose, and everything past this point is book-shaped.
+            if (download.IsCollectionPassthrough())
+            {
+                await ProcessCollectionPassthroughAsync(scope, job, download, downloadProcessingJobService, cancellationToken);
+                return;
+            }
+
+            if (download.AudiobookId == null)
+            {
+                throw new DownloadProcessingException($"Inconsistency: Download {download.Id} has no audiobook related to it");
             }
 
             var audiobookRepository = scope.ServiceProvider.GetRequiredService<IAudiobookRepository>();
