@@ -88,6 +88,7 @@ public static class BookmarkarrWorkflowRegistration
         services.AddScoped<LibraryQueryWorkflow>();
         services.AddScoped<LibraryRenameWorkflow>();
         services.AddScoped<LibraryFileRenamingWorkflow>();
+        services.AddScoped<Features.Downloads.AutomaticGrabSupersedeWorkflow>();
         services.AddScoped<LibraryStatusReconciliationWorkflow>();
         services.AddScoped<LibraryAdoptionWorkflow>();
         services.AddScoped<SearchResponseMapper>();

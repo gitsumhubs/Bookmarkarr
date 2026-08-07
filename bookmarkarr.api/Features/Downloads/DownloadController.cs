@@ -72,7 +72,8 @@ namespace Bookmarkarr.Api.Features.Downloads
         [HttpPost("send")]
         public async Task<ActionResult<string>> SendToDownloadClient(
             [FromBody] SendDownloadRequest request,
-            [FromServices] IDownloadRepository downloadRepository)
+            [FromServices] IDownloadRepository downloadRepository,
+            [FromServices] AutomaticGrabSupersedeWorkflow supersedeWorkflow)
         {
             try
             {
@@ -88,6 +89,19 @@ namespace Bookmarkarr.Api.Features.Downloads
                 _logger.LogInformation("Title: {Title}", LogRedaction.SanitizeText(candidate.Title));
                 _logger.LogInformation("Protocol: {Protocol}", candidate.SourceDescriptor.Protocol);
                 _logger.LogInformation("Source: {Source}", LogRedaction.SanitizeText(candidate.Source));
+
+                // A manually chosen release outranks whatever scoring picked, so an automatic grab
+                // for the same book is cancelled first. Otherwise the duplicate guard rejects this
+                // request with a 409 and the automatic download — often the wrong release, which is
+                // why the operator is here — keeps running. Collections are exempt: they are not
+                // attached to the book at all, so there is nothing of the book's to supersede.
+                var superseded = new List<string>();
+                if (!request.AsCollection && request.AudiobookId is int targetBookId && targetBookId > 0)
+                {
+                    superseded = [.. await supersedeWorkflow.SupersedeAsync(
+                        targetBookId,
+                        request.ContentType == SearchContentType.Ebook)];
+                }
 
                 // A collection grab is deliberately detached from the book that was on screen. Were
                 // it attached, AutomaticSearchService would count it as that book's active download
@@ -125,7 +139,21 @@ namespace Bookmarkarr.Api.Features.Downloads
                     }
                 }
 
-                return Ok(new { downloadId, message = "Sent to download client successfully" });
+                // Marks this row as a deliberate choice so a later manual grab will not silently
+                // displace it the way it just displaced an automatic one.
+                await downloadRepository.UpdateMetadataAsync(
+                    downloadId,
+                    ManualGrabMetadata.Key,
+                    ManualGrabMetadata.Manual);
+
+                return Ok(new
+                {
+                    downloadId,
+                    message = superseded.Count > 0
+                        ? $"Sent to download client, replacing {superseded.Count} automatic download(s)"
+                        : "Sent to download client successfully",
+                    supersededDownloadIds = superseded
+                });
             }
             catch (DownloadReferenceException ex)
             {
