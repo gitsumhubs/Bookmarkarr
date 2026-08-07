@@ -162,6 +162,14 @@
             </div>
             <div class="col-actions">
               <button
+                v-if="item.status === 'importnamemismatch'"
+                class="btn-icon btn-fix-icon"
+                @click="openFixImport(item)"
+                title="Fix Import — the client wrote a file under a different name"
+              >
+                <PhWrench />
+              </button>
+              <button
                 v-if="item.canRemove"
                 class="btn-icon btn-danger-icon"
                 @click="removeFromQueue(item)"
@@ -174,6 +182,13 @@
         </div>
       </div>
     </div>
+
+    <FixImportModal
+      v-if="fixImportDownloadId"
+      :downloadId="fixImportDownloadId"
+      @close="fixImportDownloadId = null"
+      @fixed="onImportFixed"
+    />
 
     <!-- Empty State -->
     <EmptyState
@@ -302,6 +317,7 @@ import {
   PhArrowClockwise,
   PhDesktop,
   PhX,
+  PhWrench,
   PhQueue,
   PhWarningCircle,
   PhInfo,
@@ -314,6 +330,7 @@ import {
   PhCheckCircle,
   PhDownloadSimple,
 } from '@phosphor-icons/vue'
+import FixImportModal from '@/components/feedback/FixImportModal.vue'
 import { useTableSort } from '@/composables/useTableSort'
 import { useColumnResize } from '@/composables/useColumnResize'
 import { useToast } from '@/services/toastService'
@@ -342,6 +359,18 @@ const removing = ref(false)
 const showClearModal = ref(false)
 const clearing = ref(false)
 let unsubscribeQueue: (() => void) | null = null
+const fixImportDownloadId = ref<string | null>(null)
+
+/** Opened from the row's wrench; the modal loads its own detail. */
+function openFixImport(item: { downloadId?: string; id?: string }) {
+  fixImportDownloadId.value = item.downloadId ?? item.id ?? null
+}
+
+async function onImportFixed() {
+  // The repair requeues the import, so pull fresh state rather than waiting for the next tick.
+  await refreshQueue()
+}
+
 let queueRefreshInterval: ReturnType<typeof setInterval> | null = null
 
 const applyQueueSnapshot = (payload: QueueUpdatePayload | null | undefined) => {
@@ -527,6 +556,7 @@ const convertDownloadToQueueItem = (download: Download): QueueItem => {
     Ready: 'completed',
     ImportPending: 'importpending',
     ImportBlocked: 'importblocked',
+    ImportNameMismatch: 'importnamemismatch',
     SourceMissing: 'sourcemissing',
     Moved: 'imported',
     Failed: 'failed',
@@ -804,6 +834,7 @@ const FINISHED_STATUSES = new Set([
   'failed',
   'imported',
   'importblocked',
+  'importnamemismatch',
   'sourcemissing',
 ])
 
@@ -860,6 +891,7 @@ const formatStatus = (status: string): string => {
     processing: 'Processing',
     importpending: 'Importing',
     importblocked: 'Import Blocked',
+    importnamemismatch: 'Needs Name Fix',
     sourcemissing: 'Source Missing',
     imported: 'Imported',
   }
@@ -1382,6 +1414,16 @@ onUnmounted(() => {
 .status-badge.importblocked {
   background-color: rgba(250, 82, 82, 0.15);
   color: #fa5252;
+}
+
+.status-badge.importnamemismatch {
+  background-color: rgba(255, 193, 7, 0.16);
+  color: #ffc107;
+}
+
+.btn-fix-icon {
+  color: #ffc107;
+  border-color: rgba(255, 193, 7, 0.4);
 }
 
 .status-badge.sourcemissing {

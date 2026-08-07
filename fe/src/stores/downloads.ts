@@ -50,6 +50,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
     if (normalized === 'moved') return 'Moved'
     if (normalized === 'importpending') return 'ImportPending'
     if (normalized === 'importblocked') return 'ImportBlocked'
+    if (normalized === 'importnamemismatch') return 'ImportNameMismatch'
     if (normalized === 'sourcemissing') return 'SourceMissing'
     return 'Queued'
   }
@@ -243,7 +244,12 @@ export const useDownloadsStore = defineStore('downloads', () => {
   const failedDownloads = computed(() =>
     downloads.value.filter((d) => {
       const status = (d.status || '').toString().toLowerCase()
-      return status === 'failed' || status === 'importblocked' || status === 'sourcemissing'
+      return (
+        status === 'failed' ||
+        status === 'importblocked' ||
+        status === 'importnamemismatch' ||
+        status === 'sourcemissing'
+      )
     }),
   )
 

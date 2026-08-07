@@ -152,6 +152,7 @@ export interface Download {
     | 'ImportPending'
     | 'ImportBlocked'
     | 'SourceMissing'
+    | 'ImportNameMismatch'
   progress: number
   totalSize: number
   downloadedSize: number

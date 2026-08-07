@@ -22,24 +22,6 @@ using Bookmarkarr.Domain.Common;
 
 namespace Bookmarkarr.Domain.Downloads
 {
-    public enum DownloadStatus
-    {
-        Queued,
-        Downloading,
-        Paused,
-        Completed,
-        Failed,
-        Processing,
-        Ready,
-        Moved,           // Added to track completed moves
-        ImportBlocked,   // Added: Block re-processing of bad imports
-        ImportPending,   // Added: Explicitly waiting on import completion/manual interaction
-        /// <summary>
-        /// Import history remains, but the completed payload is no longer exposed by its
-        /// download client. This is terminal until reconciliation sees the source again.
-        /// </summary>
-        SourceMissing
-    }
 
     public class Download
     {
@@ -284,7 +266,15 @@ namespace Bookmarkarr.Domain.Downloads
                     or DownloadStatus.Paused
                     or DownloadStatus.Processing
                     or DownloadStatus.Completed
-                    or DownloadStatus.ImportBlocked,
+                    or DownloadStatus.ImportBlocked
+                    or DownloadStatus.ImportNameMismatch,
+
+                // Reached from the same places a blocked import is, and left only by returning to
+                // ImportPending once the operator has resolved the names.
+                DownloadStatus.ImportNameMismatch => Status is DownloadStatus.ImportPending
+                    or DownloadStatus.Processing
+                    or DownloadStatus.Completed
+                    or DownloadStatus.Downloading,
 
                 DownloadStatus.ImportBlocked => Status is DownloadStatus.ImportPending
                     or DownloadStatus.Processing

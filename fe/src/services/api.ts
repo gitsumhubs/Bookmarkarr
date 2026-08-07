@@ -781,6 +781,35 @@ class ApiService {
     })
   }
 
+  /** Filename mismatches detected for a download parked at Needs Name Fix. */
+  async getImportIssues(downloadId: string): Promise<{
+    downloadId: string
+    status: string
+    count: number
+    issues: Array<{
+      reportedName: string
+      actualName: string
+      directory: string
+      reportedPath: string
+      actualPath: string
+      actualExists: boolean
+      reportedExists: boolean
+    }>
+  }> {
+    return this.request(`/download/${encodeURIComponent(downloadId)}/import-issues`)
+  }
+
+  /** Rename the mangled files to what the client reports, then requeue the import. */
+  async fixImport(
+    downloadId: string,
+    overrides?: Record<string, string>,
+  ): Promise<{ message: string; renamed: unknown[]; failures: unknown[] }> {
+    return this.request(`/download/${encodeURIComponent(downloadId)}/fix-import`, {
+      method: 'POST',
+      body: JSON.stringify({ overrides: overrides ?? {} }),
+    })
+  }
+
   // Download Queue API
   async getQueue(): Promise<QueueSnapshot> {
     const response = await this.request<QueueSnapshot | QueueItem[]>('/download/queue')

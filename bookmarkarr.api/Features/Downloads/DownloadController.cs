@@ -24,7 +24,7 @@ namespace Bookmarkarr.Api.Features.Downloads
     [ApiController]
     [Route("api/v{version:apiVersion}/download")]
     [Tags("Downloads")]
-    public class DownloadController : ControllerBase
+    public partial class DownloadController : ControllerBase
     {
         private readonly IDownloadService _downloadService;
         private readonly IDownloadQueueService _downloadQueueService;

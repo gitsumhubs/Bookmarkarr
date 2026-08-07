@@ -295,6 +295,14 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
                             : $"Ignoring {missingFiles.Count} missing non-audio companion file(s) reported by the download client");
                     }
 
+                    // Retrying cannot fix a name the client mangled on write; see the partial.
+                    if (missingPrimaryFiles.Count > 0
+                        && await TryFlagNameMismatchAsync(
+                            scope, job, download, missingPrimaryFiles, files, queueItem, downloadProcessingJobService, cancellationToken))
+                    {
+                        return;
+                    }
+
                     if (files.Count == 0 || !hasPrimaryFile || missingPrimaryFiles.Count > 0)
                     {
                         var reason = files.Count == 0

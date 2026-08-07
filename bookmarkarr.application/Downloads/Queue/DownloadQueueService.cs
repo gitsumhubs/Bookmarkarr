@@ -417,6 +417,7 @@ namespace Bookmarkarr.Application.Downloads.Queue
             DownloadStatus.Processing => "processing",
             DownloadStatus.ImportPending => "importpending",
             DownloadStatus.ImportBlocked => "importblocked",
+            DownloadStatus.ImportNameMismatch => "importnamemismatch",
             DownloadStatus.Failed => "failed",
             DownloadStatus.Moved => "moved",
             DownloadStatus.SourceMissing => "sourcemissing",
