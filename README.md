@@ -173,6 +173,19 @@ Once Prowlarr has it:
 Bookmarkarr filters results server-side, so an audiobook search only returns audiobooks and
 an ebook search only returns ebooks.
 
+### If a title with an apostrophe finds nothing
+
+Prowlarr's AudioBook Bay indexer requests `?s=<terms>&tt=1`, a title-only search that matches
+whole words — and it replaces the apostrophe with a space on the way, so `Butcher's` is sent as
+`butcher s`. Nothing matches: not that form, not `Butchers`, not the bare stem `Butcher`. The
+site's own search finds the release immediately, which makes this look like a Bookmarkarr fault
+when it isn't.
+
+Bookmarkarr works around it by dropping apostrophe-bearing words from a later rung of the search
+ladder, so `The Butcher's Masquerade` is also tried as `The Masquerade` plus the author. If you
+are debugging this yourself, test against the site directly rather than through Prowlarr — every
+spelling fails identically through Prowlarr, which hides the cause.
+
 ---
 
 ## Importing from Goodreads
@@ -305,6 +318,16 @@ qBittorrent/RDT are handled automatically when the outer path is mapped correctl
 - Dry-run-first library status reconciliation that distinguishes a blocked import from a
   completed source that no longer exists in its download client
 - Bulk import of existing audiobook and ebook libraries already on disk
+- Search that walks a ladder from precise to broad — title and author first, then series and
+  subtitle decoration stripped, then apostrophe-bearing words dropped, then one distinctive word
+  plus the author — so a book an indexer holds under an awkward title is still found
+- Optional preservation of original file names, set library-wide or overridden per book from
+  Wanted, for when a release name is worth more than a tidy one
+- **Grab as collection**: take a box set from manual search and place it at the library root with
+  its own folders and names intact, so a media server reads it as many books rather than merging
+  it into the one you searched from
+- Per-book release blocklisting after repeated failures, with manual search results badged rather
+  than hidden
 - Read-only-source, dry-run-first, transactional Listenarr migration utility
 - Responsive UI, history, notifications, backups, and multi-arch release automation
 - Bookmarkarr, Ocean, Forest, and Plum themes with System/Light/Dark modes and a top-bar
