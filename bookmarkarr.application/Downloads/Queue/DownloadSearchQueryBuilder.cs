@@ -32,6 +32,8 @@ namespace Bookmarkarr.Application.Downloads.Queue
         ///   1. normalized title + author
         ///   2. title with series/parenthetical decoration removed + author
         ///   3. normalized title alone
+        ///   4. title with apostrophe-bearing words dropped + author
+        ///   5. the single most distinctive title word + author
         ///
         /// It deliberately stops there. Dropping the title or querying by author alone
         /// would return unrelated books, and media filtering is enforced separately and
@@ -64,6 +66,15 @@ namespace Bookmarkarr.Application.Downloads.Queue
             // immediately.
             var mainTitle = NormalizeTitle(StripSubtitle(audiobook.Title));
 
+            // The whole title with every apostrophe-bearing word removed. Prowlarr's AudioBook Bay
+            // indexer searches with "&tt=1", a title-only mode that matches whole words against a
+            // title stored with a typographic apostrophe — so no form of such a word can ever
+            // match. "Butcher's" arrives as "butcher s" (Prowlarr spaces the apostrophe out),
+            // while our own "Butchers" and even the bare stem "Butcher" return zero just the same.
+            // Dropping the word outright is the only form that matches: "The Butcher's Masquerade"
+            // finds nothing, "The Masquerade Matt Dinniman" finds the release immediately.
+            var apostropheFreeTitle = NormalizeTitle(StripApostropheWords(StripSeriesDecoration(audiobook.Title)));
+
             Add(normalizedTitle, author);
             Add(strippedTitle, author);
             Add(mainTitle, author);
@@ -71,12 +82,19 @@ namespace Bookmarkarr.Application.Downloads.Queue
             Add(strippedTitle);
             Add(mainTitle);
 
-            // Last resort: the single most distinctive word plus the author. Some indexers fail
-            // on a multi-word phrase even when every word in it matches on its own — an ABB
-            // release indexed as "The Butcher's Masquerade" returns nothing for either
-            // "Butcher's Masquerade" or "Butchers Masquerade", but "Masquerade Matt Dinniman"
-            // finds it immediately. Requires an author, because a bare word is far too broad.
-            var distinctive = DistinctiveWord(normalizedTitle);
+            // Guarded rather than left to Add(), which drops blank parts: a title that is nothing
+            // but an apostrophe word ("O'Brien") strips to empty and would emit the author alone.
+            if (!string.IsNullOrWhiteSpace(apostropheFreeTitle))
+            {
+                Add(apostropheFreeTitle, author);
+            }
+
+            // Last resort: the single most distinctive word plus the author, for indexers that
+            // return nothing for a full title they nonetheless hold. Picked from the
+            // apostrophe-free form, so a poisoned word is never chosen: "The Blacksmith's Forge"
+            // must yield "Forge", not the longer — and unmatchable — "Blacksmiths". Requires an
+            // author, because a bare word is far too broad.
+            var distinctive = DistinctiveWord(apostropheFreeTitle);
             if (!string.IsNullOrEmpty(distinctive) && !string.IsNullOrWhiteSpace(author))
             {
                 // Guarded rather than left to Add(), which drops blank parts and would happily
@@ -112,6 +130,37 @@ namespace Bookmarkarr.Application.Downloads.Queue
 
             normalized = PunctuationPattern().Replace(normalized, " ");
             return CollapseWhitespacePattern().Replace(normalized, " ").Trim();
+        }
+
+        /// <summary>
+        /// Drops whole words that carry an apostrophe, rather than folding the apostrophe away.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="NormalizeTitle"/> deletes the apostrophe and keeps the letters, turning
+        /// "Butcher's" into "Butchers". That is the right call for indexers that tokenize on
+        /// whitespace, but AudioBook Bay through Prowlarr matches whole words against a title
+        /// holding a typographic apostrophe, where "Butchers", "butcher s" and "Butcher" all
+        /// miss alike. Removing the word leaves the rest of the title intact and matching.
+        ///
+        /// Returns empty when the title is nothing but apostrophe words, which drops the rung
+        /// instead of querying whatever remains.
+        /// </remarks>
+        private static string StripApostropheWords(string? title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return string.Empty;
+            }
+
+            // Folded first so a smart apostrophe is recognised as one; NormalizeTitle would
+            // otherwise be the only place that knows the two forms are the same character.
+            var folded = title.Replace('‘', '\'').Replace('’', '\'');
+
+            var kept = folded
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Where(word => !word.Contains('\'', StringComparison.Ordinal));
+
+            return string.Join(" ", kept).Trim();
         }
 
         /// <summary>

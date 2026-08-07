@@ -186,14 +186,50 @@ public sealed class DownloadSearchQueryBuilderTests
     [Fact]
     public void BuildCandidates_EndsWithTheMostDistinctiveWordPlusAuthor()
     {
-        // Some indexers fail on a multi-word phrase even when every word matches alone. An ABB
-        // release indexed as "The Butcher's Masquerade" returns nothing for either
-        // "Butcher's Masquerade" or "Butchers Masquerade", but "Masquerade Matt Dinniman" finds
-        // it — so the ladder ends there rather than giving up.
+        // Some indexers return nothing for a full title they nonetheless hold, so the ladder ends
+        // on one strong word plus the author rather than giving up.
         var candidates = DownloadSearchQueryBuilder.BuildCandidates(
             Book("The Butcher's Masquerade (Dungeon Crawler Carl, #5)", "Matt Dinniman"));
 
         Assert.Equal("Masquerade Matt Dinniman", candidates[^1]);
+    }
+
+    [Fact]
+    public void BuildCandidates_DropsApostropheWordsInABroaderRung()
+    {
+        // Prowlarr's AudioBook Bay indexer searches with "&tt=1", matching whole words against a
+        // title stored with a typographic apostrophe. Measured against the live indexer:
+        // "The Butchers Masquerade Matt Dinniman" -> 0, "The Masquerade Matt Dinniman" -> 3, all
+        // of them the wanted release. No spelling of the apostrophe word works, so it has to go.
+        var candidates = DownloadSearchQueryBuilder.BuildCandidates(
+            Book("The Butcher's Masquerade (Dungeon Crawler Carl, #5)", "Matt Dinniman"));
+
+        Assert.Contains("The Masquerade Matt Dinniman", candidates);
+
+        // And it stays a fallback: the precise title is still tried first.
+        Assert.NotEqual("The Masquerade Matt Dinniman", candidates[0]);
+    }
+
+    [Fact]
+    public void BuildCandidates_NeverPicksAnApostropheWordAsTheDistinctiveOne()
+    {
+        // "Blacksmiths" is the longest word, but it is exactly the form that cannot match.
+        var candidates = DownloadSearchQueryBuilder.BuildCandidates(
+            Book("The Blacksmith's Forge", "Ann Lee"));
+
+        Assert.Equal("Forge Ann Lee", candidates[^1]);
+        Assert.DoesNotContain(candidates, candidate => candidate.Contains("Blacksmiths Ann Lee", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void BuildCandidates_NeverQueriesTheAuthorAlone()
+    {
+        // A title that is nothing but an apostrophe word strips to empty; the rung must drop
+        // rather than let the author stand in as the whole query.
+        var candidates = DownloadSearchQueryBuilder.BuildCandidates(Book("O'Brien", "Some Author"));
+
+        Assert.DoesNotContain("Some Author", candidates);
+        Assert.All(candidates, candidate => Assert.Contains("OBrien", candidate, StringComparison.Ordinal));
     }
 
     [Fact]
