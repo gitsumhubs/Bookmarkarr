@@ -30,6 +30,23 @@ namespace Bookmarkarr.Application.Downloads.Submission
     {
         public const string Key = "CollectionPassthrough";
 
+        /// <summary>
+        /// The book whose manual search produced this grab, recorded so it can be marked finished
+        /// once the collection lands.
+        /// </summary>
+        /// <remarks>
+        /// Kept out of <c>AudiobookId</c> on purpose. Attaching it there would make the collection
+        /// count as that book's active download and stop it being searched for as long as the
+        /// download ran; here it is inert until import.
+        /// </remarks>
+        public const string SourceAudiobookKey = "CollectionSourceAudiobookId";
+
+        public static int? SourceAudiobookId(this Download download)
+        {
+            var raw = download.GetMetadataString(SourceAudiobookKey);
+            return int.TryParse(raw, out var id) && id > 0 ? id : null;
+        }
+
         public static void MarkAsCollection(this Download download) =>
             download.SetMetadata(Key, bool.TrueString);
 

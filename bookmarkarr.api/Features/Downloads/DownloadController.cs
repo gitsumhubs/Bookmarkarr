@@ -112,6 +112,17 @@ namespace Bookmarkarr.Api.Features.Downloads
                         downloadId,
                         CollectionPassthroughMetadata.Key,
                         bool.TrueString);
+
+                    // The book the search started from, recorded as metadata rather than as
+                    // AudiobookId so it still cannot suppress that book's automatic search while
+                    // the collection downloads. On import the book is marked finished from this.
+                    if (request.AudiobookId is int sourceAudiobookId && sourceAudiobookId > 0)
+                    {
+                        await downloadRepository.UpdateMetadataAsync(
+                            downloadId,
+                            CollectionPassthroughMetadata.SourceAudiobookKey,
+                            sourceAudiobookId);
+                    }
                 }
 
                 return Ok(new { downloadId, message = "Sent to download client successfully" });

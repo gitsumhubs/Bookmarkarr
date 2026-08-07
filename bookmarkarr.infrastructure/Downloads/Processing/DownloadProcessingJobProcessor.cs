@@ -391,13 +391,29 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
                         : (EditionMediaType?)null;
                     if (mediaType is null) continue;
                     var edition = editions.FirstOrDefault(e => e.MediaType == mediaType.Value);
-                    if (edition is null || edition.Files.Any(f => string.Equals(f.Path, result.FinalPath, StringComparison.OrdinalIgnoreCase))) continue;
-                    edition.Files.Add(new EditionFile
+                    if (edition is null) continue;
+
+                    // Registering the file and marking the edition imported are deliberately
+                    // separate. They used to share one guard, so an already-registered path skipped
+                    // both — and a retry, a reprocess, or any second pass over the same files left
+                    // the edition pinned at Downloading with its files sitting on disk. The edition
+                    // then still counted as wanted, so it stayed in Wanted forever and remained
+                    // eligible to be downloaded again.
+                    var alreadyRegistered = edition.Files.Any(
+                        f => string.Equals(f.Path, result.FinalPath, StringComparison.OrdinalIgnoreCase));
+
+                    if (!alreadyRegistered)
                     {
-                        Path = Path.GetFullPath(result.FinalPath!),
-                        Extension = Path.GetExtension(result.FinalPath!).ToLowerInvariant(),
-                        Size = File.Exists(result.FinalPath) ? new FileInfo(result.FinalPath).Length : 0
-                    });
+                        edition.Files.Add(new EditionFile
+                        {
+                            Path = Path.GetFullPath(result.FinalPath!),
+                            Extension = Path.GetExtension(result.FinalPath!).ToLowerInvariant(),
+                            Size = File.Exists(result.FinalPath) ? new FileInfo(result.FinalPath).Length : 0
+                        });
+                    }
+
+                    // A successful import is what makes an edition imported, whether or not this
+                    // particular pass was the one that added the row.
                     edition.Status = EditionWantedStatus.Imported;
                     edition.UpdatedAt = DateTime.UtcNow;
                 }

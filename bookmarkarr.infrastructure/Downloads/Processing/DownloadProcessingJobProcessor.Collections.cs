@@ -12,9 +12,12 @@ using Bookmarkarr.Application.Audiobooks.Contracts.Repositories;
 using Bookmarkarr.Application.Configuration.Contracts;
 using Bookmarkarr.Application.Downloads.Contracts;
 using Bookmarkarr.Application.Downloads.Import;
+using Bookmarkarr.Application.Downloads.Submission;
 using Bookmarkarr.Domain.Books;
 using Bookmarkarr.Domain.Downloads;
 using Microsoft.Extensions.DependencyInjection;
+using Bookmarkarr.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Bookmarkarr.Infrastructure.Downloads.Processing
@@ -83,6 +86,8 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
             await downloadService.UpdateAsync(download.Imported());
             await jobService.UpdateJobAsync(job.MarkAsCompleted());
 
+            await MarkSourceBookFinishedAsync(scope, download, job, cancellationToken);
+
             // No library scan is queued: the scan queue is keyed by an Audiobook, and a collection
             // has none by design. Audiobookshelf indexes the same shared path on its own schedule,
             // which is the point of placing the files this way; bringing them into Bookmarkarr's
@@ -92,6 +97,67 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
                 "Collection download {DownloadId} placed under {Root}; run a library scan or adopt-scan to track its books",
                 download.Id,
                 result.DestinationRoot);
+        }
+
+        /// <summary>
+        /// Marks the book the collection was searched from as finished, so it leaves Wanted.
+        /// </summary>
+        /// <remarks>
+        /// Chosen behaviour, not an inference: nothing here verifies the collection actually
+        /// contained that book, because the placed folders are untracked until a scan and matching
+        /// them by name is the guesswork adoption reports for review rather than committing. A
+        /// collection that did not include the book therefore marks it finished anyway, and it will
+        /// not be searched for again — clearing the edition's status by hand is the way back.
+        ///
+        /// Failures are logged and swallowed: the files are already placed and the download is
+        /// already complete, so a bookkeeping problem must not fail an import that succeeded.
+        /// </remarks>
+        private async Task MarkSourceBookFinishedAsync(
+            IServiceScope scope,
+            Download download,
+            DownloadProcessingJob job,
+            CancellationToken cancellationToken)
+        {
+            var sourceBookId = download.SourceAudiobookId();
+            if (sourceBookId is null)
+            {
+                return;
+            }
+
+            try
+            {
+                var db = scope.ServiceProvider.GetRequiredService<BookmarkarrDbContext>();
+                var editions = await db.BookEditions
+                    .Where(e => e.BookId == sourceBookId.Value && e.MediaType == EditionMediaType.Audiobook)
+                    .ToListAsync(cancellationToken);
+
+                if (editions.Count == 0)
+                {
+                    job.AddLogEntry($"Collection source book {sourceBookId} has no audiobook edition to mark finished");
+                    return;
+                }
+
+                foreach (var edition in editions)
+                {
+                    edition.Status = EditionWantedStatus.Imported;
+                    edition.UpdatedAt = DateTime.UtcNow;
+                }
+
+                await db.SaveChangesAsync(cancellationToken);
+                job.AddLogEntry($"Marked source book {sourceBookId} finished after collection import");
+                logger.LogInformation(
+                    "Collection download {DownloadId} marked source book {BookId} as imported without verifying the collection contains it",
+                    download.Id,
+                    sourceBookId.Value);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(
+                    ex,
+                    "Collection download {DownloadId} placed successfully but could not mark source book {BookId} finished",
+                    download.Id,
+                    sourceBookId.Value);
+            }
         }
 
         /// <summary>Default audiobook root, falling back to any audiobook root, then the output path.</summary>
