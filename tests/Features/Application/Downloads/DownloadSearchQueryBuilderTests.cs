@@ -148,4 +148,71 @@ public sealed class DownloadSearchQueryBuilderTests
 
         Assert.Equal("World War Z An Oral History", candidates[0]);
     }
+    [Fact]
+    public void BuildCandidates_FallsBackToTheMainTitleWithoutItsSubtitle()
+    {
+        // Catalogues carry the full "Main Title: Long Subtitle"; indexers almost never do, so
+        // without this rung a book with a subtitle returns nothing on every attempt.
+        var candidates = DownloadSearchQueryBuilder.BuildCandidates(
+            Book("World War Z: An Oral History of the Zombie War", "Max Brooks"));
+
+        Assert.Contains("World War Z Max Brooks", candidates);
+        Assert.Contains("World War Z", candidates);
+        // The precise query still leads — a broader rung is only reached when it finds nothing.
+        Assert.StartsWith("World War Z An Oral History", candidates[0]);
+    }
+
+    [Fact]
+    public void BuildCandidates_WillNotShortenToATooGenericMainTitle()
+    {
+        // "It" matches everything and nothing, so the subtitle rung is skipped entirely.
+        var candidates = DownloadSearchQueryBuilder.BuildCandidates(Book("It: A Novel", "Stephen King"));
+
+        Assert.DoesNotContain("It", candidates);
+        Assert.DoesNotContain("It Stephen King", candidates);
+    }
+
+    [Fact]
+    public void BuildCandidates_OrdersRungsFromMostToLeastSpecific()
+    {
+        var candidates = DownloadSearchQueryBuilder.BuildCandidates(
+            Book("Dune: Book One (Dune Chronicles, #1)", "Frank Herbert"));
+
+        // Each rung drops something; the author survives longer than the decoration does.
+        Assert.True(candidates.Count >= 3, $"expected a ladder, got {candidates.Count}");
+        Assert.Contains("Frank Herbert", candidates[0]);
+        Assert.DoesNotContain("Frank Herbert", candidates[^1]);
+    }
+    [Fact]
+    public void BuildCandidates_EndsWithTheMostDistinctiveWordPlusAuthor()
+    {
+        // Some indexers fail on a multi-word phrase even when every word matches alone. An ABB
+        // release indexed as "The Butcher's Masquerade" returns nothing for either
+        // "Butcher's Masquerade" or "Butchers Masquerade", but "Masquerade Matt Dinniman" finds
+        // it — so the ladder ends there rather than giving up.
+        var candidates = DownloadSearchQueryBuilder.BuildCandidates(
+            Book("The Butcher's Masquerade (Dungeon Crawler Carl, #5)", "Matt Dinniman"));
+
+        Assert.Equal("Masquerade Matt Dinniman", candidates[^1]);
+    }
+
+    [Fact]
+    public void BuildCandidates_SkipsTheDistinctiveWordRungWithoutAnAuthor()
+    {
+        // A bare word is far too broad to be worth querying on its own.
+        var candidates = DownloadSearchQueryBuilder.BuildCandidates(Book("The Butchers Masquerade"));
+
+        Assert.DoesNotContain("Masquerade", candidates);
+    }
+
+    [Fact]
+    public void BuildCandidates_IgnoresFillerWhenPickingTheDistinctiveWord()
+    {
+        var candidates = DownloadSearchQueryBuilder.BuildCandidates(
+            Book("Dune Chronicles Unabridged", "Frank Herbert"));
+
+        // "Chronicles" and "Unabridged" are longer but carry no weight.
+        Assert.DoesNotContain("Chronicles Frank Herbert", candidates);
+        Assert.DoesNotContain("Unabridged Frank Herbert", candidates);
+    }
 }

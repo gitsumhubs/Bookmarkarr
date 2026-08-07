@@ -58,10 +58,31 @@ namespace Bookmarkarr.Application.Downloads.Queue
                 }
             }
 
+            // Everything before the first colon. Catalogues carry the full
+            // "Main Title: A Long Explanatory Subtitle"; indexers almost never do, so a query
+            // built from the whole thing matches nothing while the main title alone matches
+            // immediately.
+            var mainTitle = NormalizeTitle(StripSubtitle(audiobook.Title));
+
             Add(normalizedTitle, author);
             Add(strippedTitle, author);
+            Add(mainTitle, author);
             Add(normalizedTitle);
             Add(strippedTitle);
+            Add(mainTitle);
+
+            // Last resort: the single most distinctive word plus the author. Some indexers fail
+            // on a multi-word phrase even when every word in it matches on its own — an ABB
+            // release indexed as "The Butcher's Masquerade" returns nothing for either
+            // "Butcher's Masquerade" or "Butchers Masquerade", but "Masquerade Matt Dinniman"
+            // finds it immediately. Requires an author, because a bare word is far too broad.
+            var distinctive = DistinctiveWord(normalizedTitle);
+            if (!string.IsNullOrEmpty(distinctive) && !string.IsNullOrWhiteSpace(author))
+            {
+                // Guarded rather than left to Add(), which drops blank parts and would happily
+                // emit the word alone, or — worse — the author alone when no word qualifies.
+                Add(distinctive, author);
+            }
 
             return candidates;
         }
@@ -96,6 +117,65 @@ namespace Bookmarkarr.Application.Downloads.Queue
         /// <summary>
         /// Removes series/subtitle decoration such as "(Wheel of Time #3)" from a raw title.
         /// </summary>
+        /// <summary>
+        /// The longest non-trivial word in a title, as a proxy for the most distinctive one.
+        /// </summary>
+        /// <remarks>
+        /// Length is a crude but effective proxy: it picks "Masquerade", "Horribles" and "Omens"
+        /// over the surrounding filler. Returns empty when nothing is long enough to be worth
+        /// querying alone, which drops the rung rather than issuing a hopelessly broad search.
+        /// </remarks>
+        private static string DistinctiveWord(string? normalizedTitle)
+        {
+            if (string.IsNullOrWhiteSpace(normalizedTitle))
+            {
+                return string.Empty;
+            }
+
+            var best = normalizedTitle
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Where(word => word.Length >= 5 && !StopWords.Contains(word))
+                .OrderByDescending(word => word.Length)
+                .FirstOrDefault();
+
+            return best ?? string.Empty;
+        }
+
+        /// <summary>Common title words that carry no distinguishing weight.</summary>
+        private static readonly HashSet<string> StopWords = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "audiobook", "unabridged", "abridged", "volume", "series", "novel", "chronicles",
+            "complete", "edition", "trilogy", "collection"
+        };
+
+        /// <summary>
+        /// Drops a subtitle introduced by a colon, keeping the main title.
+        /// </summary>
+        /// <remarks>
+        /// Refuses to shorten to something too generic. "It: A Novel" would become "It", which
+        /// matches everything and nothing; a main title has to be substantial enough to be worth
+        /// querying on its own, or the original is returned and the rung dedupes away.
+        /// </remarks>
+        private static string StripSubtitle(string? title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return string.Empty;
+            }
+
+            var separator = title.IndexOf(':');
+            if (separator <= 0)
+            {
+                return title;
+            }
+
+            var main = title[..separator].Trim(' ', '-', ',', ':');
+
+            // Two words, or one long one. Anything shorter is too weak a query to be useful.
+            var wordCount = main.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+            return wordCount >= 2 || main.Length >= 8 ? main : title;
+        }
+
         private static string StripSeriesDecoration(string? title)
         {
             if (string.IsNullOrWhiteSpace(title))
