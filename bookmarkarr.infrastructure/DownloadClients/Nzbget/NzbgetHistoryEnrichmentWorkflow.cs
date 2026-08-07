@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+using System.Collections.Concurrent;
 using System.Xml.Linq;
 using Bookmarkarr.Domain.Common;
 using Microsoft.Extensions.Logging;
@@ -285,6 +286,23 @@ namespace Bookmarkarr.Infrastructure.DownloadClients.Nzbget
             }
         }
 
+        /// <summary>
+        /// Failures already warned about, so NZBGet's retained history is not re-reported on
+        /// every poll.
+        ///
+        /// Static because this workflow is scoped: a per-instance set would be discarded between
+        /// polls and dedupe nothing. NZBGet keeps failed entries indefinitely, so five bad
+        /// releases produced hundreds of identical warnings an hour and buried everything else.
+        /// </summary>
+        private static readonly ConcurrentDictionary<string, byte> WarnedFailures = new();
+
+        /// <summary>
+        /// Cap on remembered failures. Reached only after an implausible number of distinct bad
+        /// downloads; clearing wholesale costs one repeated warning each, which is far cheaper
+        /// than tracking eviction order.
+        /// </summary>
+        private const int MaxWarnedFailures = 2000;
+
         private void LogFailedHistoryEntry(
             DownloadClientConfiguration client,
             string surface,
@@ -293,6 +311,18 @@ namespace Bookmarkarr.Infrastructure.DownloadClients.Nzbget
             if (entry.Outcome != NzbgetHistoryOutcome.Failed)
             {
                 return;
+            }
+
+            // Keyed on status too, so a re-download that fails a different way is still reported.
+            var key = $"{client.Id}|{entry.CanonicalNzbId}|{entry.RawStatus}";
+            if (!WarnedFailures.TryAdd(key, 0))
+            {
+                return;
+            }
+
+            if (WarnedFailures.Count > MaxWarnedFailures)
+            {
+                WarnedFailures.Clear();
             }
 
             logger.LogWarning(

@@ -84,6 +84,22 @@ describe('useTableSort', () => {
     expect(sortItems(rows).map((r) => r.author)).toEqual(['Towles', 'Hobb', null])
   })
 
+  it('returns the same array when nothing is sorted', () => {
+    // Identity matters: a fresh array on every recompute changes what a `watch` sees, so a
+    // virtualised list rebuilds its layout on unrelated updates and loses scroll position.
+    const { sortItems } = createSort()
+
+    expect(sortItems(rows)).toBe(rows)
+  })
+
+  it('returns a new array once a column is active', () => {
+    const { toggleSort, sortItems } = createSort()
+
+    toggleSort('title')
+
+    expect(sortItems(rows)).not.toBe(rows)
+  })
+
   it('does not mutate the source array', () => {
     const { toggleSort, sortItems } = createSort()
     const original = [...rows]

@@ -86,10 +86,15 @@ export function useTableSort<T, K extends string>(
 
   function sortItems(items: readonly T[]): T[] {
     const key = sortKey.value
-    if (!key) return [...items]
+
+    // Returns the caller's own array when there is nothing to sort, rather than a copy.
+    // A fresh array on every recompute changes the identity a `watch` sees, so a list that
+    // rebuilds on unrelated updates — a download status changing, say — re-runs its layout
+    // and loses the reader's scroll position. Callers treat the result as read-only.
+    if (!key) return items as T[]
 
     const accessor = accessors[key]
-    if (!accessor) return [...items]
+    if (!accessor) return items as T[]
 
     const factor = sortDirection.value === 'asc' ? 1 : -1
 
