@@ -27,6 +27,7 @@ namespace Bookmarkarr.Api.Features.Downloads
     public sealed class ImportNameFixWorkflow(
         IDownloadRepository downloadRepository,
         IDownloadService downloadService,
+        IDownloadProcessingJobService jobService,
         IFileSystem fileSystem,
         IFileMover fileMover,
         ILogger<ImportNameFixWorkflow> logger)
@@ -91,7 +92,13 @@ namespace Bookmarkarr.Api.Features.Downloads
                     // Both sides must stay inside the directory the client reported, so a supplied
                     // override cannot be used to move an arbitrary file into the library.
                     var expectedDirectory = Path.GetFullPath(Path.GetDirectoryName(mismatch.ReportedPath) ?? string.Empty);
-                    var sourceFull = Path.GetFullPath(source);
+
+                    // A bare filename is resolved against the download's own directory. The field is
+                    // prefilled with just a name, so requiring a full path would make the common
+                    // case — correcting one character — needlessly punishing.
+                    var sourceFull = Path.IsPathRooted(source)
+                        ? Path.GetFullPath(source)
+                        : Path.GetFullPath(Path.Combine(expectedDirectory, source));
                     if (!string.Equals(Path.GetDirectoryName(sourceFull), expectedDirectory, StringComparison.OrdinalIgnoreCase))
                     {
                         failures.Add(new { mismatch.ReportedPath, error = "Chosen file is outside the download's own directory" });
@@ -147,9 +154,11 @@ namespace Bookmarkarr.Api.Features.Downloads
             download.SetStatus(DownloadStatus.ImportPending);
             await downloadService.UpdateAsync(download);
 
-            // Reuses the same path the Reprocess action uses, so a repaired import goes through
-            // exactly the pipeline a normal one does rather than a parallel route of its own.
-            await downloadService.ReprocessDownloadAsync(downloadId);
+            // Enqueued directly rather than through ReprocessDownloadAsync, which is a placeholder
+            // returning null — the repair would have depended on the monitor's next poll noticing
+            // the ImportPending status, which is a side effect rather than a design.
+            var jobId = await jobService.EnqueueAsync(download);
+            logger.LogInformation("Queued import job {JobId} after repairing names for download {DownloadId}", jobId, downloadId);
 
             return new OkObjectResult(new
             {

@@ -51,15 +51,16 @@
                 v-model="overrides[issue.reportedPath]"
                 type="text"
                 class="override-input"
-                :placeholder="issue.actualName"
+                spellcheck="false"
               />
             </div>
             <div class="issue-dir">{{ issue.directory }}</div>
           </div>
 
           <p class="hint subtle">
-            Leave “Use instead” blank to accept the detected match. Any file you name must sit in
-            the same folder as the download.
+            “Use instead” starts on the file that was detected — edit it only if the match is
+            wrong. A bare filename is resolved inside the folder shown below each entry, and a
+            file outside that folder is rejected.
           </p>
         </template>
 
@@ -111,6 +112,11 @@ onMounted(async () => {
   try {
     const result = await apiService.getImportIssues(props.downloadId)
     issues.value = result.issues
+
+    // Prefilled with the detected file rather than left blank: the common correction is a
+    // character or two, and retyping a chapter filename by hand to change one of them is a
+    // pointless transcription exercise.
+    overrides.value = Object.fromEntries(result.issues.map((i) => [i.reportedPath, i.actualName]))
   } catch (err) {
     error.value = (err as Error).message || 'Could not load the detected filename issues'
     errorTracking.captureException(err as Error, {
@@ -126,6 +132,7 @@ async function apply() {
   applying.value = true
   error.value = ''
   try {
+    // Blank entries fall back to the detected pairing server-side, so they are dropped here.
     const filled = Object.fromEntries(
       Object.entries(overrides.value).filter(([, value]) => value && value.trim().length > 0),
     )
