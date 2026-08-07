@@ -33,7 +33,23 @@ namespace Bookmarkarr.Application.Mapping
             // only when the client reports a positive total size and a non-negative
             // downloaded value. Unknown byte telemetry must never look like
             // "nothing left to download."
-            var hasReliableSize = item.Size > 0 && item.Downloaded >= 0;
+            var normalizedState = (item.Status ?? string.Empty).ToLowerInvariant();
+
+            // A client claiming the transfer is finished while reporting zero downloaded bytes is
+            // not reporting byte counts at all. RDT Client's qBittorrent shim leaves `downloaded`
+            // at 0 for a torrent's whole life, so a finished 883MB file arrives as
+            // size=883MB/downloaded=0 — indistinguishable, by the check below alone, from a
+            // transfer that has not started. Read literally it means "the entire file is still
+            // outstanding", which pins a completed download at Downloading forever and blocks
+            // both its import and any further search for that book.
+            //
+            // Deliberately narrow: a genuine transfer sitting at zero bytes reports neither a
+            // completed state nor full progress, so the debrid protection below is untouched.
+            var claimsCompletion = normalizedState is "completed" or "success"
+                || (double.IsFinite(item.Progress) && item.Progress >= 100);
+            var reportsNoByteProgress = item.Downloaded <= 0 && claimsCompletion;
+
+            var hasReliableSize = item.Size > 0 && item.Downloaded >= 0 && !reportsNoByteProgress;
             var amountLeft = hasReliableSize
                 ? Math.Max(0, item.Size - item.Downloaded)
                 : null as long?;
@@ -54,7 +70,6 @@ namespace Bookmarkarr.Application.Mapping
                 hasReliableSize ? Math.Min(item.Downloaded, item.Size) : null,
                 hasReliableSize);
 
-            var normalizedState = (item.Status ?? string.Empty).ToLowerInvariant();
             if (normalizedState is "error" or "failed" or "failure" or "missingfiles" or "missing_files")
             {
                 download.Failed(item.ErrorMessage ?? $"Download client state: {item.Status}");

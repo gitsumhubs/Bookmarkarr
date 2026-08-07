@@ -90,6 +90,74 @@ namespace Bookmarkarr.Tests.Features.Application.Mapping
 
         [Fact]
         [Trait("Method", "UpdateFromQueueItem")]
+        public void UpdateFromQueueItem_CompletesDownload_WhenClientReportsCompletionWithoutByteCounts()
+        {
+            // RDT Client's qBittorrent shim never populates `downloaded`, so a finished 883MB file
+            // arrives as size=883MB/downloaded=0. Read as bytes it says the whole file is still
+            // outstanding, which pinned the download at Downloading forever — the file was on disk
+            // the entire time, and the book stopped being searched because the row looked active.
+            var download = new Download { Status = DownloadStatus.Downloading, Progress = 50m };
+            var item = new QueueItem
+            {
+                Status = "completed",
+                Progress = 100,
+                Size = 883_283_912,
+                Downloaded = 0
+            };
+
+            var updated = QueueItemConverter.UpdateFromQueueItem(download, item);
+
+            Assert.Equal(DownloadStatus.Completed, updated.Status);
+            Assert.False((bool)updated.Metadata["HasReliableSize"]);
+        }
+
+        [Fact]
+        [Trait("Method", "UpdateFromQueueItem")]
+        public void UpdateFromQueueItem_StillHoldsDebridDownload_WhenBytesGenuinelyOutstanding()
+        {
+            // The protection this narrows must survive: a debrid client reporting "completed" the
+            // moment the remote side finishes, while the local transfer is genuinely mid-flight.
+            // Partial progress and a non-zero byte count make it distinguishable from the case above.
+            var download = new Download { Status = DownloadStatus.Downloading, Progress = 40m };
+            var item = new QueueItem
+            {
+                Status = "completed",
+                Progress = 40,
+                Size = 1_000_000,
+                Downloaded = 400_000
+            };
+
+            var updated = QueueItemConverter.UpdateFromQueueItem(download, item);
+
+            Assert.Equal(DownloadStatus.Downloading, updated.Status);
+            Assert.True((bool)updated.Metadata["HasReliableSize"]);
+            Assert.Equal(600_000L, updated.Metadata["AmountLeft"]);
+        }
+
+        [Fact]
+        [Trait("Method", "UpdateFromQueueItem")]
+        public void UpdateFromQueueItem_DoesNotCompleteZeroByteDownload_WhileStillTransferring()
+        {
+            // Zero bytes without any completion claim is a transfer that has not started, and must
+            // keep being treated as outstanding rather than swept up by the new exemption.
+            var download = new Download { Status = DownloadStatus.Downloading, Progress = 0m };
+            var item = new QueueItem
+            {
+                Status = "downloading",
+                Progress = 0,
+                Size = 883_283_912,
+                Downloaded = 0
+            };
+
+            var updated = QueueItemConverter.UpdateFromQueueItem(download, item);
+
+            Assert.Equal(DownloadStatus.Downloading, updated.Status);
+            Assert.True((bool)updated.Metadata["HasReliableSize"]);
+            Assert.Equal(883_283_912L, updated.Metadata["AmountLeft"]);
+        }
+
+        [Fact]
+        [Trait("Method", "UpdateFromQueueItem")]
         public void UpdateFromQueueItem_PreservesDownloadedSize_WhenClientReportsUnknownSize()
         {
             var download = new Download

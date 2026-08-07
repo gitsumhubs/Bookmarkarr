@@ -186,12 +186,18 @@ namespace Bookmarkarr.Application.Downloads.Common
                     item.LocalPath,
                     item.ContentPath);
 
-                var hasReliableSize = item.Size > 0 && item.Downloaded >= 0;
+                var normalizedState = (item.Status ?? string.Empty).ToLowerInvariant();
+                var isExplicitCompletedState = normalizedState is "completed" or "success";
+
+                // Mirrors QueueItemConverter: zero downloaded bytes alongside a completion claim
+                // means the client does not report byte counts, not that nothing has transferred.
+                // Kept in step so this diagnostic never contradicts the decision actually taken.
+                var reportsNoByteProgress = item.Downloaded <= 0
+                    && (isExplicitCompletedState || (double.IsFinite(item.Progress) && item.Progress >= 100));
+                var hasReliableSize = item.Size > 0 && item.Downloaded >= 0 && !reportsNoByteProgress;
                 var amountLeft = hasReliableSize
                     ? Math.Max(0, item.Size - item.Downloaded)
                     : null as long?;
-                var normalizedState = (item.Status ?? string.Empty).ToLowerInvariant();
-                var isExplicitCompletedState = normalizedState is "completed" or "success";
 
                 logger.LogDebug(
                     "Completion diagnostic for {DownloadId}: Progress={Progress:F4}, HasReliableSize={HasReliableSize}, AmountLeft={AmountLeft}, ExplicitCompletedState={ExplicitCompletedState}, Status={Status}",
