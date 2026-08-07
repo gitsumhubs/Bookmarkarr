@@ -83,6 +83,13 @@
         </div>
       </FormRow>
 
+      <CheckboxCard
+        :modelValue="settings.disableFileRenaming === true"
+        @update:modelValue="(v: boolean) => updateField('disableFileRenaming', v)"
+        title="Keep original file names"
+        description="Imported files keep the names they arrived with. Folder placement still follows the patterns above. Individual books can override this from Wanted. Note: players and Audiobookshelf order tracks by file name, so multi-part releases with unsortable names may play out of order."
+      />
+
       <!-- Path length warning -->
       <div v-if="pathLengthWarning" class="path-length-warning">
         <PhWarning :size="18" />
@@ -204,6 +211,7 @@
 </template>
 
 <script setup lang="ts">
+import CheckboxCard from './CheckboxCard.vue'
 import type { ApplicationSettings } from '@/types'
 import { ref, computed } from 'vue'
 import { PhFolder, PhQuestion, PhX, PhWarning } from '@phosphor-icons/vue'

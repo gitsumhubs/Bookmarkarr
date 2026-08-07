@@ -157,6 +157,14 @@
             </div>
             <div class="col-actions">
               <div class="actions-cell">
+                <label class="rename-toggle" :title="renameToggleLabel">
+                  <input
+                    type="checkbox"
+                    :checked="isRenameOverridden(item)"
+                    :disabled="renameSaving[item.wantedKey]"
+                    @change="(e) => toggleRenameOverride(item, (e.target as HTMLInputElement).checked)"
+                  />
+                </label>
                 <button
                   class="btn-icon"
                   @click="searchAudiobook(item)"
@@ -251,6 +259,48 @@ const downloadsStore = useDownloadsStore()
 const { getProtectedImageSrc } = useProtectedImages()
 const libraryStore = useLibraryStore()
 const configurationStore = useConfigurationStore()
+const renameSaving = ref<Record<string, boolean>>({})
+
+/** True when the library default is to keep original names. */
+const renamingDisabledGlobally = computed(
+  () => configurationStore.applicationSettings?.disableFileRenaming === true,
+)
+
+/**
+ * The box always means "do the opposite of the library default for this book", so its label
+ * inverts with that default rather than the box meaning two different things silently.
+ */
+const renameToggleLabel = computed(() =>
+  renamingDisabledGlobally.value
+    ? 'Enable renaming for this book'
+    : 'Disable renaming for this book',
+)
+
+/** Checked only when this book actively differs from the library default. */
+function isRenameOverridden(item: WantedItem): boolean {
+  const override = item.disableFileRenamingOverride
+  if (override === null || override === undefined) return false
+  return override !== renamingDisabledGlobally.value
+}
+
+async function toggleRenameOverride(item: WantedItem, checked: boolean) {
+  // Unchecking returns the book to inheriting the library default rather than pinning
+  // it to the default's current value, which would silently stop tracking future changes.
+  const value = checked ? !renamingDisabledGlobally.value : null
+  renameSaving.value = { ...renameSaving.value, [item.wantedKey]: true }
+  try {
+    await apiService.setFileRenamingOverride(item.id, value)
+    item.disableFileRenamingOverride = value
+  } catch (error) {
+    errorTracking.captureException(error as Error, {
+      component: 'WantedView',
+      operation: 'setFileRenamingOverride',
+      metadata: { itemId: item.id },
+    })
+  } finally {
+    renameSaving.value = { ...renameSaving.value, [item.wantedKey]: false }
+  }
+}
 type EditionSummary = NonNullable<Audiobook['editions']>[number]
 type WantedItem = Audiobook & { wantedEdition?: EditionSummary; wantedKey: string }
 
@@ -345,6 +395,7 @@ onMounted(async () => {
     await libraryStore.fetchLibrary()
   }
   await configurationStore.loadQualityProfiles()
+  await configurationStore.loadApplicationSettings()
 
   await syncWantedLayout()
 })
@@ -1203,6 +1254,24 @@ const markAsSkipped = async (item: WantedItem) => {
 .actions-cell {
   display: flex;
   gap: 0.25rem;
+  align-items: center;
+}
+
+.rename-toggle {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 0 0.15rem;
+}
+
+.rename-toggle input {
+  cursor: pointer;
+  margin: 0;
+}
+
+.rename-toggle input:disabled {
+  cursor: wait;
+  opacity: 0.5;
 }
 
 .btn-icon {

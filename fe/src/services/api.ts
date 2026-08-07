@@ -1298,6 +1298,21 @@ class ApiService {
     })
   }
 
+  /**
+   * Set or clear one book's override of the library-wide file renaming default.
+   * Pass null to inherit. Deliberately not part of updateAudiobook: that endpoint binds the whole
+   * entity, so a partial body would read the absent override as "inherit" and wipe the choice.
+   */
+  async setFileRenamingOverride(
+    id: number,
+    disableRenaming: boolean | null,
+  ): Promise<{ message: string; audiobookId: number; disableFileRenamingOverride: boolean | null }> {
+    return this.request(`/library/${id}/file-renaming`, {
+      method: 'PUT',
+      body: JSON.stringify({ disableRenaming }),
+    })
+  }
+
   async moveAudiobook(
     id: number,
     destinationPath: string,

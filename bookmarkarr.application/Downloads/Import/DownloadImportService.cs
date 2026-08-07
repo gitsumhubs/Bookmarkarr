@@ -91,6 +91,9 @@ namespace Bookmarkarr.Application.Downloads.Import
 
                 var results = new List<ImportResult>();
                 var folderPattern = settings.FolderNamingPattern;
+
+                // The book's own choice wins; null means it never made one, so follow the library.
+                var keepOriginalFileNames = audiobook.DisableFileRenamingOverride ?? settings.DisableFileRenaming;
                 var sourceFiles = files
                     .Where(file => !FileUtils.IsBlacklistedFile(file, settings.ImportBlacklistExtensions))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -281,17 +284,24 @@ namespace Bookmarkarr.Application.Downloads.Import
                             var baseFilePattern = isMultiFileBatch ? settings.MultiFileNamingPattern : settings.FileNamingPattern;
 
                             var ext = Path.GetExtension(file);
-                            var patternHasNumberTokens = !string.IsNullOrWhiteSpace(baseFilePattern)
+                            var patternHasNumberTokens = !keepOriginalFileNames
+                                && !string.IsNullOrWhiteSpace(baseFilePattern)
                                 && (baseFilePattern.IndexOf("DiskNumber", StringComparison.OrdinalIgnoreCase) >= 0
                                     || baseFilePattern.IndexOf("ChapterNumber", StringComparison.OrdinalIgnoreCase) >= 0);
 
-                            var patternAllowsSubfolders = baseFilePattern.IndexOf("DiskNumber", StringComparison.OrdinalIgnoreCase) >= 0
-                                || baseFilePattern.Contains("ChapterNumber", StringComparison.OrdinalIgnoreCase)
-                                || baseFilePattern.Contains('/')
-                                || baseFilePattern.Contains('\\');
+                            // Kept false when preserving names so the incoming filename is forced to a
+                            // bare, sanitized leaf below — a source name must never introduce a folder.
+                            var patternAllowsSubfolders = !keepOriginalFileNames
+                                && (baseFilePattern.IndexOf("DiskNumber", StringComparison.OrdinalIgnoreCase) >= 0
+                                    || baseFilePattern.Contains("ChapterNumber", StringComparison.OrdinalIgnoreCase)
+                                    || baseFilePattern.Contains('/')
+                                    || baseFilePattern.Contains('\\'));
                             var treatAsFilename = !patternAllowsSubfolders;
 
-                            var filename = fileNamingService.ApplyNamingPattern(baseFilePattern, variablesForFile, treatAsFilename);
+                            // Folder placement still follows the pattern above; only the leaf is left alone.
+                            var filename = keepOriginalFileNames
+                                ? Path.GetFileName(file)
+                                : fileNamingService.ApplyNamingPattern(baseFilePattern, variablesForFile, treatAsFilename);
                             if (!filename.EndsWith(ext, StringComparison.OrdinalIgnoreCase)) filename += ext; // FIXME: Should be in ApplyNamingPattern
 
                             if (!patternAllowsSubfolders)

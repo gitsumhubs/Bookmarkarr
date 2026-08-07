@@ -185,6 +185,91 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Import
             Assert.Empty(Directory.EnumerateFiles(ebookRoot, "*", SearchOption.AllDirectories));
         }
 
+        private async Task<(Audiobook Book, string Source, string Root)> ArrangeRenamingCaseAsync(
+            string caseName,
+            bool? bookOverride,
+            bool disableGlobally)
+        {
+            var libraryRoot = FileService.GetTempDirectory($"{caseName}-library");
+            var sourceRoot = FileService.GetTempDirectory($"{caseName}-download");
+            var sourceFile = await FileService.GetFileAsync(sourceRoot, "Original Release Name.mp3");
+            var audiobook = new AudiobookBuilder()
+                .WithTitle("Renamed Title")
+                .WithAuthor("Some Author")
+                .Build();
+            audiobook.DisableFileRenamingOverride = bookOverride;
+            audiobook.Editions.Add(new BookEdition
+            {
+                MediaType = EditionMediaType.Audiobook,
+                RootPath = libraryRoot
+            });
+            await _audiobookRepository.AddAsync(audiobook);
+
+            var settings = new ApplicationSettingsBuilder()
+                .WithOutputPath(libraryRoot)
+                .WithCopyFileOnCompleted()
+                .WithoutMetadataProcessing()
+                .WithFolderNamingPattern("{Author}/{Title}")
+                .WithFileNamingPattern("{Title}");
+            if (disableGlobally)
+            {
+                settings = settings.WithFileRenamingDisabled();
+            }
+
+            await _applicationSettingsRepository.SaveAsync(settings.Build());
+            return (audiobook, sourceFile, libraryRoot);
+        }
+
+        [Fact]
+        public async Task AudiobookImport_RenamingDisabledGlobally_KeepsTheOriginalFileName()
+        {
+            var (audiobook, sourceFile, _) = await ArrangeRenamingCaseAsync("global-off", null, disableGlobally: true);
+
+            var service = _provider.GetRequiredService<IDownloadImportService>();
+            var result = Assert.Single(await service.ImportDownloadFilesAsync(audiobook, [sourceFile]));
+
+            Assert.True(result.Success);
+            // Folder placement still follows the pattern; only the leaf is left alone.
+            Assert.Equal("Original Release Name.mp3", Path.GetFileName(result.FinalPath));
+            Assert.Contains(Path.Join("Some Author", "Renamed Title"), result.FinalPath);
+            Assert.True(File.Exists(result.FinalPath));
+        }
+
+        [Fact]
+        public async Task AudiobookImport_BookOverrideDisablesRenaming_WhenLibraryStillRenames()
+        {
+            var (audiobook, sourceFile, _) = await ArrangeRenamingCaseAsync("book-off", true, disableGlobally: false);
+
+            var service = _provider.GetRequiredService<IDownloadImportService>();
+            var result = Assert.Single(await service.ImportDownloadFilesAsync(audiobook, [sourceFile]));
+
+            Assert.Equal("Original Release Name.mp3", Path.GetFileName(result.FinalPath));
+        }
+
+        [Fact]
+        public async Task AudiobookImport_BookOverrideForcesRenaming_WhenLibraryPreservesNames()
+        {
+            // The inverse case: with the library default off, a book may still opt back in.
+            var (audiobook, sourceFile, _) = await ArrangeRenamingCaseAsync("book-on", false, disableGlobally: true);
+
+            var service = _provider.GetRequiredService<IDownloadImportService>();
+            var result = Assert.Single(await service.ImportDownloadFilesAsync(audiobook, [sourceFile]));
+
+            Assert.Equal("Renamed Title.mp3", Path.GetFileName(result.FinalPath));
+        }
+
+        [Fact]
+        public async Task AudiobookImport_NullOverride_FollowsTheLibraryDefault()
+        {
+            // Null is "inherit", which must stay distinct from an explicit false.
+            var (audiobook, sourceFile, _) = await ArrangeRenamingCaseAsync("inherit", null, disableGlobally: false);
+
+            var service = _provider.GetRequiredService<IDownloadImportService>();
+            var result = Assert.Single(await service.ImportDownloadFilesAsync(audiobook, [sourceFile]));
+
+            Assert.Equal("Renamed Title.mp3", Path.GetFileName(result.FinalPath));
+        }
+
         [Fact]
         public async Task AudiobookImport_MissingBasePath_DerivesDestinationFromEditionRoot()
         {

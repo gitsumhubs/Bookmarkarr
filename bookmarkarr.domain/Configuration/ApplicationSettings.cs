@@ -67,6 +67,23 @@ namespace Bookmarkarr.Domain.Configuration
         // {Quality} - Audio quality (e.g., "64kbps mp3")
         public string MultiFileNamingPattern { get; set; } = "{Title}-{DiskNumber:00}-{ChapterNumber:00}";
 
+        /// <summary>
+        /// Library-wide default: when true, imported files keep the filenames they arrived with.
+        /// </summary>
+        /// <remarks>
+        /// Folder placement is unaffected — only the filename is left alone. A release name is the
+        /// only provenance many files carry, and for a single-file book renaming it buys nothing.
+        ///
+        /// The cost falls on multi-file releases: players and Audiobookshelf order tracks by
+        /// filename, and source names are frequently unsortable ("part1, part10, part2"), which
+        /// <see cref="MultiFileNamingPattern"/> exists to normalize. Leaving names alone can
+        /// therefore scramble playback order for a multi-part book.
+        ///
+        /// Defaults to false so existing libraries keep the behaviour they were built with.
+        /// A book may override this either way via <c>Audiobook.DisableFileRenamingOverride</c>.
+        /// </remarks>
+        public bool DisableFileRenaming { get; set; }
+
         public bool EnableMetadataProcessing { get; set; } = true;
         public bool EnableCoverArtDownload { get; set; } = true;
         public string AudnexusApiUrl { get; set; } = "https://api.audnex.us";

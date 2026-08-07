@@ -58,6 +58,18 @@ namespace Bookmarkarr.Domain.Audiobooks
 
         // Monitoring and file management
         public bool Monitored { get; set; } = true;
+
+        /// <summary>
+        /// Per-book override of the library-wide rename default. Null inherits the global setting.
+        /// </summary>
+        /// <remarks>
+        /// Nullable rather than a plain bool so a book records "follow the library" distinctly from
+        /// "deliberately set to the same value the library currently uses". Without that
+        /// distinction, flipping the global default would silently skip every book that had been
+        /// explicitly set, or drag along every book that had not — and the two are indistinguishable
+        /// once collapsed into a bool.
+        /// </remarks>
+        public bool? DisableFileRenamingOverride { get; set; }
         // NOTE: single-file properties are deprecated in favor of Files collection
         public string? FilePath { get; set; }
         public long? FileSize { get; set; }

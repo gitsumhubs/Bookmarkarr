@@ -316,6 +316,8 @@ export interface ApplicationSettings {
   folderNamingPattern: string
   fileNamingPattern: string
   multiFileNamingPattern: string
+  /** Library-wide default: when true, imported files keep the filenames they arrived with. */
+  disableFileRenaming?: boolean
   enableMetadataProcessing: boolean
   enableCoverArtDownload: boolean
   audnexusApiUrl: string
@@ -621,6 +623,8 @@ export type AudiobookStatus = 'downloading' | 'no-file' | 'quality-mismatch' | '
 
 export interface Audiobook {
   id: number
+  /** Per-book override of the library rename default. Null/undefined inherits it. */
+  disableFileRenamingOverride?: boolean | null
   title: string
   subtitle?: string
   authors?: string[]

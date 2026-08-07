@@ -30,6 +30,12 @@ namespace Bookmarkarr.Tests.Builders
             return this;
         }
 
+        public ApplicationSettingsBuilder WithFileRenamingDisabled()
+        {
+            _applicationSettings.DisableFileRenaming = true;
+            return this;
+        }
+
         public ApplicationSettingsBuilder WithMetadataProcessing()
         {
             _applicationSettings.EnableMetadataProcessing = true;
