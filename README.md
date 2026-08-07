@@ -176,14 +176,14 @@ an ebook search only returns ebooks.
 ### If a title with an apostrophe finds nothing
 
 Prowlarr's AudioBook Bay indexer requests `?s=<terms>&tt=1`, a title-only search that matches
-whole words — and it replaces the apostrophe with a space on the way, so `Butcher's` is sent as
-`butcher s`. Nothing matches: not that form, not `Butchers`, not the bare stem `Butcher`. The
-site's own search finds the release immediately, which makes this look like a Bookmarkarr fault
-when it isn't.
+whole words — and it replaces the apostrophe with a space on the way, so a title like
+`The Sailor's Compass` is sent as `the sailor s compass`. Nothing matches: not that form, not
+`Sailors`, not the bare stem `Sailor`. The site's own search finds the release immediately, which
+makes this look like a Bookmarkarr fault when it isn't.
 
 Bookmarkarr works around it by dropping apostrophe-bearing words from a later rung of the search
-ladder, so `The Butcher's Masquerade` is also tried as `The Masquerade` plus the author. If you
-are debugging this yourself, test against the site directly rather than through Prowlarr — every
+ladder, so `The Sailor's Compass` is also tried as `The Compass` plus the author. If you are
+debugging this yourself, test against the site directly rather than through Prowlarr — every
 spelling fails identically through Prowlarr, which hides the cause.
 
 ---
