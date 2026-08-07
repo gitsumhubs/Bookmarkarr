@@ -261,6 +261,51 @@ const libraryStore = useLibraryStore()
 const configurationStore = useConfigurationStore()
 const renameSaving = ref<Record<string, boolean>>({})
 
+/**
+ * Which rows are wanted comes from the library, which only SignalR pushes keep current — so if
+ * that connection drops the page silently freezes with no indication. This interval is the
+ * fallback that makes it recover on its own, mirroring what Activity already does.
+ */
+const WANTED_REFRESH_MS = 15000
+let wantedRefreshTimer: ReturnType<typeof setInterval> | null = null
+let wantedRefreshInFlight = false
+
+async function refreshWantedData() {
+  // Skipped rather than queued: a slow library fetch must not stack up requests behind it.
+  if (wantedRefreshInFlight) return
+  wantedRefreshInFlight = true
+  try {
+    await Promise.all([downloadsStore.loadDownloads(), libraryStore.fetchLibrary()])
+  } catch (error) {
+    // A failed refresh is not worth surfacing — the next tick retries.
+    logger.debug('[WantedView] background refresh failed', error)
+  } finally {
+    wantedRefreshInFlight = false
+  }
+}
+
+function startWantedRefresh() {
+  stopWantedRefresh()
+  wantedRefreshTimer = setInterval(() => void refreshWantedData(), WANTED_REFRESH_MS)
+}
+
+function stopWantedRefresh() {
+  if (wantedRefreshTimer !== null) {
+    clearInterval(wantedRefreshTimer)
+    wantedRefreshTimer = null
+  }
+}
+
+/** A hidden tab has no reader to serve, so stop polling and catch up on return. */
+function handleVisibilityChange() {
+  if (document.hidden) {
+    stopWantedRefresh()
+    return
+  }
+  void refreshWantedData()
+  startWantedRefresh()
+}
+
 /** True when the library default is to keep original names. */
 const renamingDisabledGlobally = computed(
   () => configurationStore.applicationSettings?.disableFileRenaming === true,
@@ -387,15 +432,16 @@ onMounted(async () => {
     window.addEventListener('resize', handleViewportResize, { passive: true })
   }
 
-  if (downloadsStore.downloads.length === 0) {
-    await downloadsStore.loadDownloads()
-  }
-
-  if (libraryStore.audiobooks.length === 0) {
-    await libraryStore.fetchLibrary()
-  }
+  // Unconditional: the stores are app-lifetime, so a guard on "already has rows" meant arriving
+  // at Wanted after using the app elsewhere rendered whatever was last cached.
+  await Promise.all([downloadsStore.loadDownloads(), libraryStore.fetchLibrary()])
   await configurationStore.loadQualityProfiles()
   await configurationStore.loadApplicationSettings()
+
+  startWantedRefresh()
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+  }
 
   await syncWantedLayout()
 })
@@ -404,6 +450,10 @@ onBeforeUnmount(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', handleViewportResize)
   }
+  if (typeof document !== 'undefined') {
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }
+  stopWantedRefresh()
 })
 
 // Expand unified books into independent wanted editions.

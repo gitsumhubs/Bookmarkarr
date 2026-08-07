@@ -157,6 +157,34 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
 
             // Filter download with active client configuration
             activeDownloads = [.. activeDownloads.Where(d => enabledClientIds.Contains(d.DownloadClientId))];
+
+            // Imported downloads are polled only to keep the CanBeRemoved flag fresh for deferred
+            // removal. A client set to "none" never removes anything, so that poll can never lead
+            // anywhere — yet the rows are terminal and accumulate for the life of the library,
+            // so every completed download would be re-polled forever and each cycle grows longer
+            // than the last. Dropping them keeps the cycle proportional to what is genuinely in
+            // flight; clients that do remove still get their imported rows polled as before.
+            var clientsKeepingCompleted = configuredClients
+                .Where(c => !string.IsNullOrWhiteSpace(c.Id)
+                    && string.Equals(c.RemoveCompletedDownloads, "none", StringComparison.OrdinalIgnoreCase))
+                .Select(c => c.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (clientsKeepingCompleted.Count > 0)
+            {
+                var beforeTerminalFilter = activeDownloads.Count;
+                activeDownloads = [.. activeDownloads.Where(d =>
+                    d.Status != DownloadStatus.Moved || !clientsKeepingCompleted.Contains(d.DownloadClientId))];
+
+                var skipped = beforeTerminalFilter - activeDownloads.Count;
+                if (skipped > 0)
+                {
+                    logger.LogDebug(
+                        "Skipping {Skipped} imported download(s) whose client never removes completed downloads",
+                        skipped);
+                }
+            }
+
             if (activeDownloads.Count <= 0)
             {
                 logger.LogInformation("No active downloads mapped to enabled download clients; skipping client polling");
