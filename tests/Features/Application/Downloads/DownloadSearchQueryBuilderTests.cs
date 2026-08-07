@@ -222,6 +222,46 @@ public sealed class DownloadSearchQueryBuilderTests
     }
 
     [Fact]
+    public void BuildFreeTextCandidates_StartsWithTheTypedQuery()
+    {
+        // Manual search must try exactly what was typed before anything broader, so a query that
+        // already works is never replaced by a looser one.
+        var candidates = DownloadSearchQueryBuilder.BuildFreeTextCandidates(
+            "The Butcher's Masquerade (Dungeon Crawler Carl, #5)");
+
+        Assert.StartsWith("The Butchers Masquerade Dungeon Crawler Carl", candidates[0]);
+    }
+
+    [Fact]
+    public void BuildFreeTextCandidates_FallsBackToDecorationStrippedAndApostropheFreeForms()
+    {
+        // Typing the real title was strictly worse than automatic search before this: the ladder
+        // lived only on the automatic path, so manual search had no rung that drops the
+        // apostrophe word AudioBook Bay cannot match in any spelling.
+        var candidates = DownloadSearchQueryBuilder.BuildFreeTextCandidates(
+            "The Butcher's Masquerade (Dungeon Crawler Carl, #5)");
+
+        Assert.Contains("The Butchers Masquerade", candidates);
+        Assert.Contains("The Masquerade", candidates);
+    }
+
+    [Fact]
+    public void BuildFreeTextCandidates_ReturnsASingleRungWhenNothingCanBeBroadened()
+    {
+        // A plain title has no decoration and no apostrophe, so the broader rungs collapse into
+        // the typed query rather than issuing the same search three times.
+        var candidates = DownloadSearchQueryBuilder.BuildFreeTextCandidates("Dune");
+
+        Assert.Equal("Dune", Assert.Single(candidates));
+    }
+
+    [Fact]
+    public void BuildFreeTextCandidates_IgnoresAnEmptyQuery()
+    {
+        Assert.Empty(DownloadSearchQueryBuilder.BuildFreeTextCandidates("   "));
+    }
+
+    [Fact]
     public void BuildCandidates_NeverQueriesTheAuthorAlone()
     {
         // A title that is nothing but an apostrophe word strips to empty; the rung must drop

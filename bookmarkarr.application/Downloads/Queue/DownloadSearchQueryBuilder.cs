@@ -106,6 +106,47 @@ namespace Bookmarkarr.Application.Downloads.Queue
         }
 
         /// <summary>
+        /// Broader retries for a query a human typed, ordered most specific first.
+        /// </summary>
+        /// <remarks>
+        /// Manual search sends exactly what was typed, so it had none of the ladder's fallbacks and
+        /// could return nothing for a book automatic search finds without trouble — typing the real
+        /// title was strictly worse than letting the app search for you. The rungs here are the two
+        /// that apply without knowing which book is meant: series and bracket decoration removed,
+        /// and apostrophe-bearing words dropped for indexers that cannot match them in any spelling.
+        ///
+        /// The typed query is always first, and the caller only walks further on an empty result,
+        /// so a query that works is never second-guessed.
+        /// </remarks>
+        public static IReadOnlyList<string> BuildFreeTextCandidates(string? query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return [];
+            }
+
+            var candidates = new List<string>();
+            void Add(string? candidate)
+            {
+                var trimmed = candidate?.Trim();
+                if (!string.IsNullOrWhiteSpace(trimmed)
+                    && !candidates.Contains(trimmed, StringComparer.OrdinalIgnoreCase))
+                {
+                    candidates.Add(trimmed);
+                }
+            }
+
+            Add(NormalizeTitle(query));
+            Add(NormalizeTitle(StripSeriesDecoration(query)));
+
+            // Decoration is stripped first so the apostrophe rung is not left carrying a series
+            // name that already failed on its own.
+            Add(NormalizeTitle(StripApostropheWords(StripSeriesDecoration(query))));
+
+            return candidates;
+        }
+
+        /// <summary>
         /// Flattens punctuation that indexers tokenize differently than catalogues do.
         /// </summary>
         private static string NormalizeTitle(string? title)

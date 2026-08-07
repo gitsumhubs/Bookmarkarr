@@ -146,7 +146,38 @@ public class IndexerSearchWorkflow
             }
 
             request = ApplyIndexerMamOptions(indexer, request);
-            return await SearchIndexerAsync(indexer, query, category, request);
+
+            // The typed query runs first and is returned whenever it finds anything, so a working
+            // search is never second-guessed. Only a genuinely empty result walks the broader rungs
+            // — the same ones automatic search uses — because manual search otherwise had no
+            // fallbacks at all and could return nothing for a book automatic search finds easily.
+            var candidates = DownloadSearchQueryBuilder.BuildFreeTextCandidates(query);
+            if (candidates.Count == 0)
+            {
+                return await SearchIndexerAsync(indexer, query, category, request);
+            }
+
+            for (var attempt = 0; attempt < candidates.Count; attempt++)
+            {
+                var candidate = candidates[attempt];
+                var results = await SearchIndexerAsync(indexer, candidate, category, request);
+                if (results.Count > 0)
+                {
+                    if (attempt > 0)
+                    {
+                        _logger.LogInformation(
+                            "Indexer {ApiId} returned nothing for '{Query}'; '{Candidate}' found {Count} result(s)",
+                            apiId,
+                            query,
+                            candidate,
+                            results.Count);
+                    }
+
+                    return results;
+                }
+            }
+
+            return [];
         }
         catch (Exception ex) when (ex is not OperationCanceledException && ex is not OutOfMemoryException && ex is not StackOverflowException)
         {
