@@ -1197,3 +1197,35 @@ export interface BlocklistEntry {
   createdAt: string
   updatedAt: string
 }
+
+/**
+ * Whether this instance searches AudioBook Bay through Prowlarr's compiled indexer, which reads
+ * only the first page of the site's results and so caps every search at nine.
+ */
+export interface AudiobookBayPatchStatus {
+  patchAvailable: boolean
+  /** Why the patch does not apply. Only set when `patchAvailable` is false. */
+  reason?: string | null
+  indexerId?: number | null
+  indexerName?: string | null
+  currentResultCap: number
+  projectedResults: number
+  /** False when Prowlarr's config directory is not mounted into Bookmarkarr. */
+  canAutoApply: boolean
+  definitionsDirectory?: string | null
+  defaultPages: number
+  maximumPages: number
+  resultsPerPage: number
+}
+
+export interface AudiobookBayPatchResult {
+  kind: 'success' | 'mountRequired' | 'failed'
+  message?: string | null
+  definitionPath?: string | null
+  prowlarrIndexerId?: number | null
+  indexerId?: number | null
+  indexerName?: string | null
+  pages: number
+  previousResultCap: number
+  projectedResults: number
+}

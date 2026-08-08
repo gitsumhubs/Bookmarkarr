@@ -552,6 +552,14 @@
 
     <!-- Global toast notifications -->
     <GlobalToast />
+
+    <!-- Offers the AudioBook Bay pagination patch, but only where it actually applies. -->
+    <AudiobookBayPatchModal
+      :visible="showAudiobookBayPatchModal"
+      :status="audiobookBayPatchStatus"
+      @close="dismissAudiobookBayPatchNotice"
+      @applied="onAudiobookBayPatchApplied"
+    />
   </div>
 </template>
 
@@ -600,7 +608,7 @@ import { useProtectedImages } from '@/composables/useProtectedImages'
 import { logSessionState, clearAllAuthData } from '@/utils/sessionDebug'
 import { signalRService } from '@/services/signalr'
 import { normalizeQueueSnapshot } from '@/utils/queueSnapshot'
-import type { QueueItem } from '@/types'
+import type { QueueItem, AudiobookBayPatchStatus } from '@/types'
 import { ref as vueRef, ref as vueRef2, reactive } from 'vue'
 import GlobalToast from '@/components/ui/GlobalToast.vue'
 import { useToast } from '@/services/toastService'
@@ -612,6 +620,11 @@ import {
   getSecurityWarningBannerHiddenPreference,
   setSecurityWarningBannerHiddenPreference,
 } from '@/utils/securityWarningBannerPreference'
+import AudiobookBayPatchModal from '@/components/feedback/AudiobookBayPatchModal.vue'
+import {
+  getAudiobookBayPatchNoticeDismissed,
+  setAudiobookBayPatchNoticeDismissed,
+} from '@/utils/audiobookBayPatchPreference'
 
 const STARTUP_CONFIG_UPDATED_EVENT = 'bookmarkarr-startup-config-updated'
 
@@ -1205,6 +1218,9 @@ onMounted(async () => {
     // Hydrate the app once, then keep it current from SignalR updates.
     await Promise.all([downloadsStore.loadDownloads(), syncLibrarySnapshot()])
 
+    // Deliberately not awaited: it reaches out to Prowlarr, and nothing on screen depends on it.
+    void checkAudiobookBayPatch()
+
     unsubscribeSignalRConnected = signalRService.onConnected(() => {
       if (auth.user.authenticated) {
         void syncLibrarySnapshot()
@@ -1430,6 +1446,40 @@ const showSecurityWarningBanner = computed(
     !securityWarningDismissed.value &&
     !securityWarningPermanentlyHidden.value,
 )
+
+// AudioBook Bay through Prowlarr's compiled indexer returns only the first page of results.
+// Nothing surfaces that on its own, so the shortfall is invisible until someone compares against
+// the site by hand — hence a prompt rather than a settings page nobody visits.
+const audiobookBayPatchStatus = ref<AudiobookBayPatchStatus | null>(null)
+const audiobookBayPatchNoticeDismissed = ref(getAudiobookBayPatchNoticeDismissed())
+
+const showAudiobookBayPatchModal = computed(
+  () =>
+    !hideLayout.value &&
+    !audiobookBayPatchNoticeDismissed.value &&
+    audiobookBayPatchStatus.value?.patchAvailable === true,
+)
+
+const dismissAudiobookBayPatchNotice = () => {
+  audiobookBayPatchNoticeDismissed.value = true
+  setAudiobookBayPatchNoticeDismissed(true)
+}
+
+const onAudiobookBayPatchApplied = () => {
+  // The indexer now points at the paginated definition, so the condition no longer holds.
+  audiobookBayPatchStatus.value = null
+}
+
+const checkAudiobookBayPatch = async () => {
+  if (audiobookBayPatchNoticeDismissed.value) return
+
+  try {
+    audiobookBayPatchStatus.value = await apiService.getAudiobookBayPatchStatus()
+  } catch (error) {
+    // Advisory only: a failed check must never interfere with startup.
+    logger.debug('AudioBook Bay patch check skipped', String(error))
+  }
+}
 
 const dismissSecurityWarning = () => {
   securityWarningDismissed.value = true

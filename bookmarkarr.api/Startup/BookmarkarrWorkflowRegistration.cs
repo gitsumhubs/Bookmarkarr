@@ -96,6 +96,7 @@ public static class BookmarkarrWorkflowRegistration
         services.AddScoped<ImagePlaceholderResolver>();
         services.AddScoped<IndexerTestWorkflow>();
         services.AddScoped<ProwlarrIndexerImportWorkflow>();
+        services.AddScoped<AudiobookBayPatchWorkflow>();
         services.AddScoped<ProwlarrIndexerNotificationWorkflow>();
         services.AddScoped<ProwlarrIndexerUpsertWorkflow>();
         services.AddScoped<StructuredSearchWorkflow>();

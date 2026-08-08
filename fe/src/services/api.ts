@@ -64,6 +64,8 @@ import type {
   GoodreadsPreviewResponse,
   GoodreadsCommitSummary,
   GoodreadsPreviewRow,
+  AudiobookBayPatchStatus,
+  AudiobookBayPatchResult,
 } from '@/types'
 import { getStartupConfigCached, resetCache as resetStartupConfigCache } from './startupConfigCache'
 import { sessionTokenManager } from '@/utils/sessionToken'
@@ -358,6 +360,26 @@ class ApiService {
 
   async testApiConnection(apiId: string): Promise<boolean> {
     return this.request<boolean>(`/search/test/${apiId}`, { method: 'POST' })
+  }
+
+  // AudioBook Bay pagination patch. Prowlarr's compiled indexer reads only the first page of
+  // the site's results, capping every search at nine.
+  async getAudiobookBayPatchStatus(): Promise<AudiobookBayPatchStatus> {
+    return this.request<AudiobookBayPatchStatus>('/indexers/audiobookbay/patch')
+  }
+
+  async applyAudiobookBayPatch(
+    pages: number,
+    definitionsDirectory?: string,
+  ): Promise<AudiobookBayPatchResult> {
+    return this.request<AudiobookBayPatchResult>('/indexers/audiobookbay/patch', {
+      method: 'POST',
+      body: JSON.stringify({ pages, definitionsDirectory: definitionsDirectory || null }),
+    })
+  }
+
+  getAudiobookBayDefinitionUrl(pages: number): string {
+    return buildApiRequestUrl(`/indexers/audiobookbay/patch/definition?pages=${pages}`)
   }
 
   // Audible catalog API
