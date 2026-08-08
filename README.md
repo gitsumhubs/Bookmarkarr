@@ -186,6 +186,36 @@ ladder, so `The Sailor's Compass` is also tried as `The Compass` plus the author
 debugging this yourself, test against the site directly rather than through Prowlarr — every
 spelling fails identically through Prowlarr, which hides the cause.
 
+### If every AudioBook Bay search stops at nine results
+
+Prowlarr's compiled AudioBook Bay indexer reads only the first page of the site's results, so
+every query is capped at nine no matter how many the site holds. Nothing reports the shortfall.
+
+**Settings → ABB Patch** replaces that indexer with a paginated definition. The tab reports whether
+the patch is in place and checks each precondition separately — Prowlarr reachable, the indexer in
+use, the definitions directory found and writable — so a failure names itself instead of leaving
+you guessing.
+
+For Bookmarkarr to apply the patch itself, mount Prowlarr's config directory into its container:
+
+```yaml
+volumes:
+  - /path/to/prowlarr/config:/prowlarr-config
+```
+
+`/prowlarr` and `/config/prowlarr` are checked too, and any other path can be typed into the tab
+and verified before use. A new mount cannot appear in a running container, so recreate it after
+editing the Compose file.
+
+If Prowlarr runs on another host it cannot be mounted at all. The tab then shows the definition to
+copy into `<prowlarr-config>/Definitions/Custom/audiobookbay.yml` yourself; **I've installed it —
+wire it up** does the rest over Prowlarr's API.
+
+One caveat the tab cannot check on its own: AudioBook Bay serves a 404 to clients identifying as
+Prowlarr. On a stock Prowlarr the patched indexer installs cleanly, tests healthy, and returns
+nothing. Use a fork that substitutes a different User-Agent, such as prowlarr-abb. **Run search
+test** in the tab will tell you which situation you are in.
+
 ---
 
 ## Importing from Goodreads

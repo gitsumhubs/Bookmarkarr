@@ -233,6 +233,36 @@ namespace Bookmarkarr.Domain.Configuration
         public string? ProwlarrApiKeyEncrypted { get; set; }
 
         /// <summary>
+        /// Operator-supplied path to Prowlarr's config directory, used when it is mounted
+        /// somewhere the AudioBook Bay patch does not probe by default.
+        /// </summary>
+        public string? AudiobookBayDefinitionsDirectory { get; set; }
+
+        /// <summary>
+        /// Where the AudioBook Bay definition was last written. Retained so the patch can be
+        /// reverted without guessing which directory was used.
+        /// </summary>
+        public string? AudiobookBayPatchDefinitionPath { get; set; }
+
+        /// <summary>
+        /// The Prowlarr indexer the patch created. Reverting deletes exactly this one rather than
+        /// matching on a name the operator may have edited.
+        /// </summary>
+        public int? AudiobookBayPatchProwlarrIndexerId { get; set; }
+
+        /// <summary>
+        /// The Bookmarkarr indexer the patch repointed, and the URL it carried beforehand.
+        /// Without both, a revert cannot restore the original target.
+        /// </summary>
+        public int? AudiobookBayPatchIndexerId { get; set; }
+
+        /// <summary>Indexer URL replaced when the patch was applied.</summary>
+        public string? AudiobookBayPatchPreviousIndexerUrl { get; set; }
+
+        /// <summary>Page count the installed definition was rendered for.</summary>
+        public int? AudiobookBayPatchPages { get; set; }
+
+        /// <summary>
         /// Audiobookshelf base URL, used only to borrow its completed metadata matching when
         /// adopting existing library folders. Optional: adoption falls back to folder names and
         /// embedded tags when this is unset.

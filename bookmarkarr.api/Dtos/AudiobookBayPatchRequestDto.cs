@@ -28,5 +28,32 @@ namespace Bookmarkarr.Api.Dtos
         /// mount points are probed instead.
         /// </summary>
         public string? DefinitionsDirectory { get; set; }
+
+        /// <summary>
+        /// Set when the operator has already copied the definition into Prowlarr themselves, so
+        /// the file write is skipped and only the Prowlarr and Bookmarkarr wiring is done.
+        /// </summary>
+        public bool? DefinitionAlreadyInstalled { get; set; }
+    }
+
+    public class AudiobookBayDirectoryProbeRequestDto
+    {
+        /// <summary>Container-side path to test, for example <c>/prowlarr-config</c>.</summary>
+        public string? Path { get; set; }
+    }
+
+    public class AudiobookBaySearchProbeRequestDto
+    {
+        /// <summary>Term to search for. A common word is the point: it should match plenty.</summary>
+        public string? Query { get; set; }
+    }
+
+    public class AudiobookBayRevertRequestDto
+    {
+        /// <summary>
+        /// Also delete the definition file. Off by default: keeping it makes re-applying immediate
+        /// and an unused definition does nothing on its own.
+        /// </summary>
+        public bool? DeleteDefinition { get; set; }
     }
 }

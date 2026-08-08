@@ -66,6 +66,11 @@ import type {
   GoodreadsPreviewRow,
   AudiobookBayPatchStatus,
   AudiobookBayPatchResult,
+  AudiobookBayDiagnostics,
+  AudiobookBayDirectoryProbe,
+  AudiobookBaySearchProbe,
+  AudiobookBayRevertResult,
+  AudiobookBayDefinitionText,
 } from '@/types'
 import { getStartupConfigCached, resetCache as resetStartupConfigCache } from './startupConfigCache'
 import { sessionTokenManager } from '@/utils/sessionToken'
@@ -368,14 +373,53 @@ class ApiService {
     return this.request<AudiobookBayPatchStatus>('/indexers/audiobookbay/patch')
   }
 
+  async getAudiobookBayDiagnostics(): Promise<AudiobookBayDiagnostics> {
+    return this.request<AudiobookBayDiagnostics>('/indexers/audiobookbay/patch/diagnostics')
+  }
+
   async applyAudiobookBayPatch(
     pages: number,
     definitionsDirectory?: string,
+    definitionAlreadyInstalled = false,
   ): Promise<AudiobookBayPatchResult> {
     return this.request<AudiobookBayPatchResult>('/indexers/audiobookbay/patch', {
       method: 'POST',
-      body: JSON.stringify({ pages, definitionsDirectory: definitionsDirectory || null }),
+      body: JSON.stringify({
+        pages,
+        definitionsDirectory: definitionsDirectory || null,
+        definitionAlreadyInstalled,
+      }),
     })
+  }
+
+  async revertAudiobookBayPatch(deleteDefinition = false): Promise<AudiobookBayRevertResult> {
+    return this.request<AudiobookBayRevertResult>('/indexers/audiobookbay/patch/revert', {
+      method: 'POST',
+      body: JSON.stringify({ deleteDefinition }),
+    })
+  }
+
+  async probeAudiobookBayDirectory(path: string): Promise<AudiobookBayDirectoryProbe> {
+    return this.request<AudiobookBayDirectoryProbe>(
+      '/indexers/audiobookbay/patch/probe-directory',
+      {
+        method: 'POST',
+        body: JSON.stringify({ path }),
+      },
+    )
+  }
+
+  async probeAudiobookBaySearch(query?: string): Promise<AudiobookBaySearchProbe> {
+    return this.request<AudiobookBaySearchProbe>('/indexers/audiobookbay/patch/probe-search', {
+      method: 'POST',
+      body: JSON.stringify({ query: query || null }),
+    })
+  }
+
+  async getAudiobookBayDefinitionText(pages: number): Promise<AudiobookBayDefinitionText> {
+    return this.request<AudiobookBayDefinitionText>(
+      `/indexers/audiobookbay/patch/definition/text?pages=${pages}`,
+    )
   }
 
   getAudiobookBayDefinitionUrl(pages: number): string {
@@ -1160,12 +1204,17 @@ class ApiService {
     return this.request<Audiobook[]>('/library')
   }
 
-  async searchBookEdition(editionId: number): Promise<{ editionId: number; mediaType: string; results: SearchResult[] }> {
+  async searchBookEdition(
+    editionId: number,
+  ): Promise<{ editionId: number; mediaType: string; results: SearchResult[] }> {
     return this.request(`/books/editions/${editionId}/search`, { method: 'POST' })
   }
 
   async updateBookEdition(editionId: number, update: Record<string, unknown>): Promise<unknown> {
-    return this.request(`/books/editions/${editionId}`, { method: 'PATCH', body: JSON.stringify(update) })
+    return this.request(`/books/editions/${editionId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(update),
+    })
   }
 
   async previewGoodreadsImport(file: File): Promise<GoodreadsPreviewResponse> {
@@ -1360,7 +1409,11 @@ class ApiService {
   async setFileRenamingOverride(
     id: number,
     disableRenaming: boolean | null,
-  ): Promise<{ message: string; audiobookId: number; disableFileRenamingOverride: boolean | null }> {
+  ): Promise<{
+    message: string
+    audiobookId: number
+    disableFileRenamingOverride: boolean | null
+  }> {
     return this.request(`/library/${id}/file-renaming`, {
       method: 'PUT',
       body: JSON.stringify({ disableRenaming }),
@@ -1991,7 +2044,12 @@ class ApiService {
    */
   async checkBlocklist(
     audiobookId: number,
-    releases: Array<{ releaseId: string; indexerId?: number | null; title?: string; size?: number }>,
+    releases: Array<{
+      releaseId: string
+      indexerId?: number | null
+      title?: string
+      size?: number
+    }>,
   ): Promise<Set<string>> {
     if (!audiobookId || releases.length === 0) return new Set()
 

@@ -49,6 +49,16 @@ namespace Bookmarkarr.Api.Features.Prowlarr
         /// <summary>File name written under the Prowlarr definitions directory.</summary>
         public const string FileName = "audiobookbay.yml";
 
+        /// <summary>
+        /// Prowlarr reports a Cardigann indexer's origin as the definition file's name without its
+        /// extension. That is how the patched indexer is recognised later: the display name is the
+        /// operator's to edit, but this follows the file Bookmarkarr wrote.
+        /// </summary>
+        public const string DefinitionFileStem = "audiobookbay";
+
+        /// <summary>Implementation name Prowlarr reports for indexers loaded from a definition file.</summary>
+        public const string CardigannImplementation = "Cardigann";
+
         /// <summary>Prowlarr only preserves user definitions inside this subdirectory.</summary>
         public const string CustomSubdirectory = "Custom";
 

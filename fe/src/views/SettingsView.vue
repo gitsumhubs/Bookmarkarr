@@ -217,6 +217,9 @@
       <!-- Indexers Tab -->
       <IndexersTab v-if="activeTab === 'indexers'" ref="indexersRef" />
 
+      <!-- AudioBook Bay patch Tab -->
+      <AbbPatchTab v-if="activeTab === 'abb-patch'" />
+
       <!-- Download Clients Tab -->
       <DownloadClientsTab v-if="activeTab === 'clients'" ref="downloadClientsRef" />
 
@@ -402,6 +405,7 @@ import QualityProfilesTab from '@/views/settings/QualityProfilesTab.vue'
 import DiscordBotTab from '@/views/settings/DiscordBotTab.vue'
 import NotificationsTab from '@/views/settings/NotificationsTab.vue'
 import IndexersTab from '@/views/settings/IndexersTab.vue'
+import AbbPatchTab from '@/views/settings/AbbPatchTab.vue'
 import { Modal, ModalHeader, ModalFooter } from '@/components/feedback'
 import DeleteConfirmationModal from '@/components/feedback/DeleteConfirmationModal.vue'
 import GeneralSettingsTab from '@/views/settings/GeneralSettingsTab.vue'
@@ -410,6 +414,7 @@ import PasswordInput from '@/components/form/PasswordInput.vue'
 import {
   PhFolder,
   PhListMagnifyingGlass,
+  PhBandaids,
   PhDownload,
   PhStar,
   PhBell,
@@ -450,12 +455,20 @@ logger.debug(
   (globalThis as unknown as { __vitest?: unknown }).__vitest,
 )
 const activeTab = ref<
-  'rootfolders' | 'indexers' | 'clients' | 'quality-profiles' | 'notifications' | 'bot' | 'general'
+  | 'rootfolders'
+  | 'indexers'
+  | 'abb-patch'
+  | 'clients'
+  | 'quality-profiles'
+  | 'notifications'
+  | 'bot'
+  | 'general'
 >('rootfolders')
 
 const mobileTabOptions = computed(() => [
   { value: 'rootfolders', label: 'Root Folders', icon: PhFolder },
   { value: 'indexers', label: 'Indexers', icon: PhListMagnifyingGlass },
+  { value: 'abb-patch', label: 'ABB Patch', icon: PhBandaids },
   { value: 'clients', label: 'Download Clients', icon: PhDownload },
   { value: 'quality-profiles', label: 'Quality Profiles', icon: PhStar },
   { value: 'notifications', label: 'Notifications', icon: PhBell },

@@ -28,6 +28,10 @@ Only an Audiobookshelf match is trusted enough to create a book from. A folder n
 
 Automatic search walks a ladder of progressively broader queries and stops at the first rung returning results: precise title plus author, then bracketed/series decoration stripped, then the subtitle after a colon dropped, then each of those without the author, then the title with apostrophe-bearing words removed plus the author, and finally the single most distinctive title word plus the author. The subtitle rung refuses to shorten to something too generic — a main title must be two words or eight characters, so `It: A Novel` is never reduced to `It`. The apostrophe rung exists because Prowlarr's AudioBook Bay indexer searches with `&tt=1`, a title-only mode matching whole words against a title stored with a typographic apostrophe: `Butcher's` leaves Prowlarr as `butcher s`, and that form, the stripped `Butchers`, and the bare stem `Butcher` all return zero, while dropping the word finds the release immediately. The distinctive word is picked from the apostrophe-free form so an unmatchable word is never chosen, and both final rungs are skipped without an author, since a bare word is far too broad. It deliberately stops before querying by author alone, which returns unrelated books.
 
+Prowlarr's compiled AudioBook Bay indexer reads only the first page of the site's results, capping every query at nine with nothing to surface the shortfall. **Settings → ABB Patch** replaces it with a paginated Cardigann definition: the definition is written to `<prowlarr-config>/Definitions/Custom/audiobookbay.yml`, Prowlarr reloads it from disk without a restart, the new indexer is created over Prowlarr's API, and Bookmarkarr's own indexer record is repointed at it. Prowlarr exposes no API for installing a definition, so that directory must be mounted into Bookmarkarr — `/prowlarr-config`, `/prowlarr`, and `/config/prowlarr` are probed, a path saved from a successful probe is preferred over all of them, and a directory only qualifies when it carries Prowlarr's own fingerprint (`config.xml` or a `Definitions` folder). Writability is established by writing a probe file and deleting it, because a read-only bind mount is otherwise indistinguishable from a writable one until the real write fails as a reload timeout. When no directory is reachable — Prowlarr on another host cannot be mounted at all — the definition is shown for manual installation and `definitionAlreadyInstalled` skips only the file write, leaving the Prowlarr and Bookmarkarr wiring automatic.
+
+Each precondition is reported separately with its own remedy rather than collapsed into one boolean, and a check that could not run because an earlier one failed reports `Unknown` rather than borrowing a verdict. Site reachability is excluded from the automatic checks because it costs a live search; it is triggered on demand and is the only signal that separates a working fork from a stock Prowlarr, which loads the definition, reports the indexer healthy, and returns nothing because AudioBook Bay 404s clients identifying as Prowlarr. Applying records the repointed indexer, its previous URL, the created Prowlarr indexer id, the definition path, and the page count in `ApplicationSettings`; reverting restores exactly those and refuses when nothing was recorded, since guessing the wrong indexer would silently stop AudioBook Bay searches. Docker socket access was rejected as an alternative to the mount: it would require granting the application root-equivalent control of the host.
+
 Downloads whose client renamed files on write are parked at `ImportNameMismatch` rather than retried. `ImportNameMismatchDetector` pairs a reported-but-missing file with an unclaimed file in the same directory whose name matches once reduced to letters and digits; ambiguous reductions and files already accounted for are skipped, so nothing is guessed. The pairs are stored in download metadata, surfaced by `GET /api/v1/download/{id}/import-issues`, and applied by `POST /api/v1/download/{id}/fix-import`, which renames to the reported name — keeping the client's file list authoritative — and requeues through the normal reprocess path. Overrides are constrained to the download's own directory. Retrying cannot repair a name, so without this a complete payload burned its retries into `ImportBlocked`; a file genuinely still transferring has no near-match and keeps its retries.
 
 A manual grab supersedes an automatic one for the same book. `AutomaticGrabSupersedeWorkflow` removes any in-flight download for that book and media type that is not marked as a manual grab, then the manual send proceeds; without it the duplicate guard returned a 409 the operator never saw while the automatic download — frequently the wrong release, which is why they were grabbing by hand — kept running. Superseded releases are not blocklisted, since losing to a human's choice is not a failure. Manual grabs never displace other manual grabs. Downloads are marked manual on creation and anything unmarked reads as automatic, which is the safe direction because the alternative is refusing to replace a download the operator is actively trying to replace; only in-flight rows are considered, so the ambiguity for pre-existing rows is short-lived.
@@ -100,6 +104,21 @@ Appearance preferences are frontend-only and stored per browser in local storage
 | BOOKMARKARR_LOG_LEVEL | Minimum application log level | Information |
 
 The authoritative full list, including logging variables, is [.env.example](.env.example).
+
+### Optional volume: Prowlarr's config directory
+
+Required only for **Settings → ABB Patch** to apply itself. Bookmarkarr writes an indexer
+definition into Prowlarr's `Definitions/Custom/`, which Prowlarr only loads from disk:
+
+```yaml
+volumes:
+  - /path/to/prowlarr/config:/prowlarr-config
+```
+
+`/prowlarr` and `/config/prowlarr` are probed as well, and any other path can be entered in the tab
+and verified before use. Mount it read-write, and make sure the container's PUID/PGID can write
+there. Without the mount the patch is still installable by hand from the same tab; with Prowlarr on
+another host, by hand is the only option.
 
 ## Port Configuration
 

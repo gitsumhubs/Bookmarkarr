@@ -86,4 +86,126 @@ namespace Bookmarkarr.Api.Features.Prowlarr
         MountRequired,
         Failed
     }
+
+    /// <summary>How a single precondition turned out.</summary>
+    public enum AudiobookBayCheckState
+    {
+        /// <summary>The precondition holds.</summary>
+        Pass,
+
+        /// <summary>The precondition does not hold and the patch cannot proceed because of it.</summary>
+        Fail,
+
+        /// <summary>Worth knowing, but not a blocker.</summary>
+        Warn,
+
+        /// <summary>Could not be determined, usually because an earlier check failed.</summary>
+        Unknown
+    }
+
+    /// <summary>Whether this instance currently searches AudioBook Bay through the patched definition.</summary>
+    public enum AudiobookBayPatchState
+    {
+        /// <summary>An enabled indexer points at the paginated definition.</summary>
+        Patched,
+
+        /// <summary>An enabled indexer points at Prowlarr's compiled, single-page indexer.</summary>
+        NotPatched,
+
+        /// <summary>No enabled indexer searches AudioBook Bay at all.</summary>
+        NotApplicable,
+
+        /// <summary>Prowlarr could not be consulted, so neither answer would be honest.</summary>
+        Unknown
+    }
+
+    /// <summary>
+    /// One precondition, its outcome, and what to do about it.
+    /// </summary>
+    /// <remarks>
+    /// Carrying the remedy alongside the result keeps the advice next to the finding that produced
+    /// it, rather than in UI copy that has to re-derive which failure it is looking at.
+    /// </remarks>
+    public sealed record AudiobookBayCheck(
+        string Id,
+        string Label,
+        AudiobookBayCheckState State,
+        string? Detail,
+        string? Remedy);
+
+    /// <summary>
+    /// The full picture: current state, every precondition, and what can be done from here.
+    /// </summary>
+    public sealed record AudiobookBayDiagnostics(
+        AudiobookBayPatchState PatchState,
+        IReadOnlyList<AudiobookBayCheck> Checks,
+        int? IndexerId,
+        string? IndexerName,
+        int? ProwlarrIndexerId,
+        string? DefinitionsDirectory,
+        bool DefinitionsDirectoryFromOverride,
+        bool CanAutoApply,
+        bool CanRevert,
+        bool DefinitionInstalled,
+        int? InstalledPages,
+        int CurrentResultCap,
+        int ProjectedResults);
+
+    /// <summary>Outcome of probing a candidate Prowlarr configuration directory.</summary>
+    public sealed record AudiobookBayDirectoryProbe(
+        string Path,
+        bool Exists,
+        bool LooksLikeProwlarr,
+        bool Writable,
+        string? Message);
+
+    /// <summary>
+    /// Outcome of searching through the AudioBook Bay indexer to see whether the site answers.
+    /// </summary>
+    /// <remarks>
+    /// AudioBook Bay serves a 404 to clients identifying as Prowlarr, so a stock Prowlarr installs
+    /// this definition cleanly and then returns nothing. Only a real search distinguishes that from
+    /// a working setup, which is why this is a separate, operator-triggered check.
+    /// </remarks>
+    public sealed record AudiobookBaySearchProbe(
+        bool Ran,
+        int Results,
+        string Query,
+        string? Message);
+
+    /// <summary>Outcome of reverting the patch.</summary>
+    public sealed record AudiobookBayRevertResult(
+        AudiobookBayRevertResultKind Kind,
+        string? Message,
+        int? IndexerId,
+        string? IndexerName,
+        string? RestoredUrl,
+        bool ProwlarrIndexerDeleted,
+        bool DefinitionDeleted)
+    {
+        public static AudiobookBayRevertResult Succeeded(
+            int indexerId,
+            string indexerName,
+            string restoredUrl,
+            bool prowlarrIndexerDeleted,
+            bool definitionDeleted)
+            => new(AudiobookBayRevertResultKind.Success, null, indexerId, indexerName, restoredUrl, prowlarrIndexerDeleted, definitionDeleted);
+
+        /// <summary>
+        /// Nothing was recorded to undo. Distinct from a failure: a patch applied by hand, or by a
+        /// build that predates this bookkeeping, leaves nothing safe to reverse automatically.
+        /// </summary>
+        public static AudiobookBayRevertResult NothingRecorded(string message)
+            => new(AudiobookBayRevertResultKind.NothingRecorded, message, null, null, null, false, false);
+
+        public static AudiobookBayRevertResult Failed(string message)
+            => new(AudiobookBayRevertResultKind.Failed, message, null, null, null, false, false);
+    }
+
+    public enum AudiobookBayRevertResultKind
+    {
+        Success,
+        NothingRecorded,
+        Failed
+    }
 }

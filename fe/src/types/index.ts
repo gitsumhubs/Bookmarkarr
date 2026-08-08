@@ -352,7 +352,15 @@ export interface ApplicationSettings {
     id: string
     name: string
     url: string
-    type: 'Pushbullet' | 'Telegram' | 'Slack' | 'Discord' | 'Pushover' | 'NTFY' | 'Gotify' | 'Zapier'
+    type:
+      | 'Pushbullet'
+      | 'Telegram'
+      | 'Slack'
+      | 'Discord'
+      | 'Pushover'
+      | 'NTFY'
+      | 'Gotify'
+      | 'Zapier'
     triggers: string[]
     isEnabled: boolean
   }>
@@ -1216,6 +1224,73 @@ export interface AudiobookBayPatchStatus {
   defaultPages: number
   maximumPages: number
   resultsPerPage: number
+}
+
+export type AudiobookBayCheckState = 'Pass' | 'Fail' | 'Warn' | 'Unknown'
+
+export type AudiobookBayPatchState = 'Patched' | 'NotPatched' | 'NotApplicable' | 'Unknown'
+
+/** One precondition, its outcome, and what to do about it when it does not hold. */
+export interface AudiobookBayCheck {
+  id: string
+  label: string
+  state: AudiobookBayCheckState
+  detail?: string | null
+  remedy?: string | null
+}
+
+export interface AudiobookBayDiagnostics {
+  patchState: AudiobookBayPatchState
+  checks: AudiobookBayCheck[]
+  indexerId?: number | null
+  indexerName?: string | null
+  prowlarrIndexerId?: number | null
+  definitionsDirectory?: string | null
+  /** True when the directory came from a saved or supplied path rather than a probed mount point. */
+  definitionsDirectoryFromOverride: boolean
+  canAutoApply: boolean
+  canRevert: boolean
+  definitionInstalled: boolean
+  installedPages?: number | null
+  currentResultCap: number
+  projectedResults: number
+  definitionFileName: string
+  customSubdirectory: string
+  defaultPages: number
+  maximumPages: number
+  resultsPerPage: number
+}
+
+export interface AudiobookBayDirectoryProbe {
+  path: string
+  exists: boolean
+  looksLikeProwlarr: boolean
+  writable: boolean
+  message?: string | null
+}
+
+export interface AudiobookBaySearchProbe {
+  ran: boolean
+  results: number
+  query: string
+  message?: string | null
+}
+
+export interface AudiobookBayRevertResult {
+  kind: 'success' | 'nothingRecorded' | 'failed'
+  message?: string | null
+  indexerId?: number | null
+  indexerName?: string | null
+  restoredUrl?: string | null
+  prowlarrIndexerDeleted?: boolean
+  definitionDeleted?: boolean
+}
+
+export interface AudiobookBayDefinitionText {
+  fileName: string
+  customSubdirectory: string
+  pages: number
+  yaml: string
 }
 
 export interface AudiobookBayPatchResult {
