@@ -174,64 +174,16 @@ namespace Bookmarkarr.Api.Features.Prowlarr
             }
         }
 
-        private static bool CanRevert(ApplicationSettings? settings) =>
-            settings?.AudiobookBayPatchIndexerId != null
-            && !string.IsNullOrWhiteSpace(settings.AudiobookBayPatchPreviousIndexerUrl);
-
-        /// <summary>
-        /// Finds the enabled Bookmarkarr indexer that searches one of <paramref name="prowlarrIds"/>.
-        /// </summary>
-        private static (int IndexerId, string Name, int ProwlarrIndexerId)? FindEnabledMatch(
-            IEnumerable<Indexer> indexers,
-            string baseUrl,
-            IEnumerable<int> prowlarrIds)
+        private bool DirectoryExistsSafely(string path)
         {
-            var enabled = indexers.Where(i => i.IsEnabled).ToList();
-
-            foreach (var prowlarrId in prowlarrIds)
+            try
             {
-                var expectedUrl = ProwlarrImportUrlPlanner.NormalizeProxyUrl(
-                    ProwlarrImportUrlPlanner.BuildProxyUrl(baseUrl, prowlarrId));
-
-                var match = enabled.FirstOrDefault(i =>
-                    string.Equals(
-                        ProwlarrImportUrlPlanner.NormalizeProxyUrl(i.Url),
-                        expectedUrl,
-                        StringComparison.OrdinalIgnoreCase));
-
-                if (match != null)
-                {
-                    return (match.Id, match.Name, prowlarrId);
-                }
+                return _fileSystem.DirectoryExists(path);
             }
-
-            return null;
-        }
-
-        /// <summary>Diagnostics for the cases where Prowlarr could not be consulted at all.</summary>
-        private AudiobookBayDiagnostics Undetermined(
-            List<AudiobookBayCheck> checks,
-            ApplicationSettings? settings,
-            string? savedDirectory,
-            AudiobookBayPatchState state)
-        {
-            var resolved = ResolveDefinitionsDirectory(null, savedDirectory);
-
-            return new AudiobookBayDiagnostics(
-                state,
-                Ordered(checks),
-                null,
-                null,
-                null,
-                resolved.Directory,
-                resolved.FromOverride,
-                resolved.Directory != null,
-                CanRevert(settings),
-                resolved.Directory != null
-                    && FileExistsSafely(Path.Combine(resolved.Directory, AudiobookBayDefinition.CustomSubdirectory, AudiobookBayDefinition.FileName)),
-                settings?.AudiobookBayPatchPages,
-                0,
-                AudiobookBayDefinition.ProjectedResults(AudiobookBayDefinition.DefaultPages));
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                return false;
+            }
         }
 
         /// <summary>

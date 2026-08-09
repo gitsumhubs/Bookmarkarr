@@ -119,6 +119,106 @@ namespace Bookmarkarr.Api.Features.Prowlarr
         }
 
         /// <summary>
+        /// Describe a definitions directory that could not be resolved, separating the mount that
+        /// was never made from the one that was made and points somewhere else.
+        /// </summary>
+        /// <remarks>
+        /// The Compose file ships this mount enabled with a placeholder host path, so an operator
+        /// who has not pointed it at Prowlarr yet has an existing but empty <c>/prowlarr-config</c>.
+        /// Reporting that as "not mounted" would send them to fix something already correct.
+        /// </remarks>
+        private AudiobookBayCheck BuildMissingDirectoryCheck(string? savedDirectory)
+        {
+            if (savedDirectory != null)
+            {
+                return new AudiobookBayCheck(
+                    "definitionsDirectory",
+                    "Prowlarr definitions directory",
+                    AudiobookBayCheckState.Fail,
+                    $"'{savedDirectory}' is not readable from Bookmarkarr, or does not look like Prowlarr's config directory.",
+                    "Set a different path below, or install the definition by hand.");
+            }
+
+            var mountedButUnrecognised = CandidateConfigDirectories.FirstOrDefault(DirectoryExistsSafely);
+            if (mountedButUnrecognised != null)
+            {
+                return new AudiobookBayCheck(
+                    "definitionsDirectory",
+                    "Prowlarr definitions directory",
+                    AudiobookBayCheckState.Fail,
+                    $"'{mountedButUnrecognised}' is mounted but carries neither Prowlarr's config.xml nor a Definitions folder, so it is not Prowlarr's config directory.",
+                    "Point the mount at Prowlarr's own config directory — set BOOKMARKARR_PROWLARR_CONFIG_PATH in Bookmarkarr's .env, then `docker compose up -d` — or set the path below.");
+            }
+
+            return new AudiobookBayCheck(
+                "definitionsDirectory",
+                "Prowlarr definitions directory",
+                AudiobookBayCheckState.Fail,
+                "Prowlarr's config directory is not mounted into Bookmarkarr.",
+                "Mount it — add `- /path/to/prowlarr/config:/prowlarr-config` to Bookmarkarr's compose and recreate the container — or set the path below. Prowlarr on another host cannot be mounted; install the definition by hand instead.");
+        }
+
+        private static bool CanRevert(ApplicationSettings? settings) =>
+            settings?.AudiobookBayPatchIndexerId != null
+            && !string.IsNullOrWhiteSpace(settings.AudiobookBayPatchPreviousIndexerUrl);
+
+        /// <summary>
+        /// Finds the enabled Bookmarkarr indexer that searches one of <paramref name="prowlarrIds"/>.
+        /// </summary>
+        private static (int IndexerId, string Name, int ProwlarrIndexerId)? FindEnabledMatch(
+            IEnumerable<Indexer> indexers,
+            string baseUrl,
+            IEnumerable<int> prowlarrIds)
+        {
+            var enabled = indexers.Where(i => i.IsEnabled).ToList();
+
+            foreach (var prowlarrId in prowlarrIds)
+            {
+                var expectedUrl = ProwlarrImportUrlPlanner.NormalizeProxyUrl(
+                    ProwlarrImportUrlPlanner.BuildProxyUrl(baseUrl, prowlarrId));
+
+                var match = enabled.FirstOrDefault(i =>
+                    string.Equals(
+                        ProwlarrImportUrlPlanner.NormalizeProxyUrl(i.Url),
+                        expectedUrl,
+                        StringComparison.OrdinalIgnoreCase));
+
+                if (match != null)
+                {
+                    return (match.Id, match.Name, prowlarrId);
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Diagnostics for the cases where Prowlarr could not be consulted at all.</summary>
+        private AudiobookBayDiagnostics Undetermined(
+            List<AudiobookBayCheck> checks,
+            ApplicationSettings? settings,
+            string? savedDirectory,
+            AudiobookBayPatchState state)
+        {
+            var resolved = ResolveDefinitionsDirectory(null, savedDirectory);
+
+            return new AudiobookBayDiagnostics(
+                state,
+                Ordered(checks),
+                null,
+                null,
+                null,
+                resolved.Directory,
+                resolved.FromOverride,
+                resolved.Directory != null,
+                CanRevert(settings),
+                resolved.Directory != null
+                    && FileExistsSafely(Path.Combine(resolved.Directory, AudiobookBayDefinition.CustomSubdirectory, AudiobookBayDefinition.FileName)),
+                settings?.AudiobookBayPatchPages,
+                0,
+                AudiobookBayDefinition.ProjectedResults(AudiobookBayDefinition.DefaultPages));
+        }
+
+        /// <summary>
         /// Runs every precondition the patch depends on and reports each one separately.
         /// </summary>
         /// <remarks>
@@ -144,7 +244,7 @@ namespace Bookmarkarr.Api.Features.Prowlarr
                     "Prowlarr connection saved",
                     AudiobookBayCheckState.Fail,
                     "No Prowlarr URL or API key is saved in Bookmarkarr.",
-                    "Settings > Indexers > Import from Prowlarr: enter Prowlarr's URL and API key, then save."));
+                    "Enter Prowlarr's URL and API key below, then Test and save. Nothing is imported."));
 
                 return Undetermined(checks, settings, savedDirectory, AudiobookBayPatchState.Unknown);
             }
@@ -157,7 +257,7 @@ namespace Bookmarkarr.Api.Features.Prowlarr
                     "Prowlarr connection saved",
                     AudiobookBayCheckState.Fail,
                     $"The saved Prowlarr address was rejected: {blockedReason}",
-                    "Correct the Prowlarr URL in Settings > Indexers > Import from Prowlarr."));
+                    "Correct the Prowlarr URL below, then Test and save."));
 
                 return Undetermined(checks, settings, savedDirectory, AudiobookBayPatchState.Unknown);
             }
@@ -281,14 +381,7 @@ namespace Bookmarkarr.Api.Features.Prowlarr
                             ? $"{resolved.Directory} (saved path)"
                             : resolved.Directory,
                         null)
-                    : new AudiobookBayCheck(
-                        "definitionsDirectory",
-                        "Prowlarr definitions directory",
-                        AudiobookBayCheckState.Fail,
-                        savedDirectory == null
-                            ? "Prowlarr's config directory is not mounted into Bookmarkarr."
-                            : $"'{savedDirectory}' is not readable from Bookmarkarr, or does not look like Prowlarr's config directory.",
-                        $"Mount it — add `- /path/to/prowlarr/config:/prowlarr-config` to Bookmarkarr's compose and recreate the container — or set the path below. Prowlarr on another host cannot be mounted; install the definition by hand instead."));
+                    : BuildMissingDirectoryCheck(savedDirectory));
 
                 var definitionPath = resolved.Directory == null
                     ? null

@@ -39,6 +39,57 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Prowlarr
         }
 
         [Fact]
+        public async Task GetDiagnostics_WithAnEmptyProwlarrMount_SaysMountedNotMissing()
+        {
+            // The Compose file ships /prowlarr-config mounted at an empty default, so the common
+            // first-run state is "mounted, but not Prowlarr". Calling that "not mounted" would send
+            // the operator to add a volume they already have.
+            var workflow = BuildWorkflow(
+                out _,
+                out _,
+                fileSystem: files => files
+                    .Setup(f => f.DirectoryExists("/prowlarr-config"))
+                    .Returns(true),
+                connection: new ProwlarrImportConnectionSettings
+                {
+                    Url = "http://prowlarr",
+                    Port = 9696,
+                    ApiKey = "key"
+                },
+                handler: new StubHandler("[]"));
+
+            var diagnostics = await workflow.GetDiagnosticsAsync();
+
+            var directory = Assert.Single(diagnostics.Checks, c => c.Id == "definitionsDirectory");
+            Assert.Equal(AudiobookBayCheckState.Fail, directory.State);
+            Assert.Contains("/prowlarr-config", directory.Detail);
+            Assert.Contains("mounted", directory.Detail);
+            Assert.DoesNotContain("is not mounted", directory.Detail);
+            Assert.Contains("BOOKMARKARR_PROWLARR_CONFIG_PATH", directory.Remedy);
+        }
+
+        [Fact]
+        public async Task GetDiagnostics_WithNoProwlarrMountAtAll_StillSaysNotMounted()
+        {
+            var workflow = BuildWorkflow(
+                out _,
+                out _,
+                connection: new ProwlarrImportConnectionSettings
+                {
+                    Url = "http://prowlarr",
+                    Port = 9696,
+                    ApiKey = "key"
+                },
+                handler: new StubHandler("[]"));
+
+            var diagnostics = await workflow.GetDiagnosticsAsync();
+
+            var directory = Assert.Single(diagnostics.Checks, c => c.Id == "definitionsDirectory");
+            Assert.Equal(AudiobookBayCheckState.Fail, directory.State);
+            Assert.Contains("is not mounted", directory.Detail);
+        }
+
+        [Fact]
         public async Task GetDiagnostics_WithoutProwlarrConfigured_ReportsUnknownRatherThanUnpatched()
         {
             var workflow = BuildWorkflow(out _, out _);
@@ -184,11 +235,23 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Prowlarr
             Assert.Contains("Read-only file system", probe.Message);
         }
 
+        /// <summary>Answers every Prowlarr request with one canned payload.</summary>
+        private sealed class StubHandler(string payload) : HttpMessageHandler
+        {
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+                => Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent(payload, System.Text.Encoding.UTF8, "application/json")
+                });
+        }
+
         private static AudiobookBayPatchWorkflow BuildWorkflow(
             out Mock<IApplicationSettingsRepository> settingsRepository,
             out Mock<IIndexerRepository> indexerRepository,
             ApplicationSettings? settings = null,
-            Action<Mock<IFileSystem>>? fileSystem = null)
+            Action<Mock<IFileSystem>>? fileSystem = null,
+            ProwlarrImportConnectionSettings? connection = null,
+            HttpMessageHandler? handler = null)
         {
             settingsRepository = new Mock<IApplicationSettingsRepository>();
             settingsRepository
@@ -206,7 +269,7 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Prowlarr
             var configuration = new Mock<IConfigurationService>();
             configuration
                 .Setup(c => c.GetProwlarrImportSettingsAsync(It.IsAny<bool>()))
-                .ReturnsAsync(new ProwlarrImportConnectionSettings());
+                .ReturnsAsync(connection ?? new ProwlarrImportConnectionSettings());
 
             var files = new Mock<IFileSystem>();
             fileSystem?.Invoke(files);
@@ -216,7 +279,7 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Prowlarr
                 configuration.Object,
                 settingsRepository.Object,
                 files.Object,
-                new HttpClient(),
+                handler == null ? new HttpClient() : new HttpClient(handler),
                 NullLogger<AudiobookBayPatchWorkflow>.Instance);
         }
     }

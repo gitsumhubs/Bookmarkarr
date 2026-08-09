@@ -1815,6 +1815,23 @@ class ApiService {
     })
   }
 
+  /**
+   * Verify a Prowlarr connection and store it, importing nothing. The AudioBook Bay patch reads
+   * the same saved connection, so it can be set up without taking Prowlarr's indexers too.
+   */
+  async saveProwlarrConnection(payload: {
+    url: string
+    port?: number
+    clearPort?: boolean
+    apiKey?: string
+    tagFilter?: string
+  }): Promise<{ saved: boolean; indexerCount: number }> {
+    return this.request(`/indexers/prowlarr/connection`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
   async importProwlarrIndexers(payload: {
     url: string
     port?: number
@@ -2279,6 +2296,13 @@ export const importProwlarrIndexers = (payload: {
   apiKey?: string
   tagFilter?: string
 }) => apiService.importProwlarrIndexers(payload)
+export const saveProwlarrConnection = (payload: {
+  url: string
+  port?: number
+  clearPort?: boolean
+  apiKey?: string
+  tagFilter?: string
+}) => apiService.saveProwlarrConnection(payload)
 
 // Export individual remote path mapping functions for convenience
 export const getRemotePathMappings = () => apiService.getRemotePathMappings()

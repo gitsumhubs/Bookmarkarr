@@ -251,6 +251,24 @@
                 </FormRow>
               </FormSection>
 
+              <!-- Saving the connection and importing indexers are separate wants: the
+                   AudioBook Bay patch needs the credentials on file, not the indexers. -->
+              <div class="prowlarr-connection-actions">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  :disabled="importingProwlarr || savingProwlarrConnection"
+                  @click="saveConnectionOnly"
+                >
+                  {{ savingProwlarrConnection ? 'Testing…' : 'Test & save connection' }}
+                </button>
+                <span class="hint">Stores the connection without importing any indexers.</span>
+              </div>
+
+              <div v-if="prowlarrConnectionMessage" class="prowlarr-summary">
+                {{ prowlarrConnectionMessage }}
+              </div>
+
               <div v-if="prowlarrSummary" class="prowlarr-summary">
                 Imported {{ prowlarrSummary.addedCount }} indexer(s), skipped
                 {{ prowlarrSummary.skippedCount }}.
@@ -325,6 +343,7 @@ import {
   deleteIndexer,
   getProwlarrImportSettings,
   importProwlarrIndexers,
+  saveProwlarrConnection,
 } from '@/services/api'
 import { signalRService } from '@/services/signalr'
 
@@ -346,6 +365,8 @@ const prowlarrTagFilter = ref('')
 const prowlarrApiKey = ref('')
 const hasSavedProwlarrApiKey = ref(false)
 const importingProwlarr = ref(false)
+const savingProwlarrConnection = ref(false)
+const prowlarrConnectionMessage = ref<string | null>(null)
 const prowlarrSummary = ref<{ addedCount: number; skippedCount: number } | null>(null)
 const showProwlarrModal = ref(false)
 
@@ -503,9 +524,14 @@ const openProwlarrModal = () => {
 const closeProwlarrModal = () => {
   showProwlarrModal.value = false
   prowlarrSummary.value = null
+  prowlarrConnectionMessage.value = null
 }
 
-const importFromProwlarr = async () => {
+/**
+ * Read the connection fields, complaining about anything the server would reject anyway.
+ * Returns null when the form is not ready to send.
+ */
+const readProwlarrConnectionInput = () => {
   const url = prowlarrUrl.value.trim()
   const apiKey = prowlarrApiKey.value.trim()
   const portRaw = String(prowlarrPort.value ?? '').trim()
@@ -513,12 +539,12 @@ const importFromProwlarr = async () => {
 
   if (!url) {
     toast.warning('Prowlarr', 'Please enter a Prowlarr URL or IP')
-    return
+    return null
   }
 
   if (!apiKey && !hasSavedProwlarrApiKey.value) {
     toast.warning('Prowlarr', 'Please enter your Prowlarr API key')
-    return
+    return null
   }
 
   let portValue: number | undefined
@@ -526,22 +552,58 @@ const importFromProwlarr = async () => {
   if (portRaw.length > 0) {
     if (!Number.isInteger(parsed) || parsed <= 0 || parsed > 65535) {
       toast.warning('Prowlarr', 'Please enter a valid port number (1-65535)')
-      return
+      return null
     }
     portValue = parsed
   }
 
-  importingProwlarr.value = true
+  return {
+    url,
+    port: portValue,
+    clearPort: portRaw.length === 0,
+    tagFilter,
+    ...(apiKey ? { apiKey } : {}),
+  }
+}
+
+const saveConnectionOnly = async () => {
+  const payload = readProwlarrConnectionInput()
+  if (!payload) {
+    return
+  }
+
+  savingProwlarrConnection.value = true
+  prowlarrConnectionMessage.value = null
   prowlarrSummary.value = null
 
   try {
-    const result = await importProwlarrIndexers({
-      url,
-      port: portValue,
-      clearPort: portRaw.length === 0,
-      tagFilter,
-      ...(apiKey ? { apiKey } : {}),
+    const result = await saveProwlarrConnection(payload)
+    prowlarrConnectionMessage.value = `Connected — Prowlarr reports ${result.indexerCount} indexer(s). Connection saved; nothing imported.`
+    await loadProwlarrImportSettings()
+    toast.success('Prowlarr', 'Connection saved')
+  } catch (error) {
+    errorTracking.captureException(error as Error, {
+      component: 'IndexersTab',
+      operation: 'saveProwlarrConnection',
     })
+    toast.error('Prowlarr connection failed', formatApiError(error))
+  } finally {
+    savingProwlarrConnection.value = false
+  }
+}
+
+const importFromProwlarr = async () => {
+  const payload = readProwlarrConnectionInput()
+  if (!payload) {
+    return
+  }
+
+  importingProwlarr.value = true
+  prowlarrSummary.value = null
+  prowlarrConnectionMessage.value = null
+
+  try {
+    const result = await importProwlarrIndexers(payload)
 
     prowlarrSummary.value = {
       addedCount: result.addedCount,
@@ -655,6 +717,19 @@ defineExpose({ openAddIndexer, openProwlarrImport: openProwlarrModal })
 .prowlarr-summary {
   color: var(--text-secondary);
   font-size: 0.9rem;
+}
+
+.prowlarr-connection-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.prowlarr-connection-actions .hint {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
 }
 
 .add-button {

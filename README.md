@@ -1,12 +1,11 @@
 # Bookmarkarr
 
-Bookmarkarr finds, downloads, imports, and organizes your **audiobooks and ebooks** — the
-same way Radarr and Sonarr handle movies and TV. Point it at your indexers and download
-client, add the books you want, and it handles grabbing and filing them.
+Bookmarkarr finds, downloads, imports, and organizes your **audiobooks and ebooks** — the same way
+Radarr and Sonarr handle movies and TV.
 
-Audiobooks and ebooks are equal citizens here. One book can have an audiobook edition, an
-ebook edition, or both, and each edition gets its own monitoring, quality profile, library
-root, download category, and wanted state. It isn't an audiobook app with ebooks bolted on.
+Audiobooks and ebooks are equal citizens. One book can have an audiobook edition, an ebook edition,
+or both, and each gets its own monitoring, quality profile, library root, download category, and
+wanted state.
 
 ![Bookmarkarr mark](fe/public/bookmarkarr-logo.png)
 
@@ -14,7 +13,7 @@ root, download category, and wanted state. It isn't an audiobook app with ebooks
 
 ## Quick start
 
-You need Docker and one file. Save this as `docker-compose.yml`:
+Save this as `docker-compose.yml`:
 
 ```yaml
 services:
@@ -33,14 +32,17 @@ services:
       - ./data/ebooks:/ebooks
       # Your download client must see this same folder, ideally at the same path.
       - ./data/downloads:/downloads
+      # For AudiobookBay: point the left side at Prowlarr's config folder.
+      # Otherwise leave it — it's just an empty folder. See "AudiobookBay" below.
+      - ./data/prowlarr-config:/prowlarr-config
     ports:
       - 3018:4545          # change 3018 if it's taken; leave 4545 alone
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
-    # NZBGet/Prowlarr/torrent client in their own compose files? Uncomment BOTH
-    # blocks below, using the real names from `docker network ls`. See step 1.
+    # Prowlarr/NZBGet/torrent client in their own compose files? Uncomment BOTH
+    # blocks below, using the real names from `docker network ls`.
     #
     # networks: [default, nzbget, prowlarr, torrent]
 
@@ -50,336 +52,128 @@ services:
 #   torrent:  {external: true, name: rdtclient_default}
 ```
 
-> **Network names come from the folder** the other compose file lives in, not the service
-> name — a Prowlarr in a folder called `prowlarr-abb` creates `prowlarr-abb_default`. Always
-> copy them from `docker network ls` rather than guessing.
->
-> **Skip this entirely if** everything is in one compose file, or your services run on the
-> host — then just use their LAN URL like `http://192.168.1.50:6789`.
-
-Then start it:
-
 ```bash
-mkdir -p data/config data/audiobooks data/ebooks data/downloads
+mkdir -p data/config data/audiobooks data/ebooks data/downloads data/prowlarr-config
 docker compose up -d
 ```
 
 Open <http://localhost:3018>.
 
-> `PUID:PGID` must be able to write all four host paths. Don't point the config volume at
-> another app's config directory.
+> Network names come from the **folder** the other compose file lives in, not the service name — a
+> Prowlarr in `prowlarr-abb/` creates `prowlarr-abb_default`. Copy them from `docker network ls`.
+> Skip that block entirely if everything is in one compose file or your services run on the host;
+> just use their LAN URL, like `http://192.168.1.50:6789`.
 
-### What happens on first run
-
-Bookmarkarr creates these on first start, **only if missing**:
-
-- A **Default Audiobook** quality profile (prefers M4B, then MP3/M4A/FLAC/Opus)
-- A **Default Ebook** quality profile (prefers EPUB, then AZW3/MOBI/PDF)
-- Library roots for `/audiobooks` and `/ebooks`
-- Staging folders `/downloads/audiobooks` and `/downloads/ebooks`
-
-Both default profiles ship with `hindi`, `arabic`, and `spanish` in **Must Not Contain**, so a
-new install does not silently grab foreign-language editions of popular titles. This is a
-case-insensitive substring match on the release title, so an English release whose title names
-one of those languages is rejected too. Remove a word in **Settings → Quality Profiles** to
-allow it — the block is deliberately opt-out rather than opt-in.
-
-Nothing you've configured is overwritten, and this includes the blocklist: profiles that
-already exist are never given these words on upgrade. If something looks missing, check
-`docker logs bookmarkarr` for mount warnings.
+On first run Bookmarkarr creates default quality profiles, library roots, and staging folders — only
+if they're missing. Both default profiles block `hindi`, `arabic`, and `spanish` release titles so a
+new install doesn't grab foreign-language editions; remove a word in **Settings → Quality Profiles**
+to allow it.
 
 ---
 
-## Setting it up
+## Setup
 
-### 1. Check Bookmarkarr can reach your other containers
+**1. Download clients** — **Settings → Download Clients**. NZBGet, SABnzbd, qBittorrent, and RDT
+Client. Use a URL reachable *from inside the container* and hit **Test**.
 
-If you uncommented the `networks:` block in Quick Start, confirm it took effect:
-
-```bash
-docker inspect bookmarkarr --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}'
-```
-
-You should see the networks you added. If one is missing, the name in your compose doesn't
-match `docker network ls`.
-
-Quick sanity check that a hostname resolves:
-
-```bash
-docker exec bookmarkarr getent hosts nzbget
-```
-
-No output means Bookmarkarr can't see it — revisit the `networks:` block, or just use the
-LAN URL (`http://192.168.1.50:6789`) in the next step instead.
-
-### 2. Download clients
-
-**Settings → Download Clients**. NZBGet, SABnzbd, qBittorrent, and RDT Client are supported.
-Use a URL reachable *from inside the container*, and hit **Test** before saving.
-
-Create both an `audiobooks` and an `ebooks` category. One Bookmarkarr client entry owns one
-category, so if a single downloader handles both formats, add **two entries** for the same
-endpoint:
+One client entry owns one category, so a single downloader handling both formats needs two entries:
 
 | Entry | Category | Download path |
 |---|---|---|
 | `NZBGet (audiobooks)` | `audiobooks` | `/downloads/audiobooks` |
 | `NZBGet (ebooks)` | `ebooks` | `/downloads/ebooks` |
 
-For RDT Client, choose the **qBittorrent** client type and enter RDT's qBittorrent-compatible
-API host, port, and credentials.
+For RDT Client, choose the **qBittorrent** type and enter RDT's qBittorrent-compatible API details.
+Bookmarkarr and your client should see finished files at the **same** `/downloads` path; if not, add
+a mapping under **Settings → Download Clients → Add Mapping**.
 
-Bookmarkarr and your download client should see finished files at the **same** `/downloads`
-path. If they don't, add a mapping under **Settings → Download Clients → Add Mapping**.
-
-### 3. Indexers
-
-**Settings → Indexers → Import from Prowlarr**. Enter a reachable Prowlarr URL (usually
-`http://prowlarr:9696`), the API key from **Prowlarr → Settings → General**, and an optional
-tag filter. Import, then **Test** each one.
-
+**2. Indexers** — **Settings → Indexers → Import from Prowlarr**. Enter the Prowlarr URL (usually
+`http://prowlarr:9696`) and the API key from **Prowlarr → Settings → General**, then **Test** each
+imported indexer. **Test & save connection** stores the connection without importing anything.
 Direct Newznab/Torznab indexers work too.
 
-### 4. Add books
+**3. AudiobookBay** (optional) — see below.
 
-Search from **Add New**, or import your Goodreads shelf (below).
-
----
-
-## Using AudiobookBay
-
-AudiobookBay works through Prowlarr, and magnet results work directly.
-
-**Stock Prowlarr does not include AudiobookBay.** It isn't in the official indexer
-definitions, and Bookmarkarr can't install definitions into Prowlarr — so you need a
-Prowlarr build that ships it.
-
-One community option is the [prowlarr-abb](https://github.com/BitlessByte0/prowlarr-abb)
-fork (`bitlessbyte/prowlarr`), a LinuxServer.io-based image with the definition included.
-It's third-party and unofficial: it only picks up upstream Prowlarr releases when its
-maintainer rebuilds, so check it's still actively maintained before depending on it. Any
-build providing a working AudiobookBay definition will do.
-
-Once Prowlarr has it:
-
-1. **In Prowlarr**, add AudiobookBay and confirm it passes Prowlarr's own **Test**.
-2. Check its category mappings distinguish audio/audiobook from book/ebook — Bookmarkarr
-   uses those to route results.
-3. **In Bookmarkarr**, import via **Settings → Indexers → Import from Prowlarr**, then run
-   **Test**.
-4. AudiobookBay returns **magnets**, so you need a torrent-capable client — qBittorrent or
-   RDT Client — configured with the `audiobooks` category.
-
-Bookmarkarr filters results server-side, so an audiobook search only returns audiobooks and
-an ebook search only returns ebooks.
-
-### If a title with an apostrophe finds nothing
-
-Prowlarr's AudioBook Bay indexer requests `?s=<terms>&tt=1`, a title-only search that matches
-whole words — and it replaces the apostrophe with a space on the way, so a title like
-`The Sailor's Compass` is sent as `the sailor s compass`. Nothing matches: not that form, not
-`Sailors`, not the bare stem `Sailor`. The site's own search finds the release immediately, which
-makes this look like a Bookmarkarr fault when it isn't.
-
-Bookmarkarr works around it by dropping apostrophe-bearing words from a later rung of the search
-ladder, so `The Sailor's Compass` is also tried as `The Compass` plus the author. If you are
-debugging this yourself, test against the site directly rather than through Prowlarr — every
-spelling fails identically through Prowlarr, which hides the cause.
-
-### If every AudioBook Bay search stops at nine results
-
-Prowlarr's compiled AudioBook Bay indexer reads only the first page of the site's results, so
-every query is capped at nine no matter how many the site holds. Nothing reports the shortfall.
-
-**Settings → ABB Patch** replaces that indexer with a paginated definition. The tab reports whether
-the patch is in place and checks each precondition separately — Prowlarr reachable, the indexer in
-use, the definitions directory found and writable — so a failure names itself instead of leaving
-you guessing.
-
-For Bookmarkarr to apply the patch itself, mount Prowlarr's config directory into its container:
-
-```yaml
-volumes:
-  - /path/to/prowlarr/config:/prowlarr-config
-```
-
-`/prowlarr` and `/config/prowlarr` are checked too, and any other path can be typed into the tab
-and verified before use. A new mount cannot appear in a running container, so recreate it after
-editing the Compose file.
-
-If Prowlarr runs on another host it cannot be mounted at all. The tab then shows the definition to
-copy into `<prowlarr-config>/Definitions/Custom/audiobookbay.yml` yourself; **I've installed it —
-wire it up** does the rest over Prowlarr's API.
-
-One caveat the tab cannot check on its own: AudioBook Bay serves a 404 to clients identifying as
-Prowlarr. On a stock Prowlarr the patched indexer installs cleanly, tests healthy, and returns
-nothing. Use a fork that substitutes a different User-Agent, such as prowlarr-abb. **Run search
-test** in the tab will tell you which situation you are in.
+**4. Add books** — search from **Add New**, or import a Goodreads shelf.
 
 ---
 
-## Importing from Goodreads
+## AudiobookBay
 
-**Library → Import → Goodreads**:
+Stock Prowlarr doesn't ship the AudiobookBay definition, and the site 404s anything identifying as
+Prowlarr — so you need a fork that includes it and substitutes a user agent, such as
+[prowlarr-abb](https://github.com/BitlessByte0/prowlarr-abb). Add AudiobookBay there, test it, then
+import it into Bookmarkarr. It returns magnets, so you need a torrent-capable client.
 
-1. Go to [goodreads.com/review/import](https://www.goodreads.com/review/import) and click
-   **Export Library**.
-2. Download the CSV it generates.
-3. Upload it and **preview** the import.
-4. Choose which books to add, resolve any ambiguous matches, and pick the audiobook edition,
-   the ebook edition, or both.
+Prowlarr's compiled indexer also reads only the first page of results, capping every search at nine.
+**Settings → ABB Patch** replaces it with a paginated definition — three pages by default. To let
+Bookmarkarr install that itself, point the `/prowlarr-config` volume at Prowlarr's config folder (the
+one holding `config.xml`) and `docker compose up -d`. Without the mount the tab hands you the
+definition to copy in by hand and finishes the wiring itself.
 
-Importing is **additive** and starts no searches. Nothing downloads until you press Search,
-or tick *search after import*. Your CSV isn't retained. Audiobook imports record their
-per-book destination from the selected root and folder naming pattern when they are created.
+Full detail — the mount, manual install, apostrophe handling, the 404 — in
+**[docs/AUDIOBOOKBAY.md](docs/AUDIOBOOKBAY.md)**.
 
 ---
 
-## Verifying your first download
+## Importing books you already have
 
-1. Indexer and download-client tests pass.
-2. The release appears in **Activity** under the expected category.
-3. Once complete, the file lands in `/audiobooks` or `/ebooks` and shows in your library.
+**Library → Import**, pick a root folder, scan. Bookmarkarr lists what isn't already in your
+library, you match each entry, and it files them. Audiobook roots group multi-part books; ebook
+roots treat each EPUB/MOBI/AZW3/PDF as its own book. Already-imported files are skipped, so rescan
+freely. **Copy** leaves your originals untouched; **Move** relocates them.
 
-```bash
-docker compose ps
-docker compose logs --tail=200 bookmarkarr
-curl --fail http://localhost:3018/api/v1/system/ready
-```
+**From Goodreads:** export your library at
+[goodreads.com/review/import](https://www.goodreads.com/review/import), then **Library → Import →
+Goodreads** to upload and preview it. Importing is additive and starts no searches. Your CSV isn't
+retained.
+
+**From Listenarr:** see [docs/MIGRATION.md](docs/MIGRATION.md).
 
 ---
 
 ## Troubleshooting
 
-**A book stays "Missing" after searching.** Check the edition has a quality profile on its
-detail page — automatic grabs need one, manual searches don't.
+Longer explanations for each of these: **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)**.
 
-**Ebooks aren't importing.** Confirm your client has a separate `ebooks` category pointing at
-`/downloads/ebooks`, and check the allowed ebook extensions under **Settings → File
-Management**.
+| Symptom | Fix |
+|---|---|
+| Book stays **Missing** after searching | Give the edition a quality profile — automatic grabs need one |
+| Ebooks aren't importing | Separate `ebooks` category → `/downloads/ebooks`; check allowed extensions |
+| Downloads finish but never import | Path mismatch — add a remote path mapping |
+| **Import Blocked**, source is gone | Reconcile: `POST /api/v1/library/status/reconcile?dryRun=true` |
+| Stuck **Downloading**, never re-searched | Same reconcile — a vanished handoff still counts as active |
+| Same release grabbed and failing repeatedly | Blocklisted after two failures; review `GET /api/v1/blocklist` |
+| Can't reach Prowlarr or the download client | URL must resolve *inside* the container; check shared networks |
+| AudiobookBay finds nothing / stops at nine | See [AudiobookBay](docs/AUDIOBOOKBAY.md) |
+| Something looks unconfigured after upgrade | `docker logs bookmarkarr` — look for mount warnings |
 
-**Downloads finish but never import.** Almost always a path mismatch. Compare the path your
-client reports with Bookmarkarr's `/downloads` and add a remote path mapping if they differ.
-If Activity reports **Import Blocked** because an older book has no destination, restart the
-current Bookmarkarr release once. Startup repair derives the missing per-book path without
-overwriting custom paths, and the importer independently derives it from the audiobook
-edition if a legacy creation path ever omits it again. Retry the existing import; the files
-do not need to be downloaded again.
-
-**A book still says "Import Blocked," but its completed download is gone.** Import Blocked
-means Bookmarkarr knows the download completed but could not place any files in the library.
-Use authenticated `POST /api/v1/library/status/reconcile?dryRun=true` to compare these rows
-with registered files and fresh download-client snapshots. Review the result, then repeat
-with `dryRun=false`. An absent source becomes terminal `Source Missing` history and its
-edition returns to **Missing**, making it eligible to search again. Bookmarkarr never clears
-the blocked state from a cached, stale, unavailable, or unknown client snapshot; if the
-source later reappears, reconciliation restores **Import Blocked** so it can be retried.
-Completed, ready, and import-pending handoff rows are checked whatever the edition currently
-reads, so stale terminal rows cannot keep it blocked after every exact client source has
-disappeared.
-
-**A book sits on "Downloading" forever and is never searched again.** A completed handoff
-whose source has vanished from its client still counts as an *active* download, and an active
-download suppresses automatic search for that book indefinitely. The same reconciliation
-clears it: the absent handoff becomes `Source Missing` history and the edition falls back to
-**Missing**, so automatic search picks it up on the next pass. A handoff the client still
-exposes is left strictly alone, and an edition whose import is genuinely in flight keeps its
-live status instead of being claimed as **Imported** underneath the running import.
-
-**A release keeps being grabbed and keeps failing.** After a release fails to download twice
-for the same book, Bookmarkarr blocklists it and stops offering it to automatic search, which
-then falls through to the next best result. One failure never blocklists — stalled peers and
-transient client errors usually clear on a retry. Import blocks never count either: those mean
-the download succeeded and Bookmarkarr could not file it, which is not the release's fault.
-Blocklisting is per book, so the same release stays available for other titles. Review and
-clear entries with `GET /api/v1/blocklist` and `DELETE /api/v1/blocklist/{id}`, or clear a
-whole book with `DELETE /api/v1/blocklist/audiobook/{id}`.
-
-**A usenet download finished but sits in "Import Blocked".** If the release name itself ends
-in `.m4b`, `.mp3`, or another media extension, NZBGet creates a destination *directory* with
-that name, which looks exactly like the qBittorrent single-file layout. Bookmarkarr used to
-refuse to look inside it and reported no importable files. It now recurses for usenet clients
-and imports the nested payload, ignoring the `_unpack` copy NZBGet leaves behind so the book
-is not stored twice.
-
-**A book is never searched and the log says it "already has N audio file(s) on disk".**
-That is the duplicate guard working. Before grabbing, Bookmarkarr checks the book's
-destination directory on disk, not just its own database rows, because files imported before
-the book was tracked — or files whose import failed after the download finished — leave no
-file rows behind and would otherwise be downloaded a second time. If the message adds that
-the files "match no quality rung", Bookmarkarr can see the files but cannot tell how good
-they are, so it declines to guess: run a library scan to register them, after which normal
-upgrade comparison resumes. Quality inferred from the filename alone always rounds *down*, so
-a genuinely better release is still grabbed as an upgrade.
-
-**Bookmarkarr can't reach Prowlarr or the download client.** The URL has to resolve from
-*inside* the container — `localhost` only works if the service is in the same container.
-If you're addressing services by name, see
-[step 1](#1-let-bookmarkarr-reach-your-other-containers): Bookmarkarr must share a Docker
-network with them. Check which networks it joined:
-
-```bash
-docker inspect bookmarkarr --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}'
-```
-
-**Something looks unconfigured after upgrading.** Check `docker logs bookmarkarr` for
-warnings about mounts that are missing or not writable.
-
-Single-file layouts like `Book.m4b/Book.m4b` and `Book.epub/Book.epub` from
-qBittorrent/RDT are handled automatically when the outer path is mapped correctly.
+Health check: `curl --fail http://localhost:3018/api/v1/system/ready`
 
 ---
 
 ## Features
 
-- One bibliographic book with independent audiobook and ebook editions
-- Per-edition monitoring, quality profile, root folder, download category, search, import,
-  upgrade, and wanted state
-- Media-aware defaults: one default profile and one default root **per media type**
-- Strict server-side release filtering, so ebook searches never surface audiobooks
-- Separate file registries; mixed audio bundles route ebook sidecars to the ebook edition
-- Goodreads CSV upload, preview, match resolution, format selection, and additive commit
-- Shared audiobook destination planning across Goodreads creation, startup repair, previews,
-  bulk edits, and completed-download import
-- Prowlarr (including AudiobookBay), direct Newznab/Torznab, NZBGet, SABnzbd, qBittorrent,
-  and RDT Client
-- Live Wanted status — Queued, Downloading, Import Pending, Import Blocked — matched to
-  downloads by stable edition ID
-- Dry-run-first library status reconciliation that distinguishes a blocked import from a
-  completed source that no longer exists in its download client
-- Bulk import of existing audiobook and ebook libraries already on disk
-- Search that walks a ladder from precise to broad — title and author first, then series and
-  subtitle decoration stripped, then apostrophe-bearing words dropped, then one distinctive word
-  plus the author — so a book an indexer holds under an awkward title is still found
-- Optional preservation of original file names, set library-wide or overridden per book from
-  Wanted, for when a release name is worth more than a tidy one
-- **Grab as collection**: take a box set from manual search and place it at the library root with
-  its own folders and names intact, so a media server reads it as many books rather than merging
-  it into the one you searched from
-- Per-book release blocklisting after repeated failures, with manual search results badged rather
-  than hidden
-- Read-only-source, dry-run-first, transactional Listenarr migration utility
-- Responsive UI, history, notifications, backups, and multi-arch release automation
-- Bookmarkarr, Ocean, Forest, and Plum themes with System/Light/Dark modes and a top-bar
-  toggle
+- One book, independent audiobook and ebook editions — each with its own monitoring, profile, root,
+  category, search, import, upgrade, and wanted state
+- Strict server-side filtering, so ebook searches never surface audiobooks
+- Prowlarr (including AudiobookBay), direct Newznab/Torznab, NZBGet, SABnzbd, qBittorrent, RDT Client
+- Live Wanted status — Queued, Downloading, Import Pending, Import Blocked
+- A search ladder from precise to broad, so a book held under an awkward title is still found
+- **Grab as collection** — a box set lands as many books rather than merging into one
+- Per-book release blocklisting after repeated failures
+- Optional preservation of original file names, library-wide or per book
+- Bulk import of existing libraries, Goodreads CSV import, Listenarr migration
+- History, notifications, backups, four themes, System/Light/Dark
 
 ## Notifications
 
-**Settings → Notifications → Add Webhook**. Slack, Discord, Telegram, Pushover,
-Pushbullet, NTFY, Gotify, and generic webhooks are supported. Pick your triggers, then use
-**Test** to confirm delivery.
+**Settings → Notifications → Add Webhook**. Slack, Discord, Telegram, Pushover, Pushbullet, NTFY,
+Gotify, and generic webhooks. Pick triggers, then **Test**.
 
-### Gotify
-
-Works the same way Radarr and Sonarr do it:
-
-1. In Gotify, go to **Apps → Create Application** and copy the application token.
-2. In Bookmarkarr, add a webhook of type **Gotify** with the URL
-   `https://your-gotify-host/message?token=<appToken>`.
-3. Choose your triggers and hit **Test**.
-
-Self-hosted instances are detected by the endpoint shape, so your Gotify hostname can be
-anything — it doesn't need "gotify" in the name.
+For Gotify, create an application in Gotify and use
+`https://your-gotify-host/message?token=<appToken>`. Self-hosted instances are detected by endpoint
+shape, so the hostname can be anything.
 
 ## Configuration
 
@@ -402,32 +196,18 @@ anything — it doesn't need "gotify" in the name.
 | `/audiobooks` | Your audiobook library |
 | `/ebooks` | Your ebook library |
 | `/downloads` | Download staging, shared with your client |
+| `/prowlarr-config` | Prowlarr's config, for the AudiobookBay patch — optional |
 
-Full details in [.env.example](.env.example).
+Full list in [.env.example](.env.example).
 
 ## Documentation
 
-- [Docker deployment](docs/DOCKER.md)
-- [External clients and indexers](docs/EXTERNAL_CLIENTS.md)
-- [Goodreads import](docs/GOODREADS.md)
-- [Backups](docs/BACKUPS.md)
-- [Listenarr migration](docs/MIGRATION.md)
-- [Architecture](docs/ARCHITECTURE.md) and [API](docs/API.md)
-- [Bug-fix ledger](docs/BUGFIXES.md)
-- [Releases and GHCR](docs/RELEASES.md)
-- [Recreating this project](RECREATE.md)
-
-## Importing an existing library
-
-Already have books on disk? **Library → Import**, pick a root folder, and scan. Bookmarkarr
-lists everything not already in your library, you match each entry, and it files them.
-
-This works for both media types. Scanning an **audiobook** root finds audio files and groups
-multi-part books together; scanning an **ebook** root finds EPUB/MOBI/AZW3/PDF and treats
-each file as its own book. Files already imported are skipped, so you can rescan freely.
-
-Choose **Copy** to leave your originals untouched, or **Move** to relocate them into the
-library layout.
+- [AudiobookBay](docs/AUDIOBOOKBAY.md) · [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Docker deployment](docs/DOCKER.md) · [External clients and indexers](docs/EXTERNAL_CLIENTS.md)
+- [Goodreads import](docs/GOODREADS.md) · [Backups](docs/BACKUPS.md) ·
+  [Listenarr migration](docs/MIGRATION.md)
+- [Architecture](docs/ARCHITECTURE.md) · [API](docs/API.md) · [Bug-fix ledger](docs/BUGFIXES.md)
+- [Releases and GHCR](docs/RELEASES.md) · [Recreating this project](RECREATE.md)
 
 ## Development
 
@@ -444,9 +224,9 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
 docker build -t bookmarkarr:local .
 ```
 
-Adapter tests use mocks and fixtures; the suite never downloads copyrighted content. The
-locked frontend dependency graph requires PostCSS 8.5.25 or newer — keep the override when
-refreshing the lockfile so the source-map path traversal advisory doesn't reappear.
+Adapter tests use mocks and fixtures; the suite never downloads copyrighted content. The locked
+frontend dependency graph requires PostCSS 8.5.25 or newer — keep the override when refreshing the
+lockfile so the source-map path traversal advisory doesn't reappear.
 
 ## Tech stack
 

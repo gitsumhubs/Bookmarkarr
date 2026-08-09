@@ -30,6 +30,8 @@ Automatic search walks a ladder of progressively broader queries and stops at th
 
 Prowlarr's compiled AudioBook Bay indexer reads only the first page of the site's results, capping every query at nine with nothing to surface the shortfall. **Settings → ABB Patch** replaces it with a paginated Cardigann definition: the definition is written to `<prowlarr-config>/Definitions/Custom/audiobookbay.yml`, Prowlarr reloads it from disk without a restart, the new indexer is created over Prowlarr's API, and Bookmarkarr's own indexer record is repointed at it. Prowlarr exposes no API for installing a definition, so that directory must be mounted into Bookmarkarr — `/prowlarr-config`, `/prowlarr`, and `/config/prowlarr` are probed, a path saved from a successful probe is preferred over all of them, and a directory only qualifies when it carries Prowlarr's own fingerprint (`config.xml` or a `Definitions` folder). Writability is established by writing a probe file and deleting it, because a read-only bind mount is otherwise indistinguishable from a writable one until the real write fails as a reload timeout. When no directory is reachable — Prowlarr on another host cannot be mounted at all — the definition is shown for manual installation and `definitionAlreadyInstalled` skips only the file write, leaving the Prowlarr and Bookmarkarr wiring automatic.
 
+The patch needs a saved Prowlarr connection before it can check anything, and that connection was originally storable only as a side effect of importing indexers, which forced anyone setting up the patch to take Prowlarr's audiobook indexers with it. `POST /indexers/prowlarr/connection` verifies and saves the connection while creating nothing; the ABB Patch tab carries the same URL, port, and API key fields inline whenever the connection or reachability check fails, and **Settings → Indexers → Import from Prowlarr** offers the same as **Test & save connection**. Both write the single saved connection. Relatedly, Prowlarr keeps its compiled AudioBook Bay indexer alongside the paginated definition and both advertise the audiobook category the import filters on, so importing after patching used to re-add the nine-result indexer as a second enabled one; the import now detects that the paginated definition is in use — matched on the Cardigann definition name, since the display name belongs to the operator — and skips the compiled indexer.
+
 Each precondition is reported separately with its own remedy rather than collapsed into one boolean, and a check that could not run because an earlier one failed reports `Unknown` rather than borrowing a verdict. Site reachability is excluded from the automatic checks because it costs a live search; it is triggered on demand and is the only signal that separates a working fork from a stock Prowlarr, which loads the definition, reports the indexer healthy, and returns nothing because AudioBook Bay 404s clients identifying as Prowlarr. Applying records the repointed indexer, its previous URL, the created Prowlarr indexer id, the definition path, and the page count in `ApplicationSettings`; reverting restores exactly those and refuses when nothing was recorded, since guessing the wrong indexer would silently stop AudioBook Bay searches. Docker socket access was rejected as an alternative to the mount: it would require granting the application root-equivalent control of the host.
 
 Downloads whose client renamed files on write are parked at `ImportNameMismatch` rather than retried. `ImportNameMismatchDetector` pairs a reported-but-missing file with an unclaimed file in the same directory whose name matches once reduced to letters and digits; ambiguous reductions and files already accounted for are skipped, so nothing is guessed. The pairs are stored in download metadata, surfaced by `GET /api/v1/download/{id}/import-issues`, and applied by `POST /api/v1/download/{id}/fix-import`, which renames to the reported name — keeping the client's file list authoritative — and requeues through the normal reprocess path. Overrides are constrained to the download's own directory. Retrying cannot repair a name, so without this a complete payload burned its retries into `ImportBlocked`; a file genuinely still transferring has no near-match and keeps its retries.
@@ -91,6 +93,7 @@ Appearance preferences are frontend-only and stored per browser in local storage
 | BOOKMARKARR_AUDIOBOOKS_PATH | Host audiobook mount | ./data/audiobooks |
 | BOOKMARKARR_EBOOKS_PATH | Host ebook mount | ./data/ebooks |
 | BOOKMARKARR_DOWNLOADS_PATH | Host download mount | ./data/downloads |
+| BOOKMARKARR_PROWLARR_CONFIG_PATH | Host Prowlarr config mount, for the ABB patch | ./data/prowlarr-config |
 | BOOKMARKARR_AUDIOBOOK_CATEGORY | Download category | audiobooks |
 | BOOKMARKARR_EBOOK_CATEGORY | Download category | ebooks |
 | PROWLARR_DOCKER_NETWORK | Optional existing Prowlarr network | replace_with_prowlarr_network |
@@ -105,18 +108,20 @@ Appearance preferences are frontend-only and stored per browser in local storage
 
 The authoritative full list, including logging variables, is [.env.example](.env.example).
 
-### Optional volume: Prowlarr's config directory
+### Volume: Prowlarr's config directory
 
-Required only for **Settings → ABB Patch** to apply itself. Bookmarkarr writes an indexer
-definition into Prowlarr's `Definitions/Custom/`, which Prowlarr only loads from disk:
+Used only by **Settings → ABB Patch** to apply itself, but the mount ships wired up in
+`docker-compose.yml` rather than commented out, because a volume added afterwards requires
+recreating the container — a cost paid at the moment the operator has just discovered they need it.
+It defaults to an empty `./data/prowlarr-config`, which costs nothing; pointing
+`BOOKMARKARR_PROWLARR_CONFIG_PATH` at Prowlarr's own config directory is then an `.env` edit and a
+`docker compose up -d`. Bookmarkarr writes an indexer definition into Prowlarr's
+`Definitions/Custom/`, which Prowlarr only loads from disk.
 
-```yaml
-volumes:
-  - /path/to/prowlarr/config:/prowlarr-config
-```
-
-`/prowlarr` and `/config/prowlarr` are probed as well, and any other path can be entered in the tab
-and verified before use. Mount it read-write, and make sure the container's PUID/PGID can write
+Because the default mount exists but is empty, "mounted but not Prowlarr's config" is a distinct
+diagnostic outcome from "not mounted", with its own remedy — otherwise the tab would tell an
+operator to add a mount they already have. `/prowlarr` and `/config/prowlarr` are probed as well,
+and any other path can be entered in the tab and verified before use. Mount it read-write, and make sure the container's PUID/PGID can write
 there. Without the mount the patch is still installable by hand from the same tab; with Prowlarr on
 another host, by hand is the only option.
 

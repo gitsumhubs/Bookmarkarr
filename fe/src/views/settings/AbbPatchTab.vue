@@ -77,6 +77,62 @@
           <span v-if="searchProbe.message">{{ searchProbe.message }}</span>
         </div>
 
+        <!-- Prowlarr connection. The patch reads the same saved connection the Indexers tab
+             uses, and setting it here imports nothing — the credentials are the point. -->
+        <section v-if="showConnectionPanel" class="panel">
+          <h4>Prowlarr connection</h4>
+          <p>
+            Where Bookmarkarr reaches Prowlarr, and the API key from Prowlarr's Settings > General.
+            Saved for the whole app; no indexers are imported.
+          </p>
+          <div class="control-row">
+            <input
+              v-model="connectionUrl"
+              class="form-input grow"
+              placeholder="http://prowlarr"
+              :disabled="busy"
+              aria-label="Prowlarr URL"
+            />
+            <input
+              v-model="connectionPort"
+              class="form-input port"
+              type="number"
+              min="1"
+              max="65535"
+              placeholder="9696"
+              :disabled="busy"
+              aria-label="Prowlarr port"
+            />
+          </div>
+          <div class="control-row">
+            <PasswordInput
+              v-model="connectionApiKey"
+              class="form-input grow"
+              autocomplete="off"
+              :disabled="busy"
+              :placeholder="hasSavedApiKey ? 'Leave blank to keep saved key' : 'Prowlarr API key'"
+              aria-label="Prowlarr API key"
+            />
+            <button
+              class="btn btn-primary"
+              :disabled="
+                busy || !connectionUrl.trim() || (!connectionApiKey.trim() && !hasSavedApiKey)
+              "
+              @click="saveConnection"
+            >
+              {{ savingConnection ? 'Testing…' : 'Test and save' }}
+            </button>
+          </div>
+          <div
+            v-if="connectionResult"
+            class="probe-result"
+            :class="connectionResult.ok ? 'ok' : 'bad'"
+          >
+            <strong>{{ connectionResult.ok ? 'Connected' : 'Could not connect' }}</strong>
+            <span>{{ connectionResult.message }}</span>
+          </div>
+        </section>
+
         <!-- Apply -->
         <section v-if="diagnostics.patchState === 'NotPatched'" class="panel">
           <h4>Apply the patch</h4>
@@ -221,7 +277,8 @@ import {
   PhXCircle,
 } from '@phosphor-icons/vue'
 import { Pill, LoadingState } from '@/components/base'
-import { apiService } from '@/services/api'
+import PasswordInput from '@/components/form/PasswordInput.vue'
+import { apiService, getProwlarrImportSettings, saveProwlarrConnection } from '@/services/api'
 import { useToast } from '@/services/toastService'
 import { logger } from '@/utils/logger'
 import type {
@@ -241,6 +298,13 @@ const reverting = ref(false)
 const probing = ref(false)
 const searching = ref(false)
 
+const savingConnection = ref(false)
+const connectionUrl = ref('')
+const connectionPort = ref('')
+const connectionApiKey = ref('')
+const hasSavedApiKey = ref(false)
+const connectionResult = ref<{ ok: boolean; message: string } | null>(null)
+
 const pages = ref(3)
 const deleteDefinition = ref(false)
 const directoryInput = ref('')
@@ -256,8 +320,19 @@ const busy = computed(
     wiring.value ||
     reverting.value ||
     probing.value ||
-    searching.value,
+    searching.value ||
+    savingConnection.value,
 )
+
+/**
+ * Offer the connection fields until Prowlarr is both configured and answering. Once it is, the
+ * panel stays out of the way — the credentials live in Settings > Indexers as well.
+ */
+const showConnectionPanel = computed(() => {
+  const checks = diagnostics.value?.checks ?? []
+  const failed = (id: string) => checks.some((check) => check.id === id && check.state !== 'Pass')
+  return failed('prowlarrConfigured') || failed('prowlarrReachable')
+})
 
 const definitionUrl = computed(() => apiService.getAudiobookBayDefinitionUrl(pages.value))
 
@@ -298,6 +373,61 @@ const load = async () => {
     toast.error('AudioBook Bay', 'Could not read the patch status')
   } finally {
     loading.value = false
+  }
+}
+
+/** Show whatever connection is already on file, so a fix starts from the current values. */
+const loadSavedConnection = async () => {
+  try {
+    const saved = await getProwlarrImportSettings()
+    connectionUrl.value = saved.url ?? ''
+    connectionPort.value = saved.port != null ? String(saved.port) : ''
+    hasSavedApiKey.value = saved.hasSavedApiKey === true
+    connectionApiKey.value = ''
+  } catch (error) {
+    logger.error('Failed to load saved Prowlarr connection', String(error))
+  }
+}
+
+const saveConnection = async () => {
+  const url = connectionUrl.value.trim()
+  const apiKey = connectionApiKey.value.trim()
+  const portRaw = connectionPort.value.trim()
+
+  let port: number | undefined
+  if (portRaw.length > 0) {
+    const parsed = Number(portRaw)
+    if (!Number.isInteger(parsed) || parsed <= 0 || parsed > 65535) {
+      toast.warning('Prowlarr', 'Please enter a valid port number (1-65535)')
+      return
+    }
+    port = parsed
+  }
+
+  savingConnection.value = true
+  connectionResult.value = null
+
+  try {
+    const result = await saveProwlarrConnection({
+      url,
+      port,
+      clearPort: portRaw.length === 0,
+      ...(apiKey ? { apiKey } : {}),
+    })
+    connectionResult.value = {
+      ok: true,
+      message: `Prowlarr reports ${result.indexerCount} indexer(s). Saved; nothing imported.`,
+    }
+    await loadSavedConnection()
+    await load()
+  } catch (error) {
+    logger.error('Failed to save Prowlarr connection', String(error))
+    connectionResult.value = {
+      ok: false,
+      message: error instanceof Error ? error.message : String(error),
+    }
+  } finally {
+    savingConnection.value = false
   }
 }
 
@@ -401,7 +531,10 @@ const extractMessage = (error: unknown, fallback: string): string => {
   return fallback
 }
 
-onMounted(load)
+onMounted(async () => {
+  await load()
+  await loadSavedConnection()
+})
 
 defineExpose({ load })
 </script>
@@ -514,6 +647,10 @@ defineExpose({ load })
 
 .control-row .grow {
   flex: 1 1 18rem;
+}
+
+.control-row .port {
+  flex: 0 0 7rem;
 }
 
 .checkbox-row {

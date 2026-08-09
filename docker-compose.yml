@@ -26,6 +26,12 @@ services:
       - ${BOOKMARKARR_AUDIOBOOKS_PATH:-./data/audiobooks}:/audiobooks
       - ${BOOKMARKARR_EBOOKS_PATH:-./data/ebooks}:/ebooks
       - ${BOOKMARKARR_DOWNLOADS_PATH:-./data/downloads}:/downloads
+      # Prowlarr's config directory. Point BOOKMARKARR_PROWLARR_CONFIG_PATH at it in .env to let
+      # Settings > ABB Patch lift AudioBook Bay past Prowlarr's nine-result cap by itself —
+      # Prowlarr has no API for installing a definition, so the file must be written to disk.
+      # The mount ships wired up because adding a volume later means recreating the container;
+      # left at its default it is a harmless empty folder.
+      - ${BOOKMARKARR_PROWLARR_CONFIG_PATH:-./data/prowlarr-config}:/prowlarr-config
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://127.0.0.1:4545/api/v1/system/ready"]
       interval: 30s
@@ -41,7 +47,7 @@ services:
 
     # NZBGet/Prowlarr/torrent client in their own compose files? Uncomment BOTH
     # blocks below, using the real names from `docker network ls`.
-    # Guide: https://github.com/gitsumhubs/Bookmarkarr#1-check-bookmarkarr-can-reach-your-other-containers
+    # Guide: https://github.com/gitsumhubs/Bookmarkarr/blob/main/docs/TROUBLESHOOTING.md
     #
     # networks: [default, nzbget, prowlarr, torrent]
 

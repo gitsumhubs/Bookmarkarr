@@ -33,6 +33,31 @@ namespace Bookmarkarr.Api.Features.Prowlarr
             _logger = logger;
         }
 
+        /// <summary>
+        /// Verify a Prowlarr connection and save it, without importing anything.
+        /// </summary>
+        /// <remarks>
+        /// Saving the connection used to be reachable only by importing, so anyone who wanted the
+        /// credentials on file — the AudioBook Bay patch needs them — had to accept whatever
+        /// indexers came with them. The two are separate acts, so they are separate calls.
+        /// </remarks>
+        public async Task<ProwlarrConnectionSaveResult> SaveConnectionAsync(ProwlarrImportRequestDto? request)
+        {
+            if (request == null)
+            {
+                return ProwlarrConnectionSaveResult.BadRequest("Request body is required");
+            }
+
+            var (connection, failure) = await VerifyAndSaveConnectionAsync(request);
+            if (failure != null)
+            {
+                return ProwlarrConnectionSaveResult.From(failure);
+            }
+
+            using var doc = JsonDocument.Parse(connection!.Payload);
+            return ProwlarrConnectionSaveResult.Success(doc.RootElement.GetArrayLength());
+        }
+
         public async Task<ProwlarrIndexerImportWorkflowResult> ImportAsync(ProwlarrImportRequestDto? request)
         {
             if (request == null)
@@ -40,6 +65,27 @@ namespace Bookmarkarr.Api.Features.Prowlarr
                 return ProwlarrIndexerImportWorkflowResult.BadRequest("Request body is required");
             }
 
+            var (connection, failure) = await VerifyAndSaveConnectionAsync(request);
+            if (failure != null)
+            {
+                return failure;
+            }
+
+            var baseUrl = connection!.BaseUrl;
+            var effectiveApiKey = connection.ApiKey;
+            var effectiveTagFilter = connection.TagFilter;
+
+            using var doc = JsonDocument.Parse(connection.Payload);
+
+            return await ImportIndexersAsync(baseUrl, effectiveApiKey, effectiveTagFilter, doc);
+        }
+
+        /// <summary>
+        /// Resolve the request against saved settings, prove Prowlarr answers on it, and store it.
+        /// Returns the indexer payload so the caller does not have to fetch it a second time.
+        /// </summary>
+        private async Task<(ProwlarrVerifiedConnection? Connection, ProwlarrIndexerImportWorkflowResult? Failure)> VerifyAndSaveConnectionAsync(ProwlarrImportRequestDto request)
+        {
             var savedConnection = await _configurationService.GetProwlarrImportSettingsAsync(includeSecret: true);
             var effectiveUrl = string.IsNullOrWhiteSpace(request.Url) ? savedConnection.Url : request.Url.Trim();
             var effectivePort = request.ClearPort ? null : request.Port ?? savedConnection.Port;
@@ -50,19 +96,19 @@ namespace Bookmarkarr.Api.Features.Prowlarr
 
             if (string.IsNullOrWhiteSpace(effectiveUrl))
             {
-                return ProwlarrIndexerImportWorkflowResult.BadRequest("Prowlarr URL is required");
+                return (null, ProwlarrIndexerImportWorkflowResult.BadRequest("Prowlarr URL is required"));
             }
 
             if (string.IsNullOrWhiteSpace(effectiveApiKey))
             {
-                return ProwlarrIndexerImportWorkflowResult.BadRequest("Prowlarr API key is required");
+                return (null, ProwlarrIndexerImportWorkflowResult.BadRequest("Prowlarr API key is required"));
             }
 
             var baseUrl = ProwlarrImportUrlPlanner.BuildBaseUrl(effectiveUrl, effectivePort);
             var blockedBaseUrlReason = ValidateOutboundUrl(baseUrl);
             if (!string.IsNullOrWhiteSpace(blockedBaseUrlReason))
             {
-                return ProwlarrIndexerImportWorkflowResult.BadRequest($"Blocked Prowlarr target: {blockedBaseUrlReason}");
+                return (null, ProwlarrIndexerImportWorkflowResult.BadRequest($"Blocked Prowlarr target: {blockedBaseUrlReason}"));
             }
 
             HttpResponseMessage response;
@@ -73,19 +119,19 @@ namespace Bookmarkarr.Api.Features.Prowlarr
             }
             catch (HttpRequestException ex)
             {
-                return BuildProwlarrApiFailure(baseUrl, ex);
+                return (null, BuildProwlarrApiFailure(baseUrl, ex));
             }
             catch (TaskCanceledException ex)
             {
-                return BuildProwlarrApiFailure(baseUrl, ex);
+                return (null, BuildProwlarrApiFailure(baseUrl, ex));
             }
             catch (UriFormatException ex)
             {
-                return BuildProwlarrApiFailure(baseUrl, ex);
+                return (null, BuildProwlarrApiFailure(baseUrl, ex));
             }
             catch (InvalidOperationException ex)
             {
-                return BuildProwlarrApiFailure(baseUrl, ex);
+                return (null, BuildProwlarrApiFailure(baseUrl, ex));
             }
 
             using (response)
@@ -93,14 +139,16 @@ namespace Bookmarkarr.Api.Features.Prowlarr
                 if (!response.IsSuccessStatusCode)
                 {
                     _logger.LogWarning("Prowlarr API returned {StatusCode}: {Body}", (int)response.StatusCode, LogRedaction.SanitizeText(payload));
-                    return ProwlarrIndexerImportWorkflowResult.UpstreamError("Prowlarr API error", (int)response.StatusCode, (int)response.StatusCode);
+                    return (null, ProwlarrIndexerImportWorkflowResult.UpstreamError("Prowlarr API error", (int)response.StatusCode, (int)response.StatusCode));
                 }
             }
 
-            using var doc = JsonDocument.Parse(payload);
-            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            using (var probe = JsonDocument.Parse(payload))
             {
-                return ProwlarrIndexerImportWorkflowResult.UpstreamError("Unexpected Prowlarr API response", StatusCodes.Status502BadGateway);
+                if (probe.RootElement.ValueKind != JsonValueKind.Array)
+                {
+                    return (null, ProwlarrIndexerImportWorkflowResult.UpstreamError("Unexpected Prowlarr API response", StatusCodes.Status502BadGateway));
+                }
             }
 
             await _configurationService.SaveProwlarrImportSettingsAsync(new ProwlarrImportConnectionSettings
@@ -111,10 +159,27 @@ namespace Bookmarkarr.Api.Features.Prowlarr
                 TagFilter = effectiveTagFilter,
             });
 
+            return (new ProwlarrVerifiedConnection(baseUrl, effectiveApiKey.Trim(), effectiveTagFilter, payload), null);
+        }
+
+        /// <summary>
+        /// Create Bookmarkarr indexers for the Prowlarr indexers that pass the import filter.
+        /// </summary>
+        private async Task<ProwlarrIndexerImportWorkflowResult> ImportIndexersAsync(
+            string baseUrl,
+            string effectiveApiKey,
+            string? effectiveTagFilter,
+            JsonDocument doc)
+        {
             var existingIndexers = await _indexerRepository.GetAllAsync();
             var createdIndexers = new List<Indexer>();
             var skipped = 0;
             Dictionary<string, string>? tagMap = null;
+
+            // Prowlarr keeps its compiled AudioBook Bay alongside the patched definition, and both
+            // answer the import filter. Importing the compiled one behind an operator's back undoes
+            // the patch in practice: searches would fan out to an indexer capped at nine results.
+            var audiobookBayIsPatched = AudiobookBayImportGuard.PatchedIndexerInUse(doc.RootElement, existingIndexers, baseUrl);
 
             if (!string.IsNullOrWhiteSpace(effectiveTagFilter))
             {
@@ -145,6 +210,15 @@ namespace Bookmarkarr.Api.Features.Prowlarr
 
                 if (!matchesImportFilter)
                 {
+                    skipped++;
+                    continue;
+                }
+
+                if (audiobookBayIsPatched && AudiobookBayImportGuard.IsCompiledAudiobookBay(element))
+                {
+                    _logger.LogInformation(
+                        "Skipping Prowlarr's compiled AudioBook Bay indexer {IndexerId} on import: the paginated definition is already in use",
+                        indexerId);
                     skipped++;
                     continue;
                 }
@@ -391,5 +465,33 @@ namespace Bookmarkarr.Api.Features.Prowlarr
         Success,
         BadRequest,
         UpstreamError
+    }
+
+    /// <summary>
+    /// A Prowlarr connection that answered, with the indexer payload it answered with.
+    /// </summary>
+    internal sealed record ProwlarrVerifiedConnection(
+        string BaseUrl,
+        string ApiKey,
+        string? TagFilter,
+        string Payload);
+
+    /// <summary>Outcome of saving a Prowlarr connection on its own.</summary>
+    public sealed record ProwlarrConnectionSaveResult(
+        ProwlarrIndexerImportWorkflowResultKind Kind,
+        string? Message,
+        int? StatusCode,
+        int? UpstreamStatus,
+        int IndexerCount)
+    {
+        public static ProwlarrConnectionSaveResult Success(int indexerCount)
+            => new(ProwlarrIndexerImportWorkflowResultKind.Success, null, null, null, indexerCount);
+
+        public static ProwlarrConnectionSaveResult BadRequest(string message)
+            => new(ProwlarrIndexerImportWorkflowResultKind.BadRequest, message, StatusCodes.Status400BadRequest, null, 0);
+
+        /// <summary>Carry an import-shaped failure across without restating its wording.</summary>
+        public static ProwlarrConnectionSaveResult From(ProwlarrIndexerImportWorkflowResult failure)
+            => new(failure.Kind, failure.Message, failure.StatusCode, failure.UpstreamStatus, 0);
     }
 }

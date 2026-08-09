@@ -492,5 +492,155 @@ namespace Bookmarkarr.Tests.Features.Api.Services.Search.Providers
             Assert.Equal("good-key", saved.ApiKey);
             Assert.Equal("audiobooks", saved.TagFilter);
         }
+
+        [Fact]
+        public async Task SaveProwlarrConnection_StoresCredentials_WithoutImportingAnyIndexer()
+        {
+            var indexerPayload = """
+                [
+                  {
+                    "id": 4,
+                    "name": "AudioBook Bay",
+                    "protocol": "torrent",
+                    "implementation": "AudioBookBay",
+                    "categories": [3030],
+                    "enable": true
+                  }
+                ]
+                """;
+
+            var harness = new ControllerHarness(_provider, new CaptureHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(indexerPayload, Encoding.UTF8, "application/json")
+            }));
+
+            var result = await harness.Controller.SaveProwlarrConnection(new ProwlarrImportRequestDto
+            {
+                Url = "http://localhost",
+                Port = 9696,
+                ApiKey = "connection-key"
+            });
+
+            Assert.IsType<OkObjectResult>(result);
+            Assert.Empty(await _indexerRepository.GetAllAsync());
+
+            var saved = await harness.ConfigurationService.GetProwlarrImportSettingsAsync(includeSecret: true);
+            Assert.Equal("http://localhost", saved.Url);
+            Assert.Equal(9696, saved.Port);
+            Assert.Equal("connection-key", saved.ApiKey);
+        }
+
+        [Fact]
+        public async Task SaveProwlarrConnection_ReportsUpstreamFailure_AndSavesNothing()
+        {
+            var harness = new ControllerHarness(_provider, new CaptureHandler(_ => new HttpResponseMessage(HttpStatusCode.Unauthorized)
+            {
+                Content = new StringContent("Unauthorized", Encoding.UTF8, "text/plain")
+            }));
+
+            var result = await harness.Controller.SaveProwlarrConnection(new ProwlarrImportRequestDto
+            {
+                Url = "http://localhost",
+                Port = 9696,
+                ApiKey = "bad-key"
+            });
+
+            var objectResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal((int)HttpStatusCode.Unauthorized, objectResult.StatusCode);
+
+            var saved = await harness.ConfigurationService.GetProwlarrImportSettingsAsync(includeSecret: true);
+            Assert.True(string.IsNullOrEmpty(saved.Url));
+        }
+
+        [Fact]
+        public async Task ImportFromProwlarr_SkipsCompiledAudiobookBay_WhenPaginatedDefinitionIsInUse()
+        {
+            // Prowlarr holds both at once after the patch, and both carry the audiobook category.
+            var indexerPayload = """
+                [
+                  {
+                    "id": 1,
+                    "name": "AudioBook Bay",
+                    "protocol": "torrent",
+                    "implementation": "AudioBookBay",
+                    "categories": [3030],
+                    "enable": true
+                  },
+                  {
+                    "id": 2,
+                    "name": "AudioBook Bay (Custom)",
+                    "protocol": "torrent",
+                    "implementation": "Cardigann",
+                    "definitionName": "audiobookbay",
+                    "categories": [3030],
+                    "enable": true
+                  }
+                ]
+                """;
+
+            await _indexerRepository.AddAsync(new Indexer
+            {
+                Name = "AudioBook Bay (Prowlarr)",
+                Type = "Torrent",
+                Implementation = "Torznab",
+                Url = "http://localhost:9696/2/api",
+                ApiKey = "patched-key",
+                Categories = "3030",
+                IsEnabled = true
+            });
+
+            var harness = new ControllerHarness(_provider, new CaptureHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(indexerPayload, Encoding.UTF8, "application/json")
+            }));
+
+            var result = await harness.Controller.ImportFromProwlarr(new ProwlarrImportRequestDto
+            {
+                Url = "http://localhost",
+                Port = 9696,
+                ApiKey = "patched-key"
+            });
+
+            Assert.IsType<OkObjectResult>(result);
+
+            var indexers = await _indexerRepository.GetAllAsync();
+            Assert.Single(indexers);
+            Assert.Equal("http://localhost:9696/2/api", indexers[0].Url);
+        }
+
+        [Fact]
+        public async Task ImportFromProwlarr_ImportsCompiledAudiobookBay_WhenPatchIsNotInUse()
+        {
+            var indexerPayload = """
+                [
+                  {
+                    "id": 1,
+                    "name": "AudioBook Bay",
+                    "protocol": "torrent",
+                    "implementation": "AudioBookBay",
+                    "categories": [3030],
+                    "enable": true
+                  }
+                ]
+                """;
+
+            var harness = new ControllerHarness(_provider, new CaptureHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(indexerPayload, Encoding.UTF8, "application/json")
+            }));
+
+            var result = await harness.Controller.ImportFromProwlarr(new ProwlarrImportRequestDto
+            {
+                Url = "http://localhost",
+                Port = 9696,
+                ApiKey = "plain-key"
+            });
+
+            Assert.IsType<OkObjectResult>(result);
+
+            var indexers = await _indexerRepository.GetAllAsync();
+            Assert.Single(indexers);
+            Assert.Equal("http://localhost:9696/1/api", indexers[0].Url);
+        }
     }
 }

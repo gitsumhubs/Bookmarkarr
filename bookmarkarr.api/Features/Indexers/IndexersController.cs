@@ -229,6 +229,41 @@ namespace Bookmarkarr.Api.Features.Indexers
         }
 
         /// <summary>
+        /// Test a Prowlarr connection and save it, without importing any indexers.
+        /// </summary>
+        /// <remarks>
+        /// The saved connection is what the AudioBook Bay patch and the import both read, so it is
+        /// storable on its own: wanting Bookmarkarr to know where Prowlarr is does not have to mean
+        /// wanting every audiobook indexer Prowlarr holds.
+        /// </remarks>
+        /// <param name="request">Prowlarr server URL and API key. Omit the key to keep the saved one.</param>
+        [HttpPost("prowlarr/connection")]
+        public async Task<IActionResult> SaveProwlarrConnection([FromBody] ProwlarrImportRequestDto request)
+        {
+            var result = await _prowlarrImportWorkflow.SaveConnectionAsync(request);
+            if (result.Kind == ProwlarrIndexerImportWorkflowResultKind.BadRequest)
+            {
+                return BadRequest(new { message = result.Message });
+            }
+
+            if (result.Kind == ProwlarrIndexerImportWorkflowResultKind.UpstreamError)
+            {
+                if (result.UpstreamStatus.HasValue)
+                {
+                    return StatusCode(result.StatusCode ?? StatusCodes.Status502BadGateway, new { message = result.Message, status = result.UpstreamStatus.Value });
+                }
+
+                return StatusCode(result.StatusCode ?? StatusCodes.Status502BadGateway, new { message = result.Message });
+            }
+
+            return Ok(new
+            {
+                saved = true,
+                indexerCount = result.IndexerCount
+            });
+        }
+
+        /// <summary>
         /// Import indexers from a Prowlarr instance.
         /// By default this imports audiobook-related indexers (category 3000/3030),
         /// but a configured tag filter overrides that selection.
