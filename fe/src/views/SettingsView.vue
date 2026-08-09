@@ -53,6 +53,14 @@
             Indexers
           </button>
           <button
+            @click="router.push({ hash: '#abb-patch' })"
+            :class="{ active: activeTab === 'abb-patch' }"
+            class="tab-button"
+          >
+            <PhBandaids />
+            ABB Patch
+          </button>
+          <button
             @click="router.push({ hash: '#clients' })"
             :class="{ active: activeTab === 'clients' }"
             class="tab-button"
@@ -454,7 +462,7 @@ logger.debug(
   '__vitest_global__:',
   (globalThis as unknown as { __vitest?: unknown }).__vitest,
 )
-const activeTab = ref<
+type SettingsTab =
   | 'rootfolders'
   | 'indexers'
   | 'abb-patch'
@@ -463,7 +471,8 @@ const activeTab = ref<
   | 'notifications'
   | 'bot'
   | 'general'
->('rootfolders')
+
+const activeTab = ref<SettingsTab>('rootfolders')
 
 const mobileTabOptions = computed(() => [
   { value: 'rootfolders', label: 'Root Folders', icon: PhFolder },
@@ -1128,21 +1137,20 @@ onUnmounted(() => {
   }
 })
 
-// Sync activeTab with URL hash
+// Sync activeTab with URL hash.
+//
+// The tab list lives in three places — the desktop strip, the mobile dropdown, and this
+// allow-list — and a tab missing from any of them is unreachable in a way nothing reports.
+// ABB Patch shipped in 0.1.33 present only in the dropdown, so on desktop it had no button
+// and its deep link bounced to Root Folders. SettingsView.spec.ts now pins all three together.
 const syncTabFromHash = () => {
-  const hash = route.hash.replace('#', '') as
-    | 'rootfolders'
-    | 'indexers'
-    | 'clients'
-    | 'quality-profiles'
-    | 'notifications'
-    | 'bot'
-    | 'general'
+  const hash = route.hash.replace('#', '') as SettingsTab
   if (
     hash &&
     [
       'rootfolders',
       'indexers',
+      'abb-patch',
       'clients',
       'quality-profiles',
       'notifications',

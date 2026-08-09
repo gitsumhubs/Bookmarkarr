@@ -289,4 +289,49 @@ describe('SettingsView', () => {
     // Ensure the Root Folders tab became active
     expect(tab!.classes()).toContain('active')
   })
+
+  // The tab list lives in three places: the desktop strip, the mobile dropdown, and the hash
+  // allow-list. ABB Patch shipped in 0.1.33 present only in the dropdown, so desktop users had
+  // no button and #abb-patch bounced them to Root Folders. Nothing failed; the tab was simply
+  // unreachable. These two tests make that state a test failure instead of a silent one.
+  const mountSettings = async (initialPath = '/') => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', name: 'home', component: { template: '<div />' } }],
+    })
+    await router.push(initialPath)
+    await router.isReady().catch(() => {})
+
+    const pinia = createPinia()
+    setActivePinia(pinia)
+
+    const wrapper = mount(SettingsView, {
+      global: { plugins: [pinia, router], stubs: ['FolderBrowser'] },
+    })
+    await new Promise((r) => setTimeout(r, 0))
+    await wrapper.vm.$nextTick()
+    return { wrapper, router }
+  }
+
+  it('gives every tab in the mobile dropdown a desktop button', async () => {
+    const { wrapper } = await mountSettings()
+
+    const options = (wrapper.vm as unknown as { mobileTabOptions: Array<{ label: string }> })
+      .mobileTabOptions
+    const desktopLabels = wrapper.findAll('button.tab-button').map((b) => b.text())
+
+    for (const option of options) {
+      expect(
+        desktopLabels.some((label) => label.includes(option.label)),
+        `"${option.label}" is in the mobile dropdown but has no desktop tab button`,
+      ).toBe(true)
+    }
+  })
+
+  it('honours a deep link to the ABB Patch tab instead of resetting it', async () => {
+    const { wrapper, router } = await mountSettings('/#abb-patch')
+
+    expect((wrapper.vm as unknown as { activeTab: string }).activeTab).toBe('abb-patch')
+    expect(router.currentRoute.value.hash).toBe('#abb-patch')
+  })
 })
