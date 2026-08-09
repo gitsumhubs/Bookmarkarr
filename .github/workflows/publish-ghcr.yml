@@ -34,10 +34,14 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/bookmarkarr
+          # `value` pins what the semver patterns read. Without it they fall back to github.ref,
+          # which on workflow_dispatch is the branch the dispatch was made from — so a retried
+          # release built the right commit and published it as `latest` alone, with no version
+          # tag at all. The retry path is the one that most needs to produce a version.
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
+            type=semver,pattern={{version}},value=${{ inputs.ref || github.ref }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.ref || github.ref }}
+            type=semver,pattern={{major}},value=${{ inputs.ref || github.ref }}
             type=raw,value=latest
       - uses: docker/build-push-action@v6
         with:
