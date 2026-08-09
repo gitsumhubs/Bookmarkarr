@@ -14,6 +14,26 @@ EXPOSE 4545
 ENV ASPNETCORE_URLS=http://*:4545
 ENV DOCKER_ENV=true
 
+# Build the frontend once, on the machine doing the building, whatever the target architecture.
+#
+# It used to be built inside the per-architecture .NET stage, which meant Vite and its native
+# toolchain ran under QEMU for the arm64 image. That failed two ways in one release: a build that
+# printed "rendering chunks..." and hung until GitHub's six-hour job limit killed it, and then
+# lightningcss failing to load its native binding outright. Neither has anything to do with the
+# code being built. The output is portable JavaScript, so there is nothing to gain by emulating it.
+FROM --platform=$BUILDPLATFORM node:24-bookworm AS frontend
+WORKDIR /src
+# npm ci runs a postinstall of `patch-package && npm run version:sync`, which reaches outside fe/
+# for its patches and for the csproj it reads the version from. Copying only the manifests first
+# would cache better and fail immediately, so the tree it actually needs comes in together.
+COPY fe/ ./fe/
+COPY scripts/ ./scripts/
+COPY package.json package-lock.json ./
+COPY bookmarkarr.api/Bookmarkarr.Api.csproj ./bookmarkarr.api/
+WORKDIR /src/fe
+RUN npm ci
+RUN npm run build
+
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY ["Directory.Build.props", "./"]
@@ -24,20 +44,16 @@ COPY ["bookmarkarr.application/Bookmarkarr.Application.csproj", "bookmarkarr.app
 COPY ["bookmarkarr.infrastructure/Bookmarkarr.Infrastructure.csproj", "bookmarkarr.infrastructure/"]
 RUN dotnet restore "bookmarkarr.api/Bookmarkarr.Api.csproj"
 WORKDIR "/src/bookmarkarr.api"
-# Ensure Node.js is available in the build image so MSBuild targets that run
-# the frontend (npm/vite) can execute during `dotnet publish`.
-# Use NodeSource to install Node 24 (Active LTS as of 2026; Node 20/22 are EOL).
-RUN apt-get update \
-	&& apt-get install -y --no-install-recommends curl ca-certificates gnupg \
-	&& curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
-	&& apt-get install -y --no-install-recommends nodejs \
-	&& node --version \
-	&& npm --version \
-	&& apt-get clean \
-	&& rm -rf /var/lib/apt/lists/*
+# No Node here: the frontend arrives prebuilt from the stage above, so SkipFrontendBuild leaves
+# MSBuild with nothing to shell out to. That also spares this stage an apt+NodeSource install
+# under emulation, which was itself several minutes of the arm64 build.
 COPY . /src
-RUN dotnet build "Bookmarkarr.Api.csproj" -c Release -o /app/build \
-	&& dotnet publish "Bookmarkarr.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet build "Bookmarkarr.Api.csproj" -c Release -o /app/build /p:SkipFrontendBuild=true \
+	&& dotnet publish "Bookmarkarr.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false /p:SkipFrontendBuild=true
+
+# The two MSBuild targets that would have populated wwwroot are skipped with the frontend build,
+# so place the compiled assets where they would have landed.
+COPY --from=frontend /src/fe/dist /app/publish/wwwroot
 
 FROM base AS final
 WORKDIR /app
