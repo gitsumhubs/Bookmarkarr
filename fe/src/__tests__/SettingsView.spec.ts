@@ -328,6 +328,32 @@ describe('SettingsView', () => {
     }
   })
 
+  // The sidebar's Settings sub-navigation in App.vue is a fourth copy of the tab list, and it
+  // went stale the same way the desktop strip did. Reading the sources beats mounting App.vue,
+  // which drags in SignalR, the stores, and the router for a question that is purely "do these
+  // two lists agree". Checked one way only: an unrelated hash elsewhere in App.vue is not a fault.
+  it('gives every settings tab a sidebar sub-navigation link', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { fileURLToPath } = await import('node:url')
+
+    const read = (relative: string) =>
+      readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8')
+
+    const tabs = [...read('../views/SettingsView.vue').matchAll(/value: '([a-z-]+)'/g)].map(
+      (m) => m[1],
+    )
+    const sidebarHashes = new Set(
+      [...read('../App.vue').matchAll(/hash: '#([a-z-]+)'/g)].map((m) => m[1]),
+    )
+
+    expect(tabs.length).toBeGreaterThan(0)
+    for (const tab of tabs) {
+      expect(sidebarHashes.has(tab), `settings tab "${tab}" has no sidebar link in App.vue`).toBe(
+        true,
+      )
+    }
+  })
+
   it('honours a deep link to the ABB Patch tab instead of resetting it', async () => {
     const { wrapper, router } = await mountSettings('/#abb-patch')
 

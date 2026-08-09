@@ -33,6 +33,12 @@ namespace Bookmarkarr.Infrastructure.Persistence
         public DbSet<ApplicationSettings> ApplicationSettings { get; set; } = null!;
         public DbSet<History> History { get; set; } = null!;
         public DbSet<Indexer> Indexers { get; set; } = null!;
+
+        /// <summary>
+        /// Requests made to each indexer, so an hourly budget survives a restart. Pruned past the
+        /// window; an unlimited indexer never writes here.
+        /// </summary>
+        public DbSet<IndexerQuotaUsage> IndexerQuotaUsages { get; set; } = null!;
         public DbSet<ApiConfiguration> ApiConfigurations { get; set; } = null!;
         public DbSet<DownloadClientConfiguration> DownloadClientConfigurations { get; set; } = null!;
         public DbSet<User> Users { get; set; } = null!;
@@ -125,6 +131,10 @@ namespace Bookmarkarr.Infrastructure.Persistence
             modelBuilder.Entity<DownloadHistory>().HasIndex(dh => dh.EventDate);
             modelBuilder.Entity<DownloadHistory>().HasIndex(dh => dh.AudiobookId);
             modelBuilder.Entity<DownloadHistory>().HasIndex(dh => new { dh.DownloadId, dh.EventType });
+
+            // Every budget check counts rows for one indexer inside the rolling window, and pruning
+            // sweeps by age, so both read this index rather than the table.
+            modelBuilder.Entity<IndexerQuotaUsage>().HasIndex(u => new { u.IndexerId, u.OccurredAtUtc });
 
             modelBuilder.Entity<DownloadProcessingJob>().HasIndex(j => new { j.DownloadId, j.Status });
             modelBuilder.Entity<DownloadProcessingJob>().HasIndex(j => j.Status);

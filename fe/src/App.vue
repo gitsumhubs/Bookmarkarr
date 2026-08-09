@@ -431,6 +431,14 @@
                 <span>Indexers</span>
               </RouterLink>
               <RouterLink
+                :to="{ path: '/settings', hash: '#abb-patch' }"
+                class="nav-subitem"
+                @click="closeMobileMenu"
+                :class="{ active: route.hash === '#abb-patch' }"
+              >
+                <span>ABB Patch</span>
+              </RouterLink>
+              <RouterLink
                 :to="{ path: '/settings', hash: '#clients' }"
                 class="nav-subitem"
                 @click="closeMobileMenu"

@@ -8,6 +8,7 @@
  * (at your option) any later version.
  */
 using Bookmarkarr.Infrastructure.Persistence.Repositories;
+using Bookmarkarr.Infrastructure.Search.Quota;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Bookmarkarr.Infrastructure.DependencyInjection.Search;
@@ -31,6 +32,7 @@ internal static class SearchRegistrationExtensions
     public static IServiceCollection AddSearchInfrastructure(this IServiceCollection services)
     {
         services.AddScoped<IIndexerRepository, EfIndexerRepository>();
+        services.AddScoped<IIndexerQuotaService, IndexerQuotaService>();
         return services;
     }
 }

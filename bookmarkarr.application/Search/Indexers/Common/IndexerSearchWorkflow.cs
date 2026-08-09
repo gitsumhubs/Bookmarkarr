@@ -31,6 +31,8 @@ public class IndexerSearchWorkflow
     private readonly TorznabResponseParser _torznabResponseParser;
     private readonly ILogger<IndexerSearchWorkflow> _logger;
 
+    private readonly IIndexerQuotaService? _quotaService;
+
     public IndexerSearchWorkflow(
         HttpClient httpClient,
         IConfigurationService configurationService,
@@ -38,7 +40,8 @@ public class IndexerSearchWorkflow
         IEnumerable<IIndexerSearchProvider> searchProviders,
         IndexerAdditionalSettingsParser additionalSettingsParser,
         ILogger<IndexerSearchWorkflow> logger,
-        IHtmlTextExtractor? htmlTextExtractor = null)
+        IHtmlTextExtractor? htmlTextExtractor = null,
+        IIndexerQuotaService? quotaService = null)
     {
         _httpClient = httpClient;
         _configurationService = configurationService;
@@ -46,6 +49,7 @@ public class IndexerSearchWorkflow
         _searchProviders = searchProviders;
         _additionalSettingsParser = additionalSettingsParser;
         _logger = logger;
+        _quotaService = quotaService;
         _torznabResponseParser = new TorznabResponseParser(httpClient, logger, htmlTextExtractor);
     }
 
@@ -75,9 +79,26 @@ public class IndexerSearchWorkflow
                 _logger.LogInformation("Searching indexer {Name} ({Type}) for query: {Query}", indexer.Name, indexer.Type, query);
                 var perIndexerRequest = ApplyIndexerMamOptions(indexer, request);
 
-                var indexerResults = await SearchIndexerAsync(indexer, query, category, perIndexerRequest);
+                var indexerResults = await SearchIndexerAsync(
+                    indexer,
+                    query,
+                    category,
+                    perIndexerRequest,
+                    isAutomaticSearch ? IndexerQuotaPurpose.AutomaticSearch : IndexerQuotaPurpose.InteractiveSearch);
                 _logger.LogInformation("Found {Count} results from indexer {Name}", indexerResults.Count, indexer.Name);
                 return indexerResults;
+            }
+            catch (IndexerUnavailableException ex)
+            {
+                // One indexer being throttled or down must not fail the others, but it is logged as
+                // what it is rather than as an empty result set.
+                _logger.LogWarning(
+                    "Indexer {Name} unavailable for query {Query}: {Reason}{RateLimited}",
+                    indexer.Name,
+                    query,
+                    ex.Message,
+                    ex.IsRateLimited ? " (rate limited)" : string.Empty);
+                return new List<IndexerSearchResult>();
             }
             catch (Exception ex) when (ex is not OperationCanceledException && ex is not OutOfMemoryException && ex is not StackOverflowException)
             {
@@ -233,8 +254,17 @@ public class IndexerSearchWorkflow
         Indexer indexer,
         string query,
         string? category = null,
-        SearchRequest? request = null)
+        SearchRequest? request = null,
+        IndexerQuotaPurpose purpose = IndexerQuotaPurpose.InteractiveSearch)
     {
+        // Checked before the request is built, because a budget that is enforced after the fact is
+        // not a budget: the point is that the refused request never reaches a site that bans by IP.
+        if (_quotaService != null && !await _quotaService.TryConsumeAsync(indexer.Id, purpose))
+        {
+            var wait = await _quotaService.TimeUntilAvailableAsync(indexer.Id, purpose);
+            throw IndexerUnavailableException.QuotaExhausted(indexer.Name, wait);
+        }
+
         try
         {
             query = IndexerQuerySanitizer.Sanitize(query);

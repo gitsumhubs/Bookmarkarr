@@ -61,8 +61,18 @@ public partial class TorznabNewznabSearchProvider : IIndexerSearchProvider
             var response = await _httpClient.SendAsync(requestMessage);
             if (!response.IsSuccessStatusCode)
             {
+                // Raising rather than returning nothing: an indexer that could not answer is not an
+                // indexer that answered "no such book". Collapsing the two sent the search ladder
+                // through every remaining rung against a refusing indexer and let a throttled book
+                // read as unfindable.
                 _logger.LogWarning("Indexer {Name} returned status {Status}", indexer.Name, response.StatusCode);
-                return new List<IndexerSearchResult>();
+
+                var rateLimited = response.StatusCode == System.Net.HttpStatusCode.TooManyRequests;
+                throw new IndexerUnavailableException(
+                    indexer.Name,
+                    $"{indexer.Name} returned {(int)response.StatusCode} {response.StatusCode}",
+                    isRateLimited: rateLimited,
+                    retryAfter: response.Headers.RetryAfter?.Delta);
             }
 
             var xmlContent = await response.Content.ReadAsStringAsync();

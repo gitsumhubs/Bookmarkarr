@@ -116,6 +116,17 @@ namespace Bookmarkarr.Domain.Search
         public string? AdditionalSettings { get; set; }
 
         /// <summary>
+        /// Most requests Bookmarkarr may make to this indexer in a rolling hour, counting searches
+        /// and grabs. Null leaves it unlimited, which is the right default for an indexer that does
+        /// not ban for volume.
+        /// </summary>
+        /// <remarks>
+        /// Set by the AudioBook Bay patch, because the patch is what multiplies request volume by
+        /// its page count against a site that bans an IP for about a week.
+        /// </remarks>
+        public int? RequestsPerHour { get; set; }
+
+        /// <summary>
         /// When the indexer was created
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
