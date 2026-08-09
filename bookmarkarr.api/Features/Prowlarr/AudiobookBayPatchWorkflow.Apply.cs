@@ -80,7 +80,7 @@ namespace Bookmarkarr.Api.Features.Prowlarr
                             : $"'{definitionsDirectoryOverride}' does not look like a Prowlarr config directory");
                 }
 
-                var customDirectory = Path.Combine(resolved.Directory, AudiobookBayDefinition.CustomSubdirectory);
+                var customDirectory = AudiobookBayDefinition.CustomDirectoryIn(resolved.Directory);
                 definitionPath = Path.Combine(customDirectory, AudiobookBayDefinition.FileName);
 
                 try

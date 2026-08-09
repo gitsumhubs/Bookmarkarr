@@ -212,7 +212,7 @@ namespace Bookmarkarr.Api.Features.Prowlarr
                 resolved.Directory != null,
                 CanRevert(settings),
                 resolved.Directory != null
-                    && FileExistsSafely(Path.Combine(resolved.Directory, AudiobookBayDefinition.CustomSubdirectory, AudiobookBayDefinition.FileName)),
+                    && FileExistsSafely(AudiobookBayDefinition.DefinitionPathIn(resolved.Directory)),
                 settings?.AudiobookBayPatchPages,
                 0,
                 AudiobookBayDefinition.ProjectedResults(AudiobookBayDefinition.DefaultPages));
@@ -385,7 +385,7 @@ namespace Bookmarkarr.Api.Features.Prowlarr
 
                 var definitionPath = resolved.Directory == null
                     ? null
-                    : Path.Combine(resolved.Directory, AudiobookBayDefinition.CustomSubdirectory, AudiobookBayDefinition.FileName);
+                    : AudiobookBayDefinition.DefinitionPathIn(resolved.Directory);
 
                 var installed = definitionPath != null && FileExistsSafely(definitionPath);
 

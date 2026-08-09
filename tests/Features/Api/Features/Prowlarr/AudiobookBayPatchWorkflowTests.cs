@@ -39,6 +39,24 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Prowlarr
         }
 
         [Fact]
+        public void DefinitionPath_LandsWhereProwlarrActuallyReads()
+        {
+            // Prowlarr reads <config>/Definitions/Custom. Every path in this feature was composed as
+            // <config>/Custom, so applying wrote the file somewhere Prowlarr never looks, waited out
+            // the reload, and failed — while the installed check looked in the same wrong place and
+            // always answered no. Only the manual instructions were right, because the UI prepends
+            // "Definitions/" itself.
+            var path = AudiobookBayDefinition.DefinitionPathIn("/prowlarr-config");
+
+            Assert.Equal(
+                Path.Combine("/prowlarr-config", "Definitions", "Custom", AudiobookBayDefinition.FileName),
+                path);
+            Assert.Equal(
+                Path.Combine("/prowlarr-config", "Definitions", "Custom"),
+                AudiobookBayDefinition.CustomDirectoryIn("/prowlarr-config"));
+        }
+
+        [Fact]
         public async Task GetDiagnostics_WithAnEmptyProwlarrMount_SaysMountedNotMissing()
         {
             // The Compose file ships /prowlarr-config mounted at an empty default, so the common

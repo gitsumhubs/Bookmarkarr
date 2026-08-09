@@ -62,6 +62,27 @@ namespace Bookmarkarr.Api.Features.Prowlarr
         /// <summary>Prowlarr only preserves user definitions inside this subdirectory.</summary>
         public const string CustomSubdirectory = "Custom";
 
+        /// <summary>Prowlarr keeps every indexer definition under this folder of its config directory.</summary>
+        public const string DefinitionsSubdirectory = "Definitions";
+
+        /// <summary>
+        /// Where a definition lives inside Prowlarr's config directory:
+        /// <c>&lt;config&gt;/Definitions/Custom</c>.
+        /// </summary>
+        /// <remarks>
+        /// This segment used to be missing everywhere the path was composed, so the patch wrote to
+        /// <c>&lt;config&gt;/Custom</c> — a folder Prowlarr never reads. Applying would write the
+        /// file, wait out the reload timeout, and report failure; the installed check looked in the
+        /// same wrong place and always said no. Only the manual instructions were right, because
+        /// the UI prepends "Definitions/" itself. One helper now, so the two cannot drift again.
+        /// </remarks>
+        public static string CustomDirectoryIn(string configDirectory)
+            => Path.Combine(configDirectory, DefinitionsSubdirectory, CustomSubdirectory);
+
+        /// <summary>Full path of the definition file inside Prowlarr's config directory.</summary>
+        public static string DefinitionPathIn(string configDirectory)
+            => Path.Combine(CustomDirectoryIn(configDirectory), FileName);
+
         /// <summary>Implementation name Prowlarr reports for the compiled, single-page indexer.</summary>
         public const string CompiledImplementation = "AudioBookBay";
 

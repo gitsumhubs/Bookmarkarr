@@ -136,7 +136,7 @@ namespace Bookmarkarr.Api.Features.Prowlarr
         /// </remarks>
         private (bool Writable, string? Message) TestWrite(string directory)
         {
-            var customDirectory = Path.Combine(directory, AudiobookBayDefinition.CustomSubdirectory);
+            var customDirectory = AudiobookBayDefinition.CustomDirectoryIn(directory);
             var probePath = Path.Combine(customDirectory, $".bookmarkarr-write-test-{Guid.NewGuid():N}");
 
             try
