@@ -329,6 +329,8 @@ namespace Bookmarkarr.Api.Features.Indexers
             existing.MinimumAge = indexer.MinimumAge;
             existing.Retention = indexer.Retention;
             existing.MaximumSize = indexer.MaximumSize;
+            // Zero and negative are not budgets, they are a stopped indexer with extra steps.
+            existing.RequestsPerHour = indexer.RequestsPerHour is > 0 ? indexer.RequestsPerHour : null;
             existing.AdditionalSettings = ApiResponseRedactor.MergeAdditionalSettings(existing.AdditionalSettings, indexer.AdditionalSettings);
             existing.UpdatedAt = DateTime.UtcNow;
 

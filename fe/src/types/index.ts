@@ -731,6 +731,8 @@ export interface Indexer {
   minimumAge: number
   retention: number
   maximumSize: number
+  /** Requests per rolling hour before Bookmarkarr stops asking. Null or absent = unlimited. */
+  requestsPerHour?: number | null
   additionalSettings?: string
   createdAt: string
   updatedAt: string

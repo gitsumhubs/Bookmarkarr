@@ -17,6 +17,7 @@
  */
 
 using Bookmarkarr.Application.Audiobooks.Matching;
+using Bookmarkarr.Application.Search.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -122,6 +123,19 @@ namespace Bookmarkarr.Infrastructure.HostedServices.Search
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
+                    break;
+                }
+                // A spent budget is not this book's failure. Stamping LastSearchTime here would put
+                // it on a six-hour cooldown for a search that never happened, so the pass ends
+                // instead and the book stays eligible. Ordering by LastSearchTime means the next
+                // pass resumes here rather than starting over at the head of the list.
+                catch (IndexerUnavailableException ex) when (ex.IsRateLimited)
+                {
+                    _logger.LogInformation(
+                        "Stopping this automatic search pass: {Indexer} is rate limited ({Reason}). {Remaining} book(s) stay eligible for the next pass.",
+                        ex.IndexerName,
+                        ex.Message,
+                        monitoredAudiobooks.Count - processedCount);
                     break;
                 }
                 catch (OperationCanceledException ex)

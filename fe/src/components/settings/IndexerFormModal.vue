@@ -269,6 +269,19 @@
             >
               <input id="maximumSize" v-model.number="formData.maximumSize" type="number" min="0" />
             </FormRow>
+
+            <FormRow
+              label="Requests Per Hour"
+              labelFor="requestsPerHour"
+              help="Stop asking this indexer once it has been contacted this many times in a rolling hour (0 = unlimited). A fifth is held back for searches you start yourself. AudioBook Bay bans an IP for about a week when asked too often, and the pagination patch spends one request per page."
+            >
+              <input
+                id="requestsPerHour"
+                v-model.number="formData.requestsPerHour"
+                type="number"
+                min="0"
+              />
+            </FormRow>
           </FormSection>
         </ModalBody>
       </ModalForm>
@@ -354,6 +367,7 @@ const defaultFormData = {
   minimumAge: 0,
   retention: 0,
   maximumSize: 0,
+  requestsPerHour: 0,
   additionalSettings: '',
 }
 
@@ -413,6 +427,7 @@ watch(
         minimumAge: newIndexer.minimumAge,
         retention: newIndexer.retention,
         maximumSize: newIndexer.maximumSize,
+        requestsPerHour: newIndexer.requestsPerHour ?? 0,
         additionalSettings: newIndexer.additionalSettings || '',
       }
 

@@ -642,5 +642,50 @@ namespace Bookmarkarr.Tests.Features.Api.Services.Search.Providers
             Assert.Single(indexers);
             Assert.Equal("http://localhost:9696/1/api", indexers[0].Url);
         }
+
+        // The budget is what keeps a patched AudioBook Bay from earning another week-long ban, and
+        // it was unreachable until now: nothing set it and no endpoint accepted it.
+        [Fact]
+        public async Task UpdateIndexer_PersistsARequestBudget()
+        {
+            var harness = new ControllerHarness(_provider);
+            var saved = await _indexerRepository.AddAsync(new Indexer
+            {
+                Name = "AudioBook Bay (Prowlarr)",
+                Type = "Torrent",
+                Implementation = "Torznab",
+                Url = "http://localhost:9696/2/api",
+                IsEnabled = true
+            });
+
+            saved.RequestsPerHour = 60;
+            var result = await harness.Controller.Update(saved.Id, saved);
+
+            Assert.IsType<OkObjectResult>(result);
+            var reloaded = await _indexerRepository.GetByIdAsync(saved.Id);
+            Assert.Equal(60, reloaded!.RequestsPerHour);
+        }
+
+        [Fact]
+        public async Task UpdateIndexer_TreatsAZeroBudgetAsUnlimited_NotAsAStoppedIndexer()
+        {
+            var harness = new ControllerHarness(_provider);
+            var saved = await _indexerRepository.AddAsync(new Indexer
+            {
+                Name = "Geek",
+                Type = "Usenet",
+                Implementation = "Newznab",
+                Url = "https://api.nzbgeek.info",
+                IsEnabled = true,
+                RequestsPerHour = 60
+            });
+
+            saved.RequestsPerHour = 0;
+            var result = await harness.Controller.Update(saved.Id, saved);
+
+            Assert.IsType<OkObjectResult>(result);
+            var reloaded = await _indexerRepository.GetByIdAsync(saved.Id);
+            Assert.Null(reloaded!.RequestsPerHour);
+        }
     }
 }

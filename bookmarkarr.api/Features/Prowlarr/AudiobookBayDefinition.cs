@@ -73,6 +73,18 @@ namespace Bookmarkarr.Api.Features.Prowlarr
         public const int DefaultPages = 3;
 
         /// <summary>
+        /// Requests per rolling hour given to a patched AudioBook Bay indexer.
+        /// </summary>
+        /// <remarks>
+        /// The site temp-bans an IP for about a week when asked too often, and this patch is what
+        /// multiplies volume: every search costs one request per page. 324 requests in one hour is
+        /// what earned a ban here, hours after the patch first went in. Sixty leaves room for
+        /// twenty searches an hour at the default three pages, which is far more than an
+        /// unattended pass needs and a fifth of what drew attention. Editable per indexer.
+        /// </remarks>
+        public const int DefaultRequestsPerHour = 60;
+
+        /// <summary>
         /// Renders the definition for <paramref name="pages"/> pages of results.
         /// </summary>
         public static string Build(int pages)

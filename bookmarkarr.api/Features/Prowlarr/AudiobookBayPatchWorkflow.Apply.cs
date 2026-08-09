@@ -129,6 +129,20 @@ namespace Bookmarkarr.Api.Features.Prowlarr
             var previousUrl = indexer.Url;
             indexer.Url = ProwlarrImportUrlPlanner.NormalizeProxyUrl(
                 ProwlarrImportUrlPlanner.BuildProxyUrl(baseUrl, newIndexerId));
+
+            // Applying the patch is the moment request volume multiplies by the page count, so it
+            // is the moment to give the indexer a budget. An operator who has already chosen one
+            // keeps it — this fills an empty setting rather than overriding a decision.
+            if (indexer.RequestsPerHour == null)
+            {
+                indexer.RequestsPerHour = AudiobookBayDefinition.DefaultRequestsPerHour;
+                _logger.LogInformation(
+                    "Gave {Name} a budget of {Budget} requests per hour, which the patch's {Pages} pages per search spend against",
+                    indexer.Name,
+                    AudiobookBayDefinition.DefaultRequestsPerHour,
+                    pages);
+            }
+
             indexer.UpdatedAt = DateTime.UtcNow;
             await _indexerRepository.UpdateAsync(indexer, ct);
 

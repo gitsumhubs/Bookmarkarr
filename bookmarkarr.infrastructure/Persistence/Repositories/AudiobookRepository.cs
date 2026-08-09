@@ -19,7 +19,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Bookmarkarr.Infrastructure.Persistence.Repositories
 {
-    public class AudiobookRepository : IAudiobookRepository
+    public partial class AudiobookRepository : IAudiobookRepository
     {
         private readonly BookmarkarrDbContext _db;
         public AudiobookRepository(BookmarkarrDbContext db)
@@ -455,16 +455,6 @@ namespace Bookmarkarr.Infrastructure.Persistence.Repositories
         public async Task SaveChangesAsync(System.Threading.CancellationToken ct = default)
         {
             await _db.SaveChangesAsync(ct);
-        }
-
-        public async Task<List<Audiobook>> GetMonitoredAudiobooksForSearchAsync(DateTime cutoff, System.Threading.CancellationToken ct = default)
-        {
-            return await _db.Audiobooks
-                .Include(a => a.QualityProfile)
-                .Where(a => a.Monitored &&
-                            a.QualityProfileId != null &&
-                            (a.LastSearchTime == null || a.LastSearchTime < cutoff))
-                .ToListAsync(ct);
         }
 
         public async Task NormalizeJsonColumnsAsync(System.Threading.CancellationToken ct = default)
