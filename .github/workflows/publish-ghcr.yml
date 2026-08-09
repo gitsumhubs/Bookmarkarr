@@ -36,12 +36,16 @@ jobs:
           images: ghcr.io/${{ github.repository_owner }}/bookmarkarr
           # `value` pins what the semver patterns read. Without it they fall back to github.ref,
           # which on workflow_dispatch is the branch the dispatch was made from — so a retried
-          # release built the right commit and published it as `latest` alone, with no version
-          # tag at all. The retry path is the one that most needs to produce a version.
+          # release built the right commit and published it as `latest` alone, with no version tag.
+          #
+          # It must be a bare version, not a ref: passing `refs/tags/v0.1.36` parses as no version
+          # at all and silently drops every semver tag, which is how v0.1.36 shipped untagged.
+          # github.ref_name is already stripped ("v0.1.36"), and a dispatch supplies the tag name
+          # directly, so both paths hand over the same shape.
           tags: |
-            type=semver,pattern={{version}},value=${{ inputs.ref || github.ref }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.ref || github.ref }}
-            type=semver,pattern={{major}},value=${{ inputs.ref || github.ref }}
+            type=semver,pattern={{version}},value=${{ inputs.ref || github.ref_name }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.ref || github.ref_name }}
+            type=semver,pattern={{major}},value=${{ inputs.ref || github.ref_name }}
             type=raw,value=latest
       - uses: docker/build-push-action@v6
         with:
