@@ -206,8 +206,7 @@ Full list in [.env.example](.env.example).
 - [Docker deployment](docs/DOCKER.md) · [External clients and indexers](docs/EXTERNAL_CLIENTS.md)
 - [Goodreads import](docs/GOODREADS.md) · [Backups](docs/BACKUPS.md) ·
   [Listenarr migration](docs/MIGRATION.md)
-- [Architecture](docs/ARCHITECTURE.md) · [API](docs/API.md) · [Bug-fix ledger](docs/BUGFIXES.md)
-- [Releases and GHCR](docs/RELEASES.md) · [Recreating this project](RECREATE.md)
+- [Architecture](docs/ARCHITECTURE.md) · [API](docs/API.md) · [Releases and GHCR](docs/RELEASES.md)
 
 ## Development
 
