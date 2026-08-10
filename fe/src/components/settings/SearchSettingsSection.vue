@@ -66,6 +66,13 @@
         title="Enable OpenLibrary Searching"
         description="Include OpenLibrary title augmentation and lookups when performing intelligent searches."
       />
+
+      <CheckboxCard
+        :modelValue="settings.unmonitorImportedEditions"
+        @update:modelValue="updateUnmonitorImportedEditions"
+        title="Stop Monitoring Imported Books"
+        description="Unmonitor an edition once it is imported and has a file, so a finished book is no longer searched every six hours. Turns off upgrade searching for anything already imported. Books still waiting on a file keep their monitor."
+      />
     </div>
   </div>
 </template>
@@ -95,6 +102,10 @@ function updateField(field: keyof ApplicationSettings, value: unknown) {
 
 function updateEnableOpenLibrarySearch(value: boolean) {
   updateField('enableOpenLibrarySearch', value)
+}
+
+function updateUnmonitorImportedEditions(value: boolean) {
+  updateField('unmonitorImportedEditions', value)
 }
 
 const defaultSearchRegion = computed(() =>

@@ -422,8 +422,7 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
 
                     // A successful import is what makes an edition imported, whether or not this
                     // particular pass was the one that added the row.
-                    edition.Status = EditionWantedStatus.Imported;
-                    edition.UpdatedAt = DateTime.UtcNow;
+                    MarkEditionImported(edition, importSettings);
                 }
                 await editionDb.SaveChangesAsync(cancellationToken);
 

@@ -25,6 +25,12 @@ namespace Bookmarkarr.Application.Audiobooks.Contracts.Repositories
         Task<Dictionary<int, List<AudiobookSeriesMembership>>> GetAllSeriesMembershipsGroupedByAudiobookIdAsync(CancellationToken ct = default);
         Task<List<Audiobook>> GetByIdsWithFilesAsync(IEnumerable<int> ids, CancellationToken ct = default);
         Task<List<Audiobook>> GetMonitoredAudiobooksForSearchAsync(DateTime cutoff, CancellationToken ct = default);
+
+        /// <summary>
+        /// Stops monitoring imported editions that hold files, and books whose editions are all
+        /// satisfied. Returns how many editions were retired.
+        /// </summary>
+        Task<int> UnmonitorSatisfiedEditionsAsync(CancellationToken ct = default);
         Task NormalizeJsonColumnsAsync(CancellationToken ct = default);
         Task<Audiobook?> GetByAsinAsync(string asin);
         Task<Audiobook?> GetByIsbnAsync(string isbn);

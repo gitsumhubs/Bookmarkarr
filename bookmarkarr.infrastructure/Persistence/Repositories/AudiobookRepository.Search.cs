@@ -46,5 +46,53 @@ namespace Bookmarkarr.Infrastructure.Persistence.Repositories
                 .ThenBy(a => a.Id)
                 .ToListAsync(ct);
         }
+
+        /// <summary>
+        /// Stops monitoring editions that are imported and hold files, and the books whose editions
+        /// are all satisfied. Returns how many editions were retired.
+        /// </summary>
+        /// <remarks>
+        /// Monitoring lives at two levels and only one of them is visible: the settings UI shows an
+        /// edition's monitor, while automatic search selects on the book's. Retiring the edition
+        /// alone would leave the book eligible and the searches running, so both move together —
+        /// the book once every one of its editions has stopped asking for anything.
+        ///
+        /// Only editions with a file are touched. A wanted edition, a failed import, and anything
+        /// still downloading keep their monitor, which is what makes this safe to run every pass
+        /// rather than once.
+        /// </remarks>
+        public async Task<int> UnmonitorSatisfiedEditionsAsync(System.Threading.CancellationToken ct = default)
+        {
+            var satisfied = await _db.BookEditions
+                .Where(e => e.Monitored
+                            && e.Status == EditionWantedStatus.Imported
+                            && e.Files.Any())
+                .ToListAsync(ct);
+
+            if (satisfied.Count == 0)
+            {
+                return 0;
+            }
+
+            foreach (var edition in satisfied)
+            {
+                edition.Monitored = false;
+                edition.UpdatedAt = DateTime.UtcNow;
+            }
+
+            var touchedBookIds = satisfied.Select(e => e.BookId).Distinct().ToList();
+            var books = await _db.Audiobooks
+                .Include(a => a.Editions)
+                .Where(a => a.Monitored && touchedBookIds.Contains(a.Id))
+                .ToListAsync(ct);
+
+            foreach (var book in books.Where(b => b.Editions.All(e => !e.Monitored)))
+            {
+                book.Monitored = false;
+            }
+
+            await _db.SaveChangesAsync(ct);
+            return satisfied.Count;
+        }
     }
 }

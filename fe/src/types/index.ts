@@ -383,6 +383,8 @@ export interface ApplicationSettings {
   // Search behavior settings
   // Enable OpenLibrary augmentation/search
   enableOpenLibrarySearch?: boolean
+  /** Stop monitoring an edition once it is imported and holds a file, so it stops being searched. */
+  unmonitorImportedEditions?: boolean
   defaultSearchRegion?: string
   defaultSearchLanguage?: string
 }

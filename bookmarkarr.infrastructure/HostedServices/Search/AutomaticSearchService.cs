@@ -85,6 +85,20 @@ namespace Bookmarkarr.Infrastructure.HostedServices.Search
             var settings = await configurationService.GetApplicationSettingsAsync();
             var presenceInspector = new LibraryPresenceInspector(fileSystem, fileNamingService, _logger);
 
+            // Retire anything already satisfied before choosing what to search. Doing it here rather
+            // than only at import means a library that was already finished stops searching too,
+            // instead of waiting for an import that will never come.
+            if (settings?.UnmonitorImportedEditions == true)
+            {
+                var retired = await audiobookRepository.UnmonitorSatisfiedEditionsAsync(stoppingToken);
+                if (retired > 0)
+                {
+                    _logger.LogInformation(
+                        "Stopped monitoring {Count} imported edition(s) that already hold files, so they are no longer searched",
+                        retired);
+                }
+            }
+
             // Get all monitored audiobooks that haven't been searched in the last 6 hours
             var cutoffTime = DateTime.UtcNow.AddHours(-6);
             var monitoredAudiobooks = await audiobookRepository.GetMonitoredAudiobooksForSearchAsync(cutoffTime, stoppingToken);
