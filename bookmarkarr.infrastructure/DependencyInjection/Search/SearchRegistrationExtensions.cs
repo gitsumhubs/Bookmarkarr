@@ -9,6 +9,7 @@
  */
 using Bookmarkarr.Infrastructure.Persistence.Repositories;
 using Bookmarkarr.Infrastructure.Search.Quota;
+using Bookmarkarr.Infrastructure.Search.Throttling;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Bookmarkarr.Infrastructure.DependencyInjection.Search;
@@ -33,6 +34,9 @@ internal static class SearchRegistrationExtensions
     {
         services.AddScoped<IIndexerRepository, EfIndexerRepository>();
         services.AddScoped<IIndexerQuotaService, IndexerQuotaService>();
+
+        // Singleton on purpose: the queue every search shares only exists if there is one of it.
+        services.AddSingleton<ISearchThrottle, SearchThrottle>();
         return services;
     }
 }

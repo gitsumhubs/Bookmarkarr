@@ -509,4 +509,60 @@ describe('ManualSearchModal.vue', () => {
     expect(badge.exists()).toBe(true)
     expect(badge.text()).toContain('88')
   })
+
+  // Torrent searches queue behind the backend's throttle and can take minutes to answer. Usenet
+  // ones answer immediately, and holding them back until the slowest indexer reports would leave
+  // the modal empty for that whole time.
+  it('shows usenet results while a torrent indexer is still searching', async () => {
+    vi.spyOn(apiService, 'getEnabledIndexers').mockResolvedValue([
+      { id: 1, name: 'ABB', type: 'Torrent', implementation: 'Torznab' } as never,
+      { id: 2, name: 'altHUB', type: 'Usenet', implementation: 'Newznab' } as never,
+    ])
+
+    let releaseTorrentSearch: (results: ManualSearchResult[]) => void = () => {}
+    const torrentSearch = new Promise<ManualSearchResult[]>((resolve) => {
+      releaseTorrentSearch = resolve
+    })
+
+    vi.spyOn(apiService, 'searchByApi').mockImplementation((async (apiId: string) =>
+      apiId === '1'
+        ? await torrentSearch
+        : [
+            {
+              id: 'nzb-1',
+              title: 'Target Book (Usenet)',
+              downloadType: 'Usenet',
+              source: 'altHUB',
+              size: 100,
+            },
+          ]) as never)
+    vi.spyOn(apiService, 'getDefaultQualityProfile').mockResolvedValue(null as never)
+
+    const wrapper = mount(ManualSearchModal, {
+      props: {
+        isOpen: false,
+        audiobook: { id: 99, title: 'Target Book', authors: ['Author Name'] },
+      },
+      global: { stubs },
+    })
+
+    await wrapper.setProps({ isOpen: true })
+
+    // Rendered with the torrent search still outstanding — the point of the whole change.
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Target Book (Usenet)'))
+    expect(wrapper.text()).not.toContain('Target Book (Torrent)')
+
+    releaseTorrentSearch([
+      {
+        id: 'torrent-1',
+        title: 'Target Book (Torrent)',
+        downloadType: 'Torrent',
+        source: 'ABB',
+        size: 200,
+      },
+    ])
+
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Target Book (Torrent)'))
+    expect(wrapper.text()).toContain('Target Book (Usenet)')
+  })
 })

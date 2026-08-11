@@ -82,8 +82,23 @@ namespace Bookmarkarr.Infrastructure.HostedServices.Search
             var fileNamingService = scope.ServiceProvider.GetRequiredService<IFileNamingService>();
             var blocklistService = scope.ServiceProvider.GetRequiredService<IBlocklistService>();
 
+            var searchThrottle = scope.ServiceProvider.GetRequiredService<ISearchThrottle>();
+            var indexerRepository = scope.ServiceProvider.GetRequiredService<IIndexerRepository>();
+
             var settings = await configurationService.GetApplicationSettingsAsync();
             var presenceInspector = new LibraryPresenceInspector(fileSystem, fileNamingService, _logger);
+
+            // Whether this pass is paced at all. Asked once per cycle rather than once per book:
+            // the answer cannot change mid-pass in any way worth reacting to, and a usenet-only
+            // install keeps searching at full speed.
+            var enabledIndexers = await indexerRepository.GetEnabledAsync(true, stoppingToken);
+            var torrentIndexerActive = IndexerProtocol.AnyTorrent(enabledIndexers);
+            if (torrentIndexerActive)
+            {
+                _logger.LogInformation(
+                    "A torrent indexer is enabled, so this pass searches one book at a time with at least {Seconds:F0}s between books",
+                    searchThrottle.MinimumCooldown.TotalSeconds);
+            }
 
             // Retire anything already satisfied before choosing what to search. Doing it here rather
             // than only at import means a library that was already finished stops searching too,
@@ -121,6 +136,12 @@ namespace Bookmarkarr.Infrastructure.HostedServices.Search
 
                 try
                 {
+                    // Held across the whole book — every query rung, every indexer, and the grab —
+                    // so nothing else searches alongside it, and released with the cooldown armed
+                    // so the next book starts a minute later however this one ended.
+                    using var searchLease = await searchThrottle.AcquireBookAsync(
+                        audiobook.Title, torrentIndexerActive, stoppingToken);
+
                     var downloadsQueuedForBook = await ProcessAudiobookAsync(
                         audiobook, searchService, qualityProfileService, downloadService, audiobookRepository, downloadRepository, fileRepository,
                         presenceInspector, settings, blocklistService, stoppingToken);

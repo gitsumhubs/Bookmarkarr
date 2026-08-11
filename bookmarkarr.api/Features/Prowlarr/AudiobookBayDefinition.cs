@@ -106,6 +106,20 @@ namespace Bookmarkarr.Api.Features.Prowlarr
         public const int DefaultRequestsPerHour = 60;
 
         /// <summary>
+        /// Seconds Prowlarr waits between the requests one search makes to the site.
+        /// </summary>
+        /// <remarks>
+        /// A paginated search is several requests, and at the old two seconds they left in a burst:
+        /// three page fetches inside six seconds, which is nothing a person browsing the site would
+        /// produce. Twelve spreads one search over about half a minute. Bookmarkarr already keeps a
+        /// minute between searches; this is what keeps the requests inside a search from clumping.
+        ///
+        /// The cost is latency — a three-page search takes ~24s longer — which matters only to an
+        /// interactive search, and only once, since Prowlarr caches the response.
+        /// </remarks>
+        public const int PageRequestDelaySeconds = 12;
+
+        /// <summary>
         /// Renders the definition for <paramref name="pages"/> pages of results.
         /// </summary>
         public static string Build(int pages)
@@ -134,7 +148,7 @@ namespace Bookmarkarr.Api.Features.Prowlarr
                 language: en-US
                 type: public
                 encoding: UTF-8
-                requestDelay: 2
+                requestDelay: {{{PageRequestDelaySeconds}}}
                 links:
                   - https://audiobookbay.lu/
                 legacylinks:

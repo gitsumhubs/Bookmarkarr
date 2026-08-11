@@ -125,6 +125,22 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Prowlarr
             Assert.DoesNotContain("User-Agent", yaml, StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// The delay is the difference between a paginated search that browses and one that
+        /// scrapes: without it the page fetches leave in a burst, which is what the site notices.
+        /// </summary>
+        [Fact]
+        public void Build_SpacesOutThePageFetches()
+        {
+            var yaml = AudiobookBayDefinition.Build(3);
+
+            Assert.Contains(
+                $"requestDelay: {AudiobookBayDefinition.PageRequestDelaySeconds}",
+                yaml,
+                StringComparison.Ordinal);
+            Assert.True(AudiobookBayDefinition.PageRequestDelaySeconds >= 10);
+        }
+
         [Fact]
         public void ProjectedResults_ScalesWithPagesAndClamps()
         {

@@ -46,6 +46,30 @@ The tab checks each precondition separately, so a failure names itself: Prowlarr
 Prowlarr reachable, AudioBook Bay indexer in use, definitions directory found and writable,
 definition installed, site answering searches.
 
+### Pacing
+
+AudioBook Bay bans an IP for about a week when asked too often, so Bookmarkarr searches it slowly
+and deliberately. Nothing here is configurable — the values are the point.
+
+- **One book at a time.** While any torrent indexer is enabled, the automatic pass, a catalogue
+  import, a retry after a failed download, and a person clicking **Search & Download** all queue
+  behind each other rather than running together.
+- **At least sixty seconds between them**, plus a random slice of up to thirty on top — never less
+  than the minute. The gap is armed when a book finishes, however it finished, and again after each
+  individual torrent request. That caps the site at sixty requests an hour no matter how many books
+  are waiting, which the hourly budget alone cannot do: it bounds the total but not the rate, so an
+  hour's worth could be spent in ten minutes and still sit inside it. The randomness is there
+  because a perfectly fixed interval solves bursts and replaces them with a metronome.
+- **Twelve seconds between page fetches.** A paginated search is several requests; the definition's
+  `requestDelay` spreads a three-page search over about half a minute instead of firing it inside
+  six seconds. This one is not randomised — Cardigann takes a single number, not a range.
+
+Usenet indexers are exempt from all of it — they are not what bans. A manual search therefore fills
+in twice: NZB results appear at once, and torrent results join them as each torrent search reaches
+the front of the queue. A search that looks stuck is usually waiting its turn; the log says so.
+
+A usenet-only install is not paced at all.
+
 ### The mount
 
 Prowlarr exposes no API for installing a definition, so the file has to be written to disk — which

@@ -32,6 +32,7 @@ public class IndexerSearchWorkflow
     private readonly ILogger<IndexerSearchWorkflow> _logger;
 
     private readonly IIndexerQuotaService? _quotaService;
+    private readonly ISearchThrottle? _searchThrottle;
 
     public IndexerSearchWorkflow(
         HttpClient httpClient,
@@ -41,7 +42,8 @@ public class IndexerSearchWorkflow
         IndexerAdditionalSettingsParser additionalSettingsParser,
         ILogger<IndexerSearchWorkflow> logger,
         IHtmlTextExtractor? htmlTextExtractor = null,
-        IIndexerQuotaService? quotaService = null)
+        IIndexerQuotaService? quotaService = null,
+        ISearchThrottle? searchThrottle = null)
     {
         _httpClient = httpClient;
         _configurationService = configurationService;
@@ -50,6 +52,7 @@ public class IndexerSearchWorkflow
         _additionalSettingsParser = additionalSettingsParser;
         _logger = logger;
         _quotaService = quotaService;
+        _searchThrottle = searchThrottle;
         _torznabResponseParser = new TorznabResponseParser(httpClient, logger, htmlTextExtractor);
     }
 
@@ -257,8 +260,17 @@ public class IndexerSearchWorkflow
         SearchRequest? request = null,
         IndexerQuotaPurpose purpose = IndexerQuotaPurpose.InteractiveSearch)
     {
+        // Torrent sites are the ones that ban, so they are the ones that queue: one request at a
+        // time, a minute apart. Usenet indexers fall straight through and answer at once, which is
+        // what lets a manual search show NZB results while the torrent half is still waiting.
+        using IDisposable? throttleLease = _searchThrottle != null && IndexerProtocol.IsTorrent(indexer)
+            ? await _searchThrottle.AcquireTorrentRequestAsync(indexer.Name)
+            : null;
+
         // Checked before the request is built, because a budget that is enforced after the fact is
         // not a budget: the point is that the refused request never reaches a site that bans by IP.
+        // After the throttle, not before, so a request that waited its turn is charged when it is
+        // actually sent rather than against the hour it queued in.
         if (_quotaService != null && !await _quotaService.TryConsumeAsync(indexer.Id, purpose))
         {
             var wait = await _quotaService.TimeUntilAvailableAsync(indexer.Id, purpose);

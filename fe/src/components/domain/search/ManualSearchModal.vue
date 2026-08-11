@@ -512,25 +512,120 @@ function setContentMode(mode: SearchContentMode) {
   search()
 }
 
+function sortResultsByColumn(list: SearchResult[]) {
+  const backendSortBy = sortBy.value as SearchSortBy
+  const ascending = sortDirection.value === 'Ascending'
+
+  list.sort((a, b) => {
+    switch (backendSortBy) {
+      case 'Seeders':
+        return ascending ? (a.seeders ?? 0) - (b.seeders ?? 0) : (b.seeders ?? 0) - (a.seeders ?? 0)
+      case 'Leechers':
+        return ascending
+          ? (a.leechers ?? 0) - (b.leechers ?? 0)
+          : (b.leechers ?? 0) - (a.leechers ?? 0)
+      case 'Grabs':
+        return ascending ? (a.grabs ?? 0) - (b.grabs ?? 0) : (b.grabs ?? 0) - (a.grabs ?? 0)
+      case 'Size':
+        return ascending ? a.size - b.size : b.size - a.size
+      case 'PublishedDate':
+        return ascending
+          ? getSortableDateValue(a.publishedDate) - getSortableDateValue(b.publishedDate)
+          : getSortableDateValue(b.publishedDate) - getSortableDateValue(a.publishedDate)
+      case 'Title':
+        return ascending ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title)
+      case 'Source':
+        return ascending ? a.source.localeCompare(b.source) : b.source.localeCompare(a.source)
+      case 'Language':
+        // Normalize undefined/unknown languages to empty string for comparison
+        return ascending
+          ? (a.language ?? '').localeCompare(b.language ?? '')
+          : (b.language ?? '').localeCompare(a.language ?? '')
+      case 'Quality':
+        return ascending
+          ? (a.quality ?? '').localeCompare(b.quality ?? '')
+          : (b.quality ?? '').localeCompare(a.quality ?? '')
+      default:
+        return 0
+    }
+  })
+}
+
+// Show what has answered instead of waiting for the slowest indexer. The two protocols no longer
+// return together: the backend queues torrent searches one at a time, a minute apart, so a usenet
+// result that was ready in a second would otherwise stay hidden for however long the torrent half
+// spends in that queue.
+function publishResults(incoming: SearchResult[]): boolean {
+  const known = new Set(results.value.map((r) => r.id))
+  const added: SearchResult[] = []
+
+  // Deduplicate by id — several indexers can carry the same release
+  for (const result of incoming) {
+    if (known.has(result.id)) continue
+    known.add(result.id)
+    added.push(result)
+  }
+
+  if (added.length === 0) return false
+
+  const merged = [...results.value, ...added]
+  if (sortBy.value !== 'Score') {
+    sortResultsByColumn(merged)
+  }
+  results.value = merged
+  return true
+}
+
+// Scoring reads and rewrites the whole score map, so two passes racing would interleave into a
+// half-filled one. Each batch queues behind the last instead.
+let scoringChain: Promise<void> = Promise.resolve()
+
+function scoreResults(): Promise<void> {
+  scoringChain = scoringChain
+    .then(async () => {
+      await loadQualityProfileAndScore()
+      if (sortBy.value === 'Score') {
+        sortFrontendResults()
+      }
+    })
+    .catch((error) => {
+      logger.warn('Failed to score search results:', error)
+    })
+  return scoringChain
+}
+
+// Distinguishes a search that has been superseded — the user retyped the query, switched to
+// ebooks, changed the sort — from the live one, so a slow indexer answering late cannot push its
+// results into a search that has already moved on.
+let searchToken = 0
+
 async function search() {
   if (!props.audiobook) return
 
+  const token = ++searchToken
   searching.value = true
   results.value = []
+  qualityScores.value.clear()
   searchedIndexers.value = 0
   totalIndexers.value = 0
 
   try {
     // Get count of enabled indexers first
     const enabledIndexers = await apiService.getEnabledIndexers()
+    if (token !== searchToken) return
     totalIndexers.value = enabledIndexers.length
 
     // Build search query from title and author (fallback if no manual query)
     const query = searchQuery.value.trim() || buildSearchQuery()
 
+    // Usenet first, so the requests that can be answered immediately are the ones already in
+    // flight while the torrent searches take their turn in the backend's queue.
+    const orderedIndexers = [...enabledIndexers].sort(
+      (a, b) => Number(a.type === 'Torrent') - Number(b.type === 'Torrent'),
+    )
+
     // Search each indexer individually to show progress
-    const allResults: SearchResult[] = []
-    const searchPromises = enabledIndexers.map(async (indexer) => {
+    const searchPromises = orderedIndexers.map(async (indexer) => {
       try {
         // Map MyAnonamouse indexer options (if present on the indexer) to searchByApi opts so backend can apply them
 
@@ -658,82 +753,28 @@ async function search() {
         normalized.forEach((r) => {
           r.language = normalizeLanguage(r.language as string | undefined)
         })
-        allResults.push(...normalized)
-        searchedIndexers.value++
+        if (token !== searchToken) return
+
+        // Published as this indexer answers, then scored, so the rows are usable — score,
+        // blocklist badge and all — before the rest of the indexers have reported.
+        if (publishResults(normalized)) {
+          await scoreResults()
+        }
       } catch (error) {
         logger.warn(`Failed to search indexer ${indexer.name}:`, error)
-        searchedIndexers.value++ // Still count as completed even if failed
+      } finally {
+        // Counted as reported either way: the progress line tracks indexers finished, not
+        // indexers that found something.
+        if (token === searchToken) searchedIndexers.value++
       }
     })
 
     // Wait for all searches to complete
     await Promise.all(searchPromises)
-
-    // Apply backend sorting if needed (for non-Score columns)
-    if (sortBy.value !== 'Score') {
-      const backendSortBy = sortBy.value as SearchSortBy
-      // Sort results based on the current sort criteria
-      allResults.sort((a, b) => {
-        switch (backendSortBy) {
-          case 'Seeders':
-            return sortDirection.value === 'Ascending'
-              ? (a.seeders ?? 0) - (b.seeders ?? 0)
-              : (b.seeders ?? 0) - (a.seeders ?? 0)
-          case 'Leechers':
-            return sortDirection.value === 'Ascending'
-              ? (a.leechers ?? 0) - (b.leechers ?? 0)
-              : (b.leechers ?? 0) - (a.leechers ?? 0)
-          case 'Grabs':
-            return sortDirection.value === 'Ascending'
-              ? (a.grabs ?? 0) - (b.grabs ?? 0)
-              : (b.grabs ?? 0) - (a.grabs ?? 0)
-          case 'Size':
-            return sortDirection.value === 'Ascending' ? a.size - b.size : b.size - a.size
-          case 'PublishedDate':
-            return sortDirection.value === 'Ascending'
-              ? getSortableDateValue(a.publishedDate) - getSortableDateValue(b.publishedDate)
-              : getSortableDateValue(b.publishedDate) - getSortableDateValue(a.publishedDate)
-          case 'Title':
-            return sortDirection.value === 'Ascending'
-              ? a.title.localeCompare(b.title)
-              : b.title.localeCompare(a.title)
-          case 'Source':
-            return sortDirection.value === 'Ascending'
-              ? a.source.localeCompare(b.source)
-              : b.source.localeCompare(a.source)
-          case 'Language':
-            // Normalize undefined/unknown languages to empty string for comparison
-            return sortDirection.value === 'Ascending'
-              ? (a.language ?? '').localeCompare(b.language ?? '')
-              : (b.language ?? '').localeCompare(a.language ?? '')
-          case 'Quality':
-            return sortDirection.value === 'Ascending'
-              ? (a.quality ?? '').localeCompare(b.quality ?? '')
-              : (b.quality ?? '').localeCompare(a.quality ?? '')
-          default:
-            return 0
-        }
-      })
-    }
-
-    // Deduplicate results by id (multiple indexers can return the same release)
-    const seen = new Map<string, SearchResult>()
-    for (const r of allResults) {
-      if (!seen.has(r.id)) seen.set(r.id, r)
-    }
-    results.value = Array.from(seen.values())
-
-    // Load quality profile and score results (always needed for Score column or display)
-    await loadQualityProfileAndScore()
-
-    // If sorting by Score, apply frontend sorting
-    if (sortBy.value === 'Score') {
-      sortFrontendResults()
-    }
   } catch (err) {
     console.error('Manual search failed:', err)
   } finally {
-    searching.value = false
+    if (token === searchToken) searching.value = false
   }
 }
 
