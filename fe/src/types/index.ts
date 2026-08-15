@@ -714,6 +714,24 @@ export interface History {
   data?: string
 }
 
+/**
+ * How the backend is currently pacing torrent searches. Torrent requests queue one at a time and at
+ * least a minute apart, which from the browser is indistinguishable from a hung search — this is
+ * what lets the manual search modal show a countdown rather than an open-ended spinner.
+ */
+export interface SearchThrottleStatus {
+  /** Shortest gap between torrent requests. The real gap adds jitter, so treat this as a floor. */
+  minimumCooldownSeconds: number
+  /** Seconds until the torrent lane opens again. Zero when nothing is holding it back. */
+  cooldownRemainingSeconds: number
+  /** True while a torrent request holds the lane, whether waiting out the cooldown or in flight. */
+  torrentLaneBusy: boolean
+  /** Torrent requests queued behind the one in progress. */
+  torrentRequestsWaiting: number
+  /** Whole-book searches queued behind the one in progress. */
+  booksWaiting: number
+}
+
 export interface Indexer {
   id: number
   name: string

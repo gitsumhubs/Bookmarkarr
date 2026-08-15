@@ -26,6 +26,7 @@ import type {
   Audiobook,
   History,
   Indexer,
+  SearchThrottleStatus,
   QueueItem,
   QueueSnapshot,
   RemotePathMapping,
@@ -361,6 +362,14 @@ class ApiService {
       params.append('mamEnrichTopResults', String(opts.mamEnrichTopResults))
 
     return this.request<SearchResult[]>(`/search/${apiId}?${params}`)
+  }
+
+  /**
+   * How the backend is pacing torrent searches right now. Cheap and read-only — safe to poll while
+   * a manual search is outstanding so the modal can count down instead of spinning.
+   */
+  async getSearchThrottle(signal?: AbortSignal): Promise<SearchThrottleStatus> {
+    return this.request<SearchThrottleStatus>('/search/throttle', { signal })
   }
 
   async testApiConnection(apiId: string): Promise<boolean> {

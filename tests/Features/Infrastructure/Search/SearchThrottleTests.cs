@@ -253,5 +253,67 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.Search
             Assert.Same(next, completed);
             (await next).Dispose();
         }
+
+        /// <summary>
+        /// The snapshot is what a waiting user is shown instead of an open-ended spinner, so it has
+        /// to report the wait that is actually happening rather than a nominal one.
+        /// </summary>
+        [Fact]
+        public async Task TheSnapshot_ReportsTheCooldownAWaitingRequestWillActuallyServe()
+        {
+            var throttle = Build(cooldown: TimeSpan.FromSeconds(30));
+
+            Assert.Equal(TimeSpan.Zero, throttle.GetSnapshot().CooldownRemaining);
+
+            using (await throttle.AcquireTorrentRequestAsync("AudioBook Bay"))
+            {
+            }
+
+            var snapshot = throttle.GetSnapshot();
+
+            Assert.Equal(TimeSpan.FromSeconds(30), snapshot.MinimumCooldown);
+            Assert.True(
+                snapshot.CooldownRemaining > TimeSpan.Zero
+                    && snapshot.CooldownRemaining <= TimeSpan.FromSeconds(30),
+                $"expected a cooldown inside 30s, got {snapshot.CooldownRemaining}");
+            Assert.False(snapshot.TorrentLaneBusy);
+            Assert.Equal(0, snapshot.TorrentRequestsWaiting);
+            Assert.Equal(0, snapshot.BooksWaiting);
+        }
+
+        /// <summary>
+        /// A queue depth of zero while somebody is stuck behind a lane would be the one reading that
+        /// makes the wait look inexplicable, which is the opposite of the point.
+        /// </summary>
+        [Fact]
+        public async Task TheSnapshot_CountsWhoIsQueuedBehindEachLane()
+        {
+            var throttle = Build(cooldown: TimeSpan.Zero);
+
+            using var book = await throttle.AcquireBookAsync("Book A", torrentIndexerActive: true);
+            using var request = await throttle.AcquireTorrentRequestAsync("AudioBook Bay");
+
+            var queuedBook = Task.Run(() => throttle.AcquireBookAsync("Book B", torrentIndexerActive: true));
+            var queuedRequest = Task.Run(() => throttle.AcquireTorrentRequestAsync("AudioBook Bay"));
+
+            SearchThrottleSnapshot snapshot;
+            var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(10);
+            do
+            {
+                await Task.Delay(20);
+                snapshot = throttle.GetSnapshot();
+            }
+            while ((snapshot.BooksWaiting == 0 || snapshot.TorrentRequestsWaiting == 0)
+                   && DateTime.UtcNow < deadline);
+
+            Assert.Equal(1, snapshot.BooksWaiting);
+            Assert.Equal(1, snapshot.TorrentRequestsWaiting);
+            Assert.True(snapshot.TorrentLaneBusy);
+
+            request.Dispose();
+            book.Dispose();
+            (await queuedBook).Dispose();
+            (await queuedRequest).Dispose();
+        }
     }
 }

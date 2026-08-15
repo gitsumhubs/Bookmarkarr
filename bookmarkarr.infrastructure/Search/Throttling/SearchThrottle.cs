@@ -72,6 +72,14 @@ namespace Bookmarkarr.Infrastructure.Search.Throttling
         /// </summary>
         private long _torrentRequests;
 
+        /// <summary>
+        /// Callers blocked on each lane, counted only so <see cref="GetSnapshot"/> can say how deep
+        /// the queue is. Incremented before the wait and decremented however the wait ends, so a
+        /// cancelled caller does not leave itself in the count forever.
+        /// </summary>
+        private int _booksWaiting;
+        private int _torrentRequestsWaiting;
+
         private readonly TimeSpan _cooldown;
         private readonly TimeSpan _jitter;
 
@@ -93,6 +101,30 @@ namespace Bookmarkarr.Infrastructure.Search.Throttling
 
         public TimeSpan MinimumCooldown => _cooldown;
 
+        public SearchThrottleSnapshot GetSnapshot()
+        {
+            DateTime nextRequestUtc;
+            lock (_cooldownGate)
+            {
+                nextRequestUtc = _nextTorrentRequestUtc;
+            }
+
+            var remaining = nextRequestUtc - DateTime.UtcNow;
+            if (remaining < TimeSpan.Zero)
+            {
+                remaining = TimeSpan.Zero;
+            }
+
+            return new SearchThrottleSnapshot(
+                _cooldown,
+                remaining,
+                // A semaphore with no permits left is one somebody is holding. That covers both
+                // halves of a torrent request's turn: waiting out the cooldown and the request.
+                _torrentLane.CurrentCount == 0,
+                Volatile.Read(ref _torrentRequestsWaiting),
+                Volatile.Read(ref _booksWaiting));
+        }
+
         public async Task<IDisposable> AcquireBookAsync(string description, bool torrentIndexerActive, CancellationToken ct = default)
         {
             if (!torrentIndexerActive)
@@ -101,7 +133,15 @@ namespace Bookmarkarr.Infrastructure.Search.Throttling
             }
 
             var queuedAt = DateTime.UtcNow;
-            await _bookLane.WaitAsync(ct);
+            Interlocked.Increment(ref _booksWaiting);
+            try
+            {
+                await _bookLane.WaitAsync(ct);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _booksWaiting);
+            }
 
             var queuedFor = DateTime.UtcNow - queuedAt;
             if (queuedFor > NotableWait)
@@ -133,7 +173,15 @@ namespace Bookmarkarr.Infrastructure.Search.Throttling
 
         public async Task<IDisposable> AcquireTorrentRequestAsync(string indexerName, CancellationToken ct = default)
         {
-            await _torrentLane.WaitAsync(ct);
+            Interlocked.Increment(ref _torrentRequestsWaiting);
+            try
+            {
+                await _torrentLane.WaitAsync(ct);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _torrentRequestsWaiting);
+            }
 
             try
             {

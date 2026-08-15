@@ -44,6 +44,16 @@ if (!(apiService as unknown as Record<string, unknown>).scoreSearchResults) {
     }
   ).scoreSearchResults = async () => []
 }
+if (!(apiService as unknown as Record<string, unknown>).getSearchThrottle) {
+  ;(apiService as unknown as { getSearchThrottle: () => Promise<unknown> }).getSearchThrottle =
+    async () => ({
+      minimumCooldownSeconds: 60,
+      cooldownRemainingSeconds: 0,
+      torrentLaneBusy: false,
+      torrentRequestsWaiting: 0,
+      booksWaiting: 0,
+    })
+}
 
 type ManualSearchResult = {
   id: string
@@ -86,6 +96,9 @@ describe('ManualSearchModal.vue', () => {
     PhXCircle: true,
     PhDownloadSimple: true,
     PhArrowsDownUp: true,
+    PhPencilSimple: true,
+    PhCheckCircle: true,
+    PhClock: true,
     // Ensure ScorePopover renders its default slot in tests so the inner badge is present
     ScorePopover: { template: '<div><slot /></div>' },
     Modal: { template: '<div><slot name="header" /><slot /></div>' },
@@ -107,6 +120,44 @@ describe('ManualSearchModal.vue', () => {
     vi.restoreAllMocks()
   })
 
+  // Opening the modal must not spend a query: awkward titles are exactly the ones that need
+  // editing first, and an automatic search on open burns indexer quota proving they fail.
+  it('waits for the user before searching and prefills the query from the book', async () => {
+    vi.spyOn(apiService, 'getEnabledIndexers').mockResolvedValue([
+      { id: 1, name: 'Test', implementation: 'Newznab', additionalSettings: null } as never,
+    ])
+    const searchByApi = vi.spyOn(apiService, 'searchByApi').mockResolvedValue([])
+    vi.spyOn(apiService, 'getDefaultQualityProfile').mockResolvedValue(null as never)
+
+    const wrapper = mount(ManualSearchModal, {
+      props: {
+        isOpen: false,
+        audiobook: { id: 99, title: 'Target Book', authors: ['Author Name'] },
+      },
+      global: { stubs },
+    })
+
+    await wrapper.setProps({ isOpen: true })
+    await nextTick()
+
+    const input = wrapper.find('input.search-input')
+    expect((input.element as HTMLInputElement).value).toBe('Target Book Author Name')
+    expect(wrapper.find('.pre-search').exists()).toBe(true)
+    expect(searchByApi).not.toHaveBeenCalled()
+
+    // Switching content type before the first search only changes what the pending search will ask
+    await wrapper.findAll('.content-mode-button')[1]!.trigger('click')
+    expect(searchByApi).not.toHaveBeenCalled()
+    await wrapper.findAll('.content-mode-button')[0]!.trigger('click')
+
+    await input.setValue('Edited Title')
+    await wrapper.find('button.btn-primary').trigger('click')
+
+    await vi.waitFor(() => expect(searchByApi).toHaveBeenCalledTimes(1))
+    expect(searchByApi.mock.calls[0]?.[1]).toBe('Edited Title')
+    await vi.waitFor(() => expect(wrapper.find('.pre-search').exists()).toBe(false))
+  })
+
   it('defaults to audiobooks and searches again in ebook-only mode', async () => {
     vi.spyOn(apiService, 'getEnabledIndexers').mockResolvedValue([
       { id: 1, name: 'Test', implementation: 'Newznab', additionalSettings: null } as never,
@@ -123,6 +174,8 @@ describe('ManualSearchModal.vue', () => {
     })
 
     await wrapper.setProps({ isOpen: true })
+    await nextTick()
+    await wrapper.find('button.btn-primary').trigger('click')
     await vi.waitFor(() => expect(searchByApi).toHaveBeenCalledTimes(1))
     expect(searchByApi.mock.calls[0]?.[3]).toMatchObject({ contentType: 'audiobook' })
 
@@ -491,6 +544,8 @@ describe('ManualSearchModal.vue', () => {
     })
 
     await wrapper.setProps({ isOpen: true })
+    await nextTick()
+    await wrapper.find('button.btn-primary').trigger('click')
 
     const start = Date.now()
     while (Date.now() - start < 3000) {
@@ -547,6 +602,8 @@ describe('ManualSearchModal.vue', () => {
     })
 
     await wrapper.setProps({ isOpen: true })
+    await nextTick()
+    await wrapper.find('button.btn-primary').trigger('click')
 
     // Rendered with the torrent search still outstanding — the point of the whole change.
     await vi.waitFor(() => expect(wrapper.text()).toContain('Target Book (Usenet)'))
@@ -564,5 +621,116 @@ describe('ManualSearchModal.vue', () => {
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Target Book (Torrent)'))
     expect(wrapper.text()).toContain('Target Book (Usenet)')
+  })
+
+  // A paced torrent search and a hung one look identical from the browser. The progress panel is
+  // the only thing that tells them apart, so it has to name the indexer still being waited on and
+  // say how long the wait has run.
+  it('times the search and reports each indexer as it answers', async () => {
+    vi.spyOn(apiService, 'getEnabledIndexers').mockResolvedValue([
+      { id: 1, name: 'ABB', type: 'Torrent', implementation: 'Torznab' } as never,
+      { id: 2, name: 'altHUB', type: 'Usenet', implementation: 'Newznab' } as never,
+    ])
+    vi.spyOn(apiService, 'getSearchThrottle').mockResolvedValue({
+      minimumCooldownSeconds: 60,
+      cooldownRemainingSeconds: 42,
+      torrentLaneBusy: true,
+      torrentRequestsWaiting: 0,
+      booksWaiting: 2,
+    })
+
+    let releaseTorrentSearch: (results: ManualSearchResult[]) => void = () => {}
+    const torrentSearch = new Promise<ManualSearchResult[]>((resolve) => {
+      releaseTorrentSearch = resolve
+    })
+
+    vi.spyOn(apiService, 'searchByApi').mockImplementation((async (apiId: string) =>
+      apiId === '1'
+        ? await torrentSearch
+        : [
+            {
+              id: 'nzb-1',
+              title: 'Target Book (Usenet)',
+              downloadType: 'Usenet',
+              source: 'altHUB',
+              size: 100,
+            },
+          ]) as never)
+    vi.spyOn(apiService, 'getDefaultQualityProfile').mockResolvedValue(null as never)
+
+    const wrapper = mount(ManualSearchModal, {
+      props: {
+        isOpen: false,
+        audiobook: { id: 99, title: 'Target Book', authors: ['Author Name'] },
+      },
+      global: { stubs },
+    })
+
+    await wrapper.setProps({ isOpen: true })
+    await nextTick()
+    await wrapper.find('button.btn-primary').trigger('click')
+
+    // The usenet indexer answers immediately; the torrent one is still queued behind the throttle.
+    await vi.waitFor(() => {
+      const rows = wrapper.findAll('.indexer-progress')
+      expect(rows).toHaveLength(2)
+      expect(rows.map((row) => row.text()).join(' ')).toContain('1 result')
+    })
+
+    const rowText = wrapper.findAll('.indexer-progress').map((row) => row.text())
+    expect(rowText.some((text) => text.includes('ABB') && text.includes('queued'))).toBe(true)
+    expect(wrapper.find('.search-timer').text()).toMatch(/\d+:\d{2}/)
+
+    // The countdown and the queue depth both come from the backend, so the wait has a cause on
+    // screen rather than just a spinner.
+    await vi.waitFor(() => expect(wrapper.find('.search-pacing-note').text()).toContain('0:42'))
+    expect(wrapper.find('.search-pacing-note').text()).toContain('at least 1 min apart')
+    expect(wrapper.find('.search-pacing-note').text()).toContain('2 other book searches are queued')
+
+    releaseTorrentSearch([])
+
+    // Once everything has answered the panel goes away and the results header reports the duration.
+    await vi.waitFor(() => expect(wrapper.find('.search-status').exists()).toBe(false))
+    expect(wrapper.find('.results-duration').text()).toMatch(/\d+:\d{2}/)
+  })
+
+  // Every query that comes back empty costs a torrent slot, so the edits that usually fix one are
+  // offered as a click. Picking one must fill the box and stop there — searching on the user's
+  // behalf is the exact thing the pre-search state exists to prevent.
+  it('offers narrower queries as chips without spending a search', async () => {
+    vi.spyOn(apiService, 'getEnabledIndexers').mockResolvedValue([])
+    const searchByApi = vi.spyOn(apiService, 'searchByApi').mockResolvedValue([])
+
+    const wrapper = mount(ManualSearchModal, {
+      props: {
+        isOpen: false,
+        audiobook: {
+          id: 99,
+          title: 'The Way of Kings: Book One of the Stormlight Archive',
+          authors: ['Brandon Sanderson'],
+        },
+      },
+      global: { stubs },
+    })
+
+    await wrapper.setProps({ isOpen: true })
+    await nextTick()
+
+    const input = wrapper.find('input.search-input')
+    expect((input.element as HTMLInputElement).value).toBe(
+      'The Way of Kings: Book One of the Stormlight Archive Brandon Sanderson',
+    )
+
+    const chips = wrapper.findAll('.query-chip')
+    expect(chips.length).toBeGreaterThan(0)
+    const shortChip = chips.find((chip) => chip.text() === 'Short title + author')
+    expect(shortChip).toBeDefined()
+
+    await shortChip!.trigger('click')
+    await nextTick()
+
+    expect((input.element as HTMLInputElement).value).toBe('The Way of Kings Brandon Sanderson')
+    expect(searchByApi).not.toHaveBeenCalled()
+    expect(wrapper.find('.pre-search').exists()).toBe(true)
   })
 })

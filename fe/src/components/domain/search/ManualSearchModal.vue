@@ -27,10 +27,65 @@
 
     <template #default>
       <ModalBody>
-        <!-- Search Status -->
-        <div v-if="searching" class="search-status">
-          <PhSpinner class="ph-spin" />
-          <span>Searching indexers... ({{ searchedIndexers }}/{{ totalIndexers }})</span>
+        <!-- Search progress. A torrent search can sit in the backend's queue for minutes, which
+             from here is indistinguishable from a hung request, so the wait shows its own clock,
+             which indexers have answered, and how long until the next request is allowed out. -->
+        <div v-if="searching" class="search-status" role="status" aria-live="polite">
+          <div class="search-status-head">
+            <span class="search-status-title">
+              <PhSpinner class="ph-spin" />
+              Searching indexers
+            </span>
+            <span class="search-timer" :title="`Elapsed time: ${formatDuration(elapsedSeconds)}`">
+              <PhClock />
+              {{ formatDuration(elapsedSeconds) }}
+            </span>
+          </div>
+
+          <div
+            class="search-progress-track"
+            role="progressbar"
+            :aria-valuenow="searchProgressPercent"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <div class="search-progress-fill" :style="{ width: `${searchProgressPercent}%` }"></div>
+          </div>
+
+          <ul v-if="indexerProgress.length" class="indexer-progress-list">
+            <li
+              v-for="entry in indexerProgress"
+              :key="entry.key"
+              :class="['indexer-progress', entry.state]"
+            >
+              <PhSpinner v-if="entry.state === 'pending'" class="ph-spin indexer-progress-icon" />
+              <PhCheckCircle v-else-if="entry.state === 'done'" class="indexer-progress-icon" />
+              <PhXCircle v-else class="indexer-progress-icon" />
+              <span class="indexer-progress-name">{{ safeText(entry.name) }}</span>
+              <span class="indexer-progress-protocol">{{
+                entry.isTorrent ? 'Torrent' : 'Usenet'
+              }}</span>
+              <span class="indexer-progress-state">{{ describeIndexerProgress(entry) }}</span>
+            </li>
+          </ul>
+
+          <p v-if="pendingTorrentCount > 0" class="search-pacing-note">
+            <template v-if="nextTorrentSlotSeconds !== null && minimumCooldownLabel">
+              Torrent indexers are queried one at a time, at least {{ minimumCooldownLabel }} apart —
+              the next request may go out in
+              <strong>{{ formatDuration(nextTorrentSlotSeconds) }}</strong
+              >.
+            </template>
+            <template v-else>
+              Torrent indexers are queried one at a time and spaced apart, so this can take a few
+              minutes.
+            </template>
+            Results appear as each indexer answers.
+            <span v-if="booksQueuedAhead > 0" class="search-pacing-queue">
+              {{ booksQueuedAhead }} other book
+              {{ booksQueuedAhead === 1 ? 'search is' : 'searches are' }} queued ahead of this one.
+            </span>
+          </p>
         </div>
 
         <!-- Results Table -->
@@ -41,6 +96,7 @@
               <div class="search-input-wrapper">
                 <PhMagnifyingGlass class="search-icon" />
                 <input
+                  ref="queryInput"
                   v-model="searchQuery"
                   type="text"
                   class="search-input form-input"
@@ -57,9 +113,29 @@
                   <span v-else><PhSpinner class="ph-spin" /></span>
                   Search
                 </button>
-                <button v-if="!searching" class="btn btn-secondary btn-sm" @click="search">
+                <button
+                  v-if="!searching && hasSearched"
+                  class="btn btn-secondary btn-sm"
+                  @click="search"
+                >
                   <PhArrowClockwise />
                   Refresh
+                </button>
+              </div>
+
+              <!-- Every query that comes back empty costs a torrent slot — a minute or more — so
+                   the edits that usually fix one are offered as a click rather than as typing. -->
+              <div v-if="!searching && querySuggestions.length" class="query-suggestions">
+                <span class="query-suggestions-label">Try:</span>
+                <button
+                  v-for="suggestion in querySuggestions"
+                  :key="suggestion.value"
+                  type="button"
+                  class="query-chip"
+                  :title="`Use “${suggestion.value}” as the search query`"
+                  @click="applySuggestion(suggestion.value)"
+                >
+                  {{ suggestion.label }}
                 </button>
               </div>
             </div>
@@ -83,17 +159,41 @@
                   Ebooks
                 </button>
               </div>
-              <label class="collection-toggle" title="Place the release at the library root with its own folders and file names, and leave this book untouched. Use for box sets and collections, which the normal import would merge into this one book.">
+              <label
+                class="collection-toggle"
+                title="Place the release at the library root with its own folders and file names, and leave this book untouched. Use for box sets and collections, which the normal import would merge into this one book."
+              >
                 <input type="checkbox" v-model="grabAsCollection" />
                 <span>Grab as collection</span>
               </label>
               <div class="results-count">
                 {{ displayResults.length }} result{{ displayResults.length !== 1 ? 's' : '' }} found
+                <span
+                  v-if="!searching && lastSearchSeconds !== null"
+                  class="results-duration"
+                  title="How long the last search took"
+                  >· {{ formatDuration(lastSearchSeconds) }}</span
+                >
               </div>
             </div>
           </div>
 
-          <div v-if="displayResults.length === 0 && !searching" class="no-results">
+          <!-- Nothing is searched until the user says so: indexer queries are rate limited and
+               metered, and a title that needs fixing would spend a query proving it. -->
+          <div
+            v-if="displayResults.length === 0 && !searching && !hasSearched"
+            class="no-results pre-search"
+          >
+            <PhPencilSimple />
+            <p>Edit the title above, then search</p>
+            <p class="hint">
+              Nothing has been sent to your indexers yet. Trim subtitles, drop punctuation or fix
+              the author first — searches cost quota, so it pays to get the query right on the first
+              try.
+            </p>
+          </div>
+
+          <div v-else-if="displayResults.length === 0 && !searching" class="no-results">
             <PhMagnifyingGlass />
             <p>No results found</p>
             <p class="hint">Try adjusting your indexer settings or search criteria</p>
@@ -299,7 +399,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, nextTick, watch, onBeforeUnmount } from 'vue'
 import { Modal, ModalHeader, ModalBody } from '@/components/feedback'
 import {
   PhMagnifyingGlass,
@@ -308,8 +408,11 @@ import {
   PhArrowUp,
   PhArrowDown,
   PhXCircle,
+  PhCheckCircle,
+  PhClock,
   PhDownloadSimple,
   PhArrowsDownUp,
+  PhPencilSimple,
 } from '@phosphor-icons/vue'
 import { useToast } from '@/services/toastService'
 import { apiService } from '@/services/api'
@@ -317,6 +420,7 @@ import { logger } from '@/utils/logger'
 import type {
   Audiobook,
   SearchResult,
+  SearchThrottleStatus,
   QualityScore,
   QualityProfile,
   SearchSortBy,
@@ -340,16 +444,22 @@ const emit = defineEmits<{
 const results = ref<SearchResult[]>([])
 const searching = ref(false)
 const downloading = ref<Record<string, boolean>>({})
-const searchedIndexers = ref(0)
-const totalIndexers = ref(0)
 const qualityScores = ref<Map<string, QualityScore>>(new Map())
 const blocklistedIds = ref<Set<string>>(new Set())
 const qualityProfile = ref<QualityProfile | null>(null)
 const sortBy = ref<SearchSortBy | 'Score'>('Score')
 const sortDirection = ref<SearchSortDirection>('Descending')
 const searchQuery = ref('')
+const queryInput = ref<HTMLInputElement | null>(null)
 type SearchContentMode = 'audiobook' | 'ebook'
 const contentMode = ref<SearchContentMode>('audiobook')
+
+/**
+ * False until the user has actually asked for a search. Opening the modal only prefills the query
+ * from the book's metadata — the awkward titles are exactly the ones an automatic search burns
+ * quota on for nothing, so the first query waits for the user to fix it.
+ */
+const hasSearched = ref(false)
 
 /**
  * Opt-in per grab, never remembered: it changes where files land and detaches the download from
@@ -357,14 +467,196 @@ const contentMode = ref<SearchContentMode>('audiobook')
  */
 const grabAsCollection = ref(false)
 
+/**
+ * One row per indexer this search went out to. A torrent search can sit in the backend's queue for
+ * minutes, so "still working" is not enough — the user needs to see which indexer is holding things
+ * up and that the ones that answered already did.
+ */
+type IndexerProgressState = 'pending' | 'done' | 'failed'
+interface IndexerProgress {
+  key: string
+  name: string
+  isTorrent: boolean
+  state: IndexerProgressState
+  resultCount: number
+}
+const indexerProgress = ref<IndexerProgress[]>([])
+
+/**
+ * Ticks once a second while a search is outstanding, and every duration on screen is derived from
+ * it. Elapsed time is measured against the wall clock rather than counted up, so a backgrounded tab
+ * — where browsers throttle timers to once a minute — shows the true figure when it comes back
+ * instead of a count that fell behind.
+ */
+const nowMs = ref(Date.now())
+const searchStartedAtMs = ref(0)
+
+/** Seconds the last completed search took, kept so the results header can report it. */
+const lastSearchSeconds = ref<number | null>(null)
+
+/**
+ * The backend's pacing state, polled while torrent indexers are outstanding. Without it the modal
+ * can only say "still waiting"; with it, it can say how long until the next request is allowed out.
+ */
+const throttleStatus = ref<SearchThrottleStatus | null>(null)
+const throttleFetchedAtMs = ref(0)
+
+let clockTimer: ReturnType<typeof setInterval> | null = null
+let throttleTimer: ReturnType<typeof setInterval> | null = null
+
+/** Poll interval for the throttle. The countdown itself is interpolated locally between polls. */
+const THROTTLE_POLL_MS = 5000
+
+const elapsedSeconds = computed(() => {
+  if (!searchStartedAtMs.value) return 0
+  return Math.max(0, Math.floor((nowMs.value - searchStartedAtMs.value) / 1000))
+})
+
+const indexersReported = computed(
+  () => indexerProgress.value.filter((entry) => entry.state !== 'pending').length,
+)
+
+const searchProgressPercent = computed(() => {
+  const total = indexerProgress.value.length
+  if (total === 0) return 0
+  return Math.round((indexersReported.value / total) * 100)
+})
+
+const pendingTorrentCount = computed(
+  () => indexerProgress.value.filter((entry) => entry.isTorrent && entry.state === 'pending').length,
+)
+
+/**
+ * Seconds until the torrent lane opens again, interpolated from the last poll so the number moves
+ * every second rather than in five-second steps. Null when nothing is holding the lane back — the
+ * wait is then in the request itself, which has no countdown to offer.
+ */
+const nextTorrentSlotSeconds = computed(() => {
+  const status = throttleStatus.value
+  if (!status) return null
+  // Clamped at zero: the tick and the fetch are a second apart at worst, and a negative drift would
+  // round the countdown up past the figure the backend actually reported.
+  const drift = Math.max(0, (nowMs.value - throttleFetchedAtMs.value) / 1000)
+  const remaining = status.cooldownRemainingSeconds - drift
+  return remaining > 0 ? remaining : null
+})
+
+/** Other books queued ahead of this search, which is the honest explanation for a long wait. */
+const booksQueuedAhead = computed(() => throttleStatus.value?.booksWaiting ?? 0)
+
+const minimumCooldownLabel = computed(() => {
+  const seconds = throttleStatus.value?.minimumCooldownSeconds ?? 0
+  if (seconds <= 0) return null
+  // Prose, not a clock: "at least 1 min apart" reads as a rule, where "at least 1:00 apart" reads
+  // as a stopwatch that happens to be sitting in a sentence.
+  if (seconds < 60) return `${Math.round(seconds)}s`
+  const minutes = Math.round(seconds / 60)
+  return `${minutes} min`
+})
+
+/** mm:ss, because a search measured in minutes reads badly as a raw second count. */
+function formatDuration(seconds: number): string {
+  const total = Math.max(0, Math.ceil(seconds))
+  const minutes = Math.floor(total / 60)
+  return `${minutes}:${String(total % 60).padStart(2, '0')}`
+}
+
+function describeIndexerProgress(entry: IndexerProgress): string {
+  if (entry.state === 'failed') return 'no answer'
+  if (entry.state === 'done') {
+    if (entry.resultCount === 0) return 'no results'
+    return `${entry.resultCount} result${entry.resultCount === 1 ? '' : 's'}`
+  }
+  // A torrent request is genuinely sitting in a queue; a usenet one went out immediately.
+  return entry.isTorrent ? 'queued' : 'searching'
+}
+
+function startSearchClock() {
+  stopSearchClock()
+  searchStartedAtMs.value = Date.now()
+  nowMs.value = searchStartedAtMs.value
+  clockTimer = setInterval(() => {
+    nowMs.value = Date.now()
+  }, 1000)
+}
+
+function stopSearchClock() {
+  if (clockTimer) {
+    clearInterval(clockTimer)
+    clockTimer = null
+  }
+}
+
+function stopThrottlePolling() {
+  if (throttleTimer) {
+    clearInterval(throttleTimer)
+    throttleTimer = null
+  }
+}
+
+/**
+ * Only ever polled while a torrent indexer is still outstanding: usenet searches answer at once and
+ * take no lane, so there would be nothing to count down.
+ */
+async function refreshThrottleStatus() {
+  try {
+    const status = await apiService.getSearchThrottle()
+    throttleStatus.value = status
+    throttleFetchedAtMs.value = Date.now()
+    // Pulled forward with the fetch so the countdown starts from the figure the backend gave rather
+    // than from wherever the once-a-second tick happens to be.
+    nowMs.value = throttleFetchedAtMs.value
+  } catch (error) {
+    // The countdown is a courtesy. Losing it must not disturb a search that is working.
+    logger.warn('Failed to read search throttle status:', error)
+    throttleStatus.value = null
+  }
+}
+
+function startThrottlePolling() {
+  stopThrottlePolling()
+  void refreshThrottleStatus()
+  throttleTimer = setInterval(() => {
+    if (!searching.value || pendingTorrentCount.value === 0) {
+      stopThrottlePolling()
+      return
+    }
+    void refreshThrottleStatus()
+  }, THROTTLE_POLL_MS)
+}
+
+function stopSearchTimers() {
+  stopSearchClock()
+  stopThrottlePolling()
+}
+
+onBeforeUnmount(stopSearchTimers)
+
 watch(
   () => props.isOpen,
-  (isOpen) => {
-    if (isOpen && props.audiobook) {
-      // Initialize search query with default query and auto-search
+  async (isOpen) => {
+    if (!isOpen) {
+      // A closed modal has nothing to time. Leaving the intervals running would keep polling the
+      // backend for a search nobody is watching.
+      stopSearchTimers()
+      return
+    }
+
+    if (props.audiobook) {
+      // Prefill the query from the book and hand the user the cursor. No search runs yet.
       contentMode.value = 'audiobook'
       searchQuery.value = buildSearchQuery()
-      search()
+      hasSearched.value = false
+      results.value = []
+      qualityScores.value.clear()
+      blocklistedIds.value = new Set<string>()
+      indexerProgress.value = []
+      lastSearchSeconds.value = null
+      throttleStatus.value = null
+
+      await nextTick()
+      queryInput.value?.focus()
+      queryInput.value?.select()
     }
   },
 )
@@ -462,8 +754,8 @@ function setSort(column: SearchSortBy | 'Score') {
   if (column === 'Score') {
     // Frontend sorting for Score column
     sortFrontendResults()
-  } else {
-    // Backend sorting for other columns
+  } else if (hasSearched.value) {
+    // Backend sorting for other columns — but never as the query that opens the account's tab
     search()
   }
 }
@@ -509,7 +801,8 @@ function sortFrontendResults() {
 function setContentMode(mode: SearchContentMode) {
   if (contentMode.value === mode) return
   contentMode.value = mode
-  search()
+  // Before the first search this is just picking what the pending search will look for.
+  if (hasSearched.value) search()
 }
 
 function sortResultsByColumn(list: SearchResult[]) {
@@ -603,17 +896,28 @@ async function search() {
   if (!props.audiobook) return
 
   const token = ++searchToken
+  hasSearched.value = true
   searching.value = true
   results.value = []
   qualityScores.value.clear()
-  searchedIndexers.value = 0
-  totalIndexers.value = 0
+  indexerProgress.value = []
+  lastSearchSeconds.value = null
+  startSearchClock()
+
+  // Marks one indexer as reported. Guarded by the token so a superseded search cannot rewrite the
+  // progress of the one that replaced it.
+  const reportIndexer = (key: string, state: IndexerProgressState, resultCount: number) => {
+    if (token !== searchToken) return
+    const entry = indexerProgress.value.find((candidate) => candidate.key === key)
+    if (!entry) return
+    entry.state = state
+    entry.resultCount = resultCount
+  }
 
   try {
     // Get count of enabled indexers first
     const enabledIndexers = await apiService.getEnabledIndexers()
     if (token !== searchToken) return
-    totalIndexers.value = enabledIndexers.length
 
     // Build search query from title and author (fallback if no manual query)
     const query = searchQuery.value.trim() || buildSearchQuery()
@@ -623,6 +927,20 @@ async function search() {
     const orderedIndexers = [...enabledIndexers].sort(
       (a, b) => Number(a.type === 'Torrent') - Number(b.type === 'Torrent'),
     )
+
+    indexerProgress.value = orderedIndexers.map((indexer) => ({
+      key: String(indexer.id),
+      name: indexer.name,
+      isTorrent: indexer.type === 'Torrent',
+      state: 'pending' as IndexerProgressState,
+      resultCount: 0,
+    }))
+
+    // Only worth asking when something is actually queueing. A usenet-only install takes no lane,
+    // so there is no cooldown to count down and no reason to poll for one.
+    if (pendingTorrentCount.value > 0) {
+      startThrottlePolling()
+    }
 
     // Search each indexer individually to show progress
     const searchPromises = orderedIndexers.map(async (indexer) => {
@@ -755,6 +1073,10 @@ async function search() {
         })
         if (token !== searchToken) return
 
+        // Counted as reported before scoring: the indexer has answered, and holding its row on
+        // "queued" while the scores are computed would misreport what is actually being waited on.
+        reportIndexer(String(indexer.id), 'done', normalized.length)
+
         // Published as this indexer answers, then scored, so the rows are usable — score,
         // blocklist badge and all — before the rest of the indexers have reported.
         if (publishResults(normalized)) {
@@ -762,10 +1084,9 @@ async function search() {
         }
       } catch (error) {
         logger.warn(`Failed to search indexer ${indexer.name}:`, error)
-      } finally {
-        // Counted as reported either way: the progress line tracks indexers finished, not
-        // indexers that found something.
-        if (token === searchToken) searchedIndexers.value++
+        // Reported either way, so one dead indexer cannot leave the progress bar short of the end
+        // forever. It is marked as the failure it was rather than as an empty result.
+        reportIndexer(String(indexer.id), 'failed', 0)
       }
     })
 
@@ -774,7 +1095,14 @@ async function search() {
   } catch (err) {
     console.error('Manual search failed:', err)
   } finally {
-    if (token === searchToken) searching.value = false
+    if (token === searchToken) {
+      searching.value = false
+      // Read off the wall clock rather than the once-a-second tick, which can be up to a second
+      // behind at the moment the search ends.
+      nowMs.value = Date.now()
+      lastSearchSeconds.value = elapsedSeconds.value
+      stopSearchTimers()
+    }
   }
 }
 
@@ -839,6 +1167,56 @@ function buildSearchQuery(): string {
   }
 
   return parts.join(' ')
+}
+
+/**
+ * Everything from the first colon, bracket or dash onward — "A Book: The Subtitle (Unabridged)".
+ * Indexers store release titles, not catalogue titles, and rarely carry any of it, so a query that
+ * includes it is the usual reason a first search comes back with nothing.
+ */
+function stripSubtitle(title: string): string {
+  const [head] = title.split(/[:(\[\]—–]|\s-\s/)
+  return (head ?? title).trim()
+}
+
+/**
+ * One-click narrower queries, offered whenever a search is not running. Every rejected query costs
+ * a torrent slot — a minute or more each — so the cheapest fix is to make the obvious edits
+ * something the user picks rather than types.
+ */
+const querySuggestions = computed<{ label: string; value: string }[]>(() => {
+  const book = props.audiobook
+  if (!book?.title) return []
+
+  const title = book.title.trim()
+  const author = book.authors?.[0]?.trim() ?? ''
+  const short = stripSubtitle(title)
+
+  const candidates = [
+    { label: 'Title + author', value: [title, author].filter(Boolean).join(' ') },
+    { label: 'Short title + author', value: [short, author].filter(Boolean).join(' ') },
+    { label: 'Title only', value: title },
+    { label: 'Short title only', value: short },
+  ]
+
+  // Anything identical to what is already in the box is not a suggestion, and the same value
+  // reached two ways — a title with no subtitle to strip — should only be offered once.
+  const seen = new Set<string>([searchQuery.value.trim()])
+  const suggestions: { label: string; value: string }[] = []
+  for (const candidate of candidates) {
+    if (!candidate.value || seen.has(candidate.value)) continue
+    seen.add(candidate.value)
+    suggestions.push(candidate)
+  }
+  return suggestions
+})
+
+async function applySuggestion(value: string) {
+  searchQuery.value = value
+  // Focus returns to the box rather than running the search: the suggestion is a starting point the
+  // user may still want to edit, and spending a query on it uninvited is the thing being avoided.
+  await nextTick()
+  queryInput.value?.focus()
 }
 
 async function downloadResult(result: SearchResult) {
@@ -1096,18 +1474,153 @@ function getScoreClass(score: number): string {
 }
 
 .search-status {
-  text-align: center;
-  padding: 3rem 2rem;
-  color: var(--brand-500);
-  font-size: 1.1rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
 }
 
-.search-status i {
-  font-size: 3rem;
+.search-status-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.search-status-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--brand-500);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Tabular figures so the seconds do not shuffle the layout as they tick over. */
+.search-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.search-progress-track {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.search-progress-fill {
+  height: 100%;
+  background: var(--brand-500);
+  transition: width 0.3s ease;
+}
+
+.indexer-progress-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.indexer-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.indexer-progress-icon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.indexer-progress.done .indexer-progress-icon {
+  color: var(--success-500, #51cf66);
+}
+
+.indexer-progress.failed .indexer-progress-icon {
+  color: var(--danger-500, #ff6b6b);
+}
+
+.indexer-progress-name {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.indexer-progress-protocol {
+  padding: 0.05rem 0.4rem;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* Pushed to the far edge so the states line up in a readable column. */
+.indexer-progress-state {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.search-pacing-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.search-pacing-note strong {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.search-pacing-queue {
+  display: block;
+}
+
+.query-suggestions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.query-suggestions-label {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.query-chip {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.query-chip:hover {
+  border-color: var(--brand-500);
+  color: var(--text-primary);
+}
+
+.results-duration {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .results-container {
@@ -1257,6 +1770,18 @@ function getScoreClass(score: number): string {
 .no-results .hint {
   font-size: 0.9rem;
   color: #999;
+}
+
+.no-results.pre-search p:not(.hint) {
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+.no-results.pre-search .hint {
+  max-width: 46ch;
+  margin: 0.5rem auto 0;
+  line-height: 1.5;
 }
 
 .results-table-wrapper {

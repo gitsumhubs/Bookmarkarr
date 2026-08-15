@@ -52,6 +52,12 @@ namespace Bookmarkarr.Application.Search.Contracts
         TimeSpan MinimumCooldown { get; }
 
         /// <summary>
+        /// The queue's current state, for showing a person why their search is still running. Read
+        /// only — taking this snapshot never joins a lane or moves anyone's turn along.
+        /// </summary>
+        SearchThrottleSnapshot GetSnapshot();
+
+        /// <summary>
         /// Takes the book lane for the caller's whole search, releasing it on dispose. Releasing
         /// arms the cooldown when the book actually contacted a torrent indexer, so the next book
         /// waits whether this one found something, found nothing, or threw.
