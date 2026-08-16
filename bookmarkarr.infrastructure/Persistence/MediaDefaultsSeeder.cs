@@ -55,6 +55,13 @@ namespace Bookmarkarr.Infrastructure.Persistence
         /// </remarks>
         internal static readonly string[] DefaultBlockedLanguageWords = ["hindi", "arabic", "spanish"];
 
+        /// <summary>
+        /// 5 GB, expressed in megabytes because that is the unit the profile stores.
+        /// Seeding is additive, so this applies to profiles created on a fresh install; an existing
+        /// profile keeps whatever limit its owner already chose.
+        /// </summary>
+        internal const int DefaultMaximumSizeMegabytes = 5 * 1024;
+
         private static string AudiobookRoot =>
             Environment.GetEnvironmentVariable("BOOKMARKARR_AUDIOBOOK_ROOT") ?? "/audiobooks";
 
@@ -159,7 +166,9 @@ namespace Bookmarkarr.Infrastructure.Persistence
             PreferredLanguages = ["English"],
             MustNotContain = [.. DefaultBlockedLanguageWords],
             MinimumSize = 0,
-            MaximumSize = 0,
+            // 5 GB. Not a quality judgement — a guard against the occasional mislabelled release
+            // that is an entire series, or not an audiobook at all. No single title comes close.
+            MaximumSize = DefaultMaximumSizeMegabytes,
             MaximumAge = 0,
             MinimumSeeders = 1,
             MinimumScore = 0,
@@ -192,7 +201,7 @@ namespace Bookmarkarr.Infrastructure.Persistence
             PreferredLanguages = ["English"],
             MustNotContain = [.. DefaultBlockedLanguageWords],
             MinimumSize = 0,
-            MaximumSize = 0,
+            MaximumSize = DefaultMaximumSizeMegabytes,
             MaximumAge = 0,
             MinimumSeeders = 1,
             MinimumScore = 0,

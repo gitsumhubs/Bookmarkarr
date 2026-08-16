@@ -29,7 +29,7 @@ namespace Bookmarkarr.Application.Downloads.Common
     /// - Single point of contact for any download client adapter, no download client adapter detail should be visible behind this
     /// - Persistence: Do not persist anything here, it's up to callers to know what they are doing
     /// </summary>
-    public class DownloadClientGateway(
+    public partial class DownloadClientGateway(
         IRemotePathMappingService remotePathMappingService,
         IDownloadClientAdapterFactory factory,
         IFileSystem fileSystem,
@@ -59,12 +59,27 @@ namespace Bookmarkarr.Application.Downloads.Common
             throw new InvalidOperationException(message);
         }
 
-        public Task<(bool Success, string Message)> TestConnectionAsync(DownloadClientConfiguration client, CancellationToken ct = default)
+        public async Task<(bool Success, string Message)> TestConnectionAsync(DownloadClientConfiguration client, CancellationToken ct = default)
         {
             var adapter = ResolveAdapter(client);
-            return adapter.TestConnectionAsync(client, ct);
-        }
+            var result = await adapter.TestConnectionAsync(client, ct);
+            if (!result.Success)
+            {
+                return result;
+            }
 
+            // Reaching the API is only half of what "working" means. A client that reports host
+            // paths rather than its own container paths answers every request perfectly and still
+            // hands over directories this process cannot open, so a connection-only test passes
+            // while every import from it is guaranteed to fail. Checking the paths here is what
+            // turns that into an answer at the point the user is already asking the question.
+            //
+            // The result stays successful on purpose: the connection genuinely is fine, and the
+            // two concerns should not be collapsed into one boolean. The warning rides along in
+            // the message, which is where the user is already reading.
+            var pathIssue = await DescribeUnreachableClientPathsAsync(client, ct);
+            return pathIssue == null ? result : (result.Success, $"{result.Message} {pathIssue}");
+        }
         public async Task<DownloadClientSubmissionResult> AddAsync(
             DownloadClientConfiguration client,
             PreparedDownloadSubmission submission,
@@ -167,6 +182,8 @@ namespace Bookmarkarr.Application.Downloads.Common
             var tasks = items.Select(item => TranslateQueueItemPathsAsync(client, item));
             items = [.. await Task.WhenAll(tasks)];
 
+            var matchedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             foreach (QueueItem item in items)
             {
                 var download = downloads.FirstOrDefault(d =>
@@ -208,8 +225,11 @@ namespace Bookmarkarr.Application.Downloads.Common
                     isExplicitCompletedState,
                     item.Status);
 
+                matchedIds.Add(item.Id);
                 download = QueueItemConverter.UpdateFromQueueItem(download, item);
             }
+
+            WarnOnUnreportedDownloads(client, ids!, matchedIds, items.Count);
 
             return downloads;
         }

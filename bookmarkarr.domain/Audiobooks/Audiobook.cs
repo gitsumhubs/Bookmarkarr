@@ -80,7 +80,13 @@ namespace Bookmarkarr.Domain.Audiobooks
             get
             {
                 // TODO: Should be put on the set operation with appropriate DB migration to normalize existing data
-                return FileUtils.NormalizeStoredPath(field);
+                //
+                // Blank stays blank. Normalising resolves a relative path against the process working
+                // directory, so an empty or whitespace value came back as the directory Bookmarkarr
+                // happens to be running from — a real path, pointing somewhere arbitrary. That made
+                // "no base path" indistinguishable from a deliberate one to every caller, including
+                // the guards meant to reject it.
+                return string.IsNullOrWhiteSpace(field) ? field : FileUtils.NormalizeStoredPath(field);
             }
             set;
         }

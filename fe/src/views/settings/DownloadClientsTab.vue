@@ -355,24 +355,19 @@ const formatApiError = (error: unknown): string => {
   return 'An unknown error occurred'
 }
 
+/**
+ * Mirrors the server, which resolves a client's mappings with GetByClientIdAsync(client.Id) —
+ * the mapping's own downloadClientId and nothing else.
+ *
+ * This used to filter on a `remotePathMappingIds` list kept in the client's settings, which no
+ * server code has ever read. A mapping that was correctly created and actively being applied
+ * could therefore be missing from this list, which is exactly the wrong direction for a screen
+ * someone opens to find out whether their mapping is working.
+ */
 const getMappingsForClient = (client: DownloadClientConfiguration): RemotePathMapping[] => {
-  const assignedIds = new Set<number>()
-  try {
-    const s = (client as unknown as Record<string, unknown>)?.settings as
-      | Record<string, unknown>
-      | undefined
-    const raw = s?.remotePathMappingIds ?? s?.RemotePathMappingIds
-    if (Array.isArray(raw)) {
-      for (const v of raw) {
-        const n = Number(v)
-        if (!Number.isNaN(n)) assignedIds.add(n)
-      }
-    }
-  } catch {
-    // ignore malformed settings
-  }
-
-  return remotePathMappings.value.filter((m) => assignedIds.has(m.id))
+  return remotePathMappings.value.filter(
+    (m) => String(m.downloadClientId) === String(client.id),
+  )
 }
 
 const toggleDownloadClientFunc = async (client: DownloadClientConfiguration) => {
@@ -518,34 +513,9 @@ const handleSaveMapping = async (
       const created = await createRemotePathMapping(mappingData)
       remotePathMappings.value.push(created)
 
-      // Automatically assign the new mapping to the selected download client
-      if (mappingData.downloadClientId) {
-        const selectedClient = configStore.downloadClientConfigurations.find(
-          (c) => c.id === mappingData.downloadClientId,
-        )
-        if (selectedClient) {
-          const updatedClient = { ...selectedClient }
-          if (!updatedClient.settings.remotePathMappingIds) {
-            updatedClient.settings.remotePathMappingIds = []
-          }
-          if (!updatedClient.settings.remotePathMappingIds.includes(created.id)) {
-            updatedClient.settings.remotePathMappingIds.push(created.id)
-            const clientIndex = configStore.downloadClientConfigurations.findIndex(
-              (c) => c.id === mappingData.downloadClientId,
-            )
-            if (clientIndex !== -1) {
-              configStore.downloadClientConfigurations[clientIndex] = updatedClient
-            }
-            configStore.saveDownloadClientConfiguration(updatedClient).catch((err) => {
-              errorTracking.captureException(err as Error, {
-                component: 'DownloadClientsTab',
-                operation: 'saveClientConfig',
-              })
-              configStore.loadDownloadClientConfigurations()
-            })
-          }
-        }
-      }
+      // No follow-up write is needed: the mapping carries its own downloadClientId, which is the
+      // only thing the server consults. This used to also push the new id into the client's
+      // settings, saving a second record that nothing has ever read.
 
       toast.success('Remote path mapping', 'Remote path mapping created')
     }

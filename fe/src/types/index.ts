@@ -274,8 +274,9 @@ export interface DownloadClientSettings {
   sequentialOrder?: boolean
   firstAndLastFirst?: boolean
   contentLayout?: string
-  // Optional mapping to one or more remote path mapping IDs
-  remotePathMappingIds?: number[]
+  // No remotePathMappingIds here: a mapping is bound to its client by the mapping's own
+  // downloadClientId, which is the only association the server reads. Existing rows may still
+  // carry the old key, which the index signature below tolerates.
   [key: string]: unknown
 }
 

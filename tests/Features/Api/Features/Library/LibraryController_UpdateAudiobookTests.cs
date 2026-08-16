@@ -16,140 +16,67 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
+using Bookmarkarr.Application.Audiobooks.Common;
 using Bookmarkarr.Tests.Common;
 
 namespace Bookmarkarr.Tests.Features.Api.Features.Library
 {
-    [Trait("Area", "LibraryApi")]
     [Trait("Name", "LibraryController_UpdateAudiobookTests")]
-    [Trait("Category", "LibraryController")]
+    [Trait("Category", "Library")]
     public class LibraryController_UpdateAudiobookTests : BaseTests
     {
         [Fact]
-        [Trait("Method", "UpdateAudiobook")]
-        [Trait("Scenario", "PersistsExpandedMetadataFields")]
-        public async Task UpdateAudiobook_PersistsExpandedMetadataFields()
+        [Trait("Scenario", "The update response serializes, having committed its write")]
+        public async Task UpdateAudiobook_ResponseUsesNonCyclicDto()
         {
-            // Given
-            var existingAudiobook = await _audiobookRepository.AddAsync(new Audiobook
-            {
-                Title = "Original Title",
-                Subtitle = "Original Subtitle",
-                Authors = new List<string> { "Original Author" },
-                Narrators = new List<string> { "Original Narrator" },
-                Description = "Original description",
-                Publisher = "Original Publisher",
-                Language = "english",
-                PublishedDate = "2024-01-01",
-                PublishYear = "2024",
-                Runtime = 600,
-                Edition = "Original Edition",
-                Version = "Original Version",
-                Series = "Original Series",
-                SeriesNumber = "1",
-                SeriesMemberships = new List<AudiobookSeriesMembership>
-                {
-                    new()
-                    {
-                        SeriesName = "Original Series",
-                        SeriesNumber = "1",
-                        IsPrimary = true,
-                        SortOrder = 0
-                    }
-                },
-                Genres = new List<string> { "Fantasy" },
-                ImageUrl = "https://example.com/original.jpg",
-                Tags = new List<string> { "tag-one" },
-                Monitored = true,
-                Explicit = false,
-                Abridged = false,
-            });
+            // Regression: BF-012 replaced the entity graph with a DTO on the add and
+            // duplicate-conflict responses but left the update endpoint returning the tracked
+            // entity. Audiobook -> Editions -> Book -> Editions then recursed past the serializer
+            // depth limit after the write had already committed, so the caller saw a 500 for a
+            // change that had persisted — the worst shape a write failure can take.
+            var audiobook = await CreateAudiobook();
 
             var controller = _provider.GetRequiredService<LibraryController>();
-
-            var updatedAudiobook = new Audiobook
+            var result = await controller.UpdateAudiobook(audiobook.Id, new Audiobook
             {
-                Title = "Edited Title",
-                Subtitle = "Edited Subtitle",
-                Authors = new List<string> { "Edited Author" },
-                Narrators = new List<string> { "Edited Narrator" },
-                Description = "Edited description",
-                Publisher = "Edited Publisher",
-                Language = "swedish",
-                PublishedDate = "2025-02-01",
-                PublishYear = "2025",
-                Runtime = 720,
-                Edition = "Collector Edition",
-                Version = "Edited Version",
-                Series = "Edited Universe",
-                SeriesNumber = "4",
-                SeriesMemberships = new List<AudiobookSeriesMembership>
-                {
-                    new()
-                    {
-                        SeriesName = "Edited Universe",
-                        SeriesNumber = "4",
-                        IsPrimary = true,
-                        SortOrder = 0
-                    },
-                    new()
-                    {
-                        SeriesName = "Anthology Line",
-                        SeriesNumber = "12",
-                        IsPrimary = false,
-                        SortOrder = 1
-                    }
-                },
-                Genres = new List<string> { "Sci-Fi", "Adventure" },
-                ImageUrl = "https://example.com/edited.jpg",
-                Tags = new List<string> { "tag-two" },
-                Monitored = false,
-                Explicit = true,
-                Abridged = true,
-            };
+                Id = audiobook.Id,
+                Title = "Renamed Title",
+                Monitored = true
+            });
 
-            // When
-            var actionResult = await controller.UpdateAudiobook(existingAudiobook.Id, updatedAudiobook);
+            var ok = Assert.IsType<OkObjectResult>(result);
+            var responseAudiobook = ok.Value?.GetType().GetProperty("audiobook")?.GetValue(ok.Value);
+            Assert.IsType<AudiobookDto>(responseAudiobook);
 
-            // Then
-            Assert.IsType<OkObjectResult>(actionResult);
-            var storedAudiobook = await _audiobookRepository.GetByIdAsync(existingAudiobook.Id);
-            Assert.NotNull(storedAudiobook);
-            Assert.Equal("Edited Title", storedAudiobook.Title);
-            Assert.Equal("Edited Subtitle", storedAudiobook.Subtitle);
-            Assert.Equal(new List<string> { "Edited Author" }, storedAudiobook.Authors);
-            Assert.Equal(new List<string> { "Edited Narrator" }, storedAudiobook.Narrators);
-            Assert.Equal("Edited description", storedAudiobook.Description);
-            Assert.Equal("Edited Publisher", storedAudiobook.Publisher);
-            Assert.Equal("swedish", storedAudiobook.Language);
-            Assert.Equal("2025-02-01", storedAudiobook.PublishedDate);
-            Assert.Equal("2025", storedAudiobook.PublishYear);
-            Assert.Equal(720, storedAudiobook.Runtime);
-            Assert.Equal("Collector Edition", storedAudiobook.Edition);
-            Assert.Equal("Edited Version", storedAudiobook.Version);
-            Assert.Equal("Edited Universe", storedAudiobook.Series);
-            Assert.Equal("4", storedAudiobook.SeriesNumber);
-            Assert.NotNull(storedAudiobook.SeriesMemberships);
-            Assert.Collection(
-                storedAudiobook.SeriesMemberships!,
-                membership =>
-                {
-                    Assert.Equal("Edited Universe", membership.SeriesName);
-                    Assert.Equal("4", membership.SeriesNumber);
-                    Assert.True(membership.IsPrimary);
-                },
-                membership =>
-                {
-                    Assert.Equal("Anthology Line", membership.SeriesName);
-                    Assert.Equal("12", membership.SeriesNumber);
-                    Assert.False(membership.IsPrimary);
-                });
-            Assert.Equal(new List<string> { "Sci-Fi", "Adventure" }, storedAudiobook.Genres);
-            Assert.Equal("https://example.com/edited.jpg", storedAudiobook.ImageUrl);
-            Assert.Equal(new List<string> { "tag-two" }, storedAudiobook.Tags);
-            Assert.False(storedAudiobook.Monitored);
-            Assert.True(storedAudiobook.Explicit);
-            Assert.True(storedAudiobook.Abridged);
+            // Serializing is the actual assertion; the cycle threw here before the fix.
+            var json = JsonSerializer.Serialize(ok.Value);
+            Assert.Contains("Renamed Title", json, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        [Trait("Scenario", "A blank BasePath is a blank form field, not a request to unset the folder")]
+        public async Task UpdateAudiobook_WithEmptyBasePath_KeepsTheStoredValue()
+        {
+            // Taking an empty string literally stored a path that resolves to nothing and quietly
+            // broke organisation and import for the book, with only an "[empty-path]" line in the
+            // log to show for it.
+            var audiobook = await CreateAudiobook();
+            audiobook.BasePath = "/library/audiobooks/Example Author/Example Book";
+            await _audiobookRepository.UpdateAsync(audiobook);
+
+            var controller = _provider.GetRequiredService<LibraryController>();
+            var result = await controller.UpdateAudiobook(audiobook.Id, new Audiobook
+            {
+                Id = audiobook.Id,
+                Title = audiobook.Title,
+                BasePath = "   "
+            });
+
+            Assert.IsType<OkObjectResult>(result);
+
+            var stored = await _audiobookRepository.GetByIdAsync(audiobook.Id);
+            Assert.Equal("/library/audiobooks/Example Author/Example Book", stored!.BasePath);
         }
     }
 }

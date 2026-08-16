@@ -53,13 +53,18 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.DownloadClients.Sabnzbd
             Assert.True(success);
             Assert.Contains("connected", message, StringComparison.OrdinalIgnoreCase);
 
-            var capturedUri = apiMock.GetLastRequest().RequestUri;
+            // A successful test also verifies the client's reported paths, so the version probe is
+            // no longer the last request on the wire. Assert against the probe itself rather than
+            // whatever happens to be last, so this keeps testing host normalisation and nothing else.
+            var capturedUri = Assert.Single(
+                apiMock.RequestHistory,
+                request => request.RequestUri.Query.Contains("mode=version", StringComparison.Ordinal))
+                .RequestUri;
             Assert.NotNull(capturedUri);
             Assert.Equal("http", capturedUri!.Scheme);
             Assert.Equal("192.168.50.111", capturedUri.Host);
             Assert.Equal(8080, capturedUri.Port);
             Assert.Equal("/api", capturedUri.AbsolutePath);
-            Assert.Contains("mode=version", capturedUri.Query, StringComparison.Ordinal);
             Assert.Contains("output=json", capturedUri.Query, StringComparison.Ordinal);
         }
 

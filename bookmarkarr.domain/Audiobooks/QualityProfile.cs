@@ -49,9 +49,13 @@ namespace Bookmarkarr.Domain.Audiobooks
         public int MinimumSize { get; set; } = 0;
 
         /// <summary>
-        /// Maximum file size in MB (0 = no maximum)
+        /// Maximum file size in MB (0 = no maximum).
+        ///
+        /// Defaults to 5 GB so a new profile starts with a guard against the occasional mislabelled
+        /// release that turns out to be a whole series, or not a book at all. No single title comes
+        /// near it, so it rejects nothing anyone actually wanted.
         /// </summary>
-        public int MaximumSize { get; set; } = 0;
+        public int MaximumSize { get; set; } = 5 * 1024;
 
         /// <summary>
         /// Preferred file formats in order of preference

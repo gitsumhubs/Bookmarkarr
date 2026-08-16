@@ -306,7 +306,7 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
                     if (files.Count == 0 || !hasPrimaryFile || missingPrimaryFiles.Count > 0)
                     {
                         var reason = files.Count == 0
-                            ? "No importable files found"
+                            ? DescribeMissingSourceFiles(queueItem.SourceFiles)
                             : missingPrimaryFiles.Count > 0
                                 ? $"{(isEbook ? "Ebook" : "Audio")} or archive files reported by the download client are missing on disk"
                                 : $"No {(isEbook ? "ebook" : "audio")} or archive files found on disk";
@@ -494,6 +494,5 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
             await CompleteImportAsync(scope.ServiceProvider, scanQueueService, job, downloadProcessingJobService,
                 historyRepository, download, audiobook, client, correlationId, isDirectDownload, isEbook, cancellationToken);
         }
-
     }
 }

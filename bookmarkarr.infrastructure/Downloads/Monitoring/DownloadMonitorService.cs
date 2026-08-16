@@ -70,7 +70,7 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
         }
     }
 
-    public class DownloadMonitorProcessor(
+    public partial class DownloadMonitorProcessor(
         IServiceScopeFactory scopeFactory,
         IDownloadPushService downloadPushService,
         TimeProvider timeProvider,
@@ -231,8 +231,12 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
                     foreach (Download download in updatedDownloads)
                     {
                         var downloadService = scope.ServiceProvider.GetRequiredService<IDownloadService>();
-                        await downloadService.UpdateAsync(download);
                         var previousDownload = previousDownloads.FirstOrDefault(d => d.Id == download.Id);
+
+                        // Recorded before the save so the stall bookkeeping persists with the row.
+                        TrackProgressStall(client, download, previousDownload);
+
+                        await downloadService.UpdateAsync(download);
                         if (previousDownload == null)
                         {
                             continue;

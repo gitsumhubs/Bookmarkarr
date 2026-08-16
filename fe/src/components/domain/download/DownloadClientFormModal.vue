@@ -312,18 +312,31 @@
             </div>
           </FormSection>
 
-          <!-- Remote Path Mappings (only for existing clients) -->
+          <!--
+            Mappings belong to the client that owns them, so this is a read-out and not a picker.
+            It used to be a multi-select whose help text promised "if none selected, no mapping
+            will be applied" — the exact opposite of what happens. Every mapping created against
+            this client applies to it, selected or not, so a correct mapping looked inert here and
+            invited the reader to go hunting for a setting that was never the problem.
+          -->
           <FormSection title="Remote Path Mappings" :icon="PhFolder" v-if="editingClient?.id">
             <div class="form-group">
-              <label for="remoteMappings">Select Remote Path Mappings</label>
-              <select id="remoteMappings" v-model="formData.remotePathMappingIds" multiple size="5">
-                <option v-for="m in remotePathMappings" :key="m.id" :value="m.id">
-                  {{ m.name }} — {{ m.remotePath }}
-                </option>
-              </select>
+              <label>Mappings applied to this client</label>
+              <ul v-if="mappingsForClient.length" class="mapping-readout">
+                <li v-for="m in mappingsForClient" :key="m.id">
+                  <span class="mapping-name">{{ m.name }}</span>
+                  <code>{{ m.remotePath }}</code>
+                  <PhArrowRight :size="12" />
+                  <code>{{ m.localPath }}</code>
+                </li>
+              </ul>
+              <p v-else class="mapping-readout-empty">
+                No remote path mappings apply to this client. Add one if this client reports paths
+                that differ from the ones Bookmarkarr can open.
+              </p>
               <small
-                >Choose one or more remote path mappings to apply for this download client (Shift +
-                Click to select multiple). If none selected, no mapping will be applied.</small
+                >Every mapping created for this client is applied automatically. Manage them under
+                Settings → Download Clients → Remote Path Mappings.</small
               >
             </div>
           </FormSection>
@@ -373,6 +386,7 @@ import {
   PhWrench,
   PhFolder,
   PhToggleRight,
+  PhArrowRight,
 } from '@phosphor-icons/vue'
 import Checkbox from '@/components/form/Checkbox.vue'
 import FormSection from '@/components/settings/FormSection.vue'
@@ -426,12 +440,18 @@ const defaultFormData = {
   contentLayout: 'default',
   urlBase: '',
   settings: {},
-  remotePathMappingIds: [] as number[],
 }
 
 const formData = ref({ ...defaultFormData })
 
 const remotePathMappings = ref<RemotePathMapping[]>([])
+
+/** Mirrors the server, which resolves mappings by the mapping's own downloadClientId. */
+const mappingsForClient = computed(() => {
+  const clientId = props.editingClient?.id
+  if (!clientId) return []
+  return remotePathMappings.value.filter((m) => String(m.downloadClientId) === String(clientId))
+})
 
 const loadRemotePathMappings = async () => {
   try {
@@ -554,10 +574,8 @@ watch(
         contentLayout: (settings?.contentLayout as string) || 'default',
         urlBase: (settings?.urlBase as string) || '',
         settings: newClient.settings || {},
-        remotePathMappingIds:
-          settings && settings.remotePathMappingIds ? settings.remotePathMappingIds : [],
       }
-      // Load available mappings when editing a client so the dropdown can show options
+      // Loaded so the section can read out which mappings already apply to this client.
       void loadRemotePathMappings()
     } else {
       formData.value = { ...defaultFormData }
@@ -606,9 +624,6 @@ const testConnection = async () => {
         sequentialOrder: formData.value.sequentialOrder,
         firstAndLastFirst: formData.value.firstAndLastFirst,
         contentLayout: formData.value.contentLayout,
-        ...(formData.value.remotePathMappingIds && formData.value.remotePathMappingIds.length > 0
-          ? { remotePathMappingIds: formData.value.remotePathMappingIds }
-          : {}),
       },
     }
 
@@ -666,9 +681,6 @@ const handleSubmit = async () => {
         sequentialOrder: formData.value.sequentialOrder,
         firstAndLastFirst: formData.value.firstAndLastFirst,
         contentLayout: formData.value.contentLayout,
-        ...(formData.value.remotePathMappingIds && formData.value.remotePathMappingIds.length > 0
-          ? { remotePathMappingIds: formData.value.remotePathMappingIds }
-          : {}),
       },
     }
 
@@ -761,6 +773,44 @@ const handleDelete = () => {
   display: block;
   margin-top: 0.5rem;
   color: #999;
+  font-size: 0.85rem;
+}
+
+.mapping-readout {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.mapping-readout li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--btn-radius, 8px);
+  background: var(--muted-bg);
+  font-size: 0.85rem;
+}
+
+.mapping-readout .mapping-name {
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+
+.mapping-readout code {
+  /* Paths are the point of this readout, so let them wrap rather than clip. */
+  overflow-wrap: anywhere;
+  font-size: 0.8rem;
+}
+
+.mapping-readout-empty {
+  margin: 0;
+  color: var(--text-muted);
   font-size: 0.85rem;
 }
 

@@ -87,12 +87,39 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Common
 
         [Fact]
         [Trait("Method", "TestConnectionAsync")]
-        [Trait("Scenario", "Check that the selected mock is the right one and also TestConnectionAsync")]
+        [Trait("Scenario", "A reachable client whose reported paths all resolve passes and keeps the adapter's message")]
         public async Task TestConnectionAsync()
         {
+            // The mock reports two content paths that map under localPath; create them so the
+            // gateway's path verification has something real to find.
+            Directory.CreateDirectory(Path.Combine(localPath, "random title"));
+            Directory.CreateDirectory(Path.Combine(localPath, "random title two"));
+
             var (success, message) = await downloadClientGateway.TestConnectionAsync(client);
             Assert.True(success);
             Assert.Equal("mock", message);
+        }
+
+        [Fact]
+        [Trait("Method", "TestConnectionAsync")]
+        [Trait("Scenario", "A reachable client whose reported paths do not exist still passes, but says so")]
+        public async Task TestConnectionAsync_WarnsWhenNoReportedPathIsReachable()
+        {
+            // Regression: a client can answer every API call perfectly and still hand over
+            // directories this process cannot open — RDT Client reporting host paths rather than
+            // its own container paths is the case this was written for. A connection-only test
+            // said nothing while every import from that client was guaranteed to fail, which sent
+            // the reader looking at the import code instead of at the path mapping.
+            //
+            // The connection is genuinely fine, so Success stays true; the message is what has to
+            // carry the problem.
+            //
+            // localPath is deliberately not created here, so nothing the mock reports resolves.
+            var (success, message) = await downloadClientGateway.TestConnectionAsync(client);
+
+            Assert.True(success);
+            Assert.Contains("mock", message, StringComparison.Ordinal);
+            Assert.Contains("Remote Path Mapping", message, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]

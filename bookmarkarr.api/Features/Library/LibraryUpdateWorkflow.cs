@@ -16,6 +16,7 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+using Bookmarkarr.Application.Mapping;
 using Bookmarkarr.Domain.Common;
 using Microsoft.AspNetCore.Mvc;
 
@@ -93,10 +94,25 @@ namespace Bookmarkarr.Api.Features.Library
 
             await ApplyQualityProfileAsync(existingAudiobook, updatedAudiobook);
 
+            // An empty BasePath is a blank form field, not a request to unset the folder this
+            // audiobook lives in. Taking it literally stores a path that resolves to nothing and
+            // quietly breaks organisation and import for the book, so treat it as "not supplied"
+            // and say so rather than accepting it in silence.
             if (updatedAudiobook.BasePath != null)
             {
-                existingAudiobook.BasePath = FileUtils.NormalizeStoredPath(updatedAudiobook.BasePath);
-                _logger.LogInformation("Updated BasePath for audiobook '{Title}' to: {BasePath}", LogRedaction.SanitizeText(existingAudiobook.Title), LogRedaction.SanitizeFilePath(updatedAudiobook.BasePath));
+                if (string.IsNullOrWhiteSpace(updatedAudiobook.BasePath))
+                {
+                    _logger.LogWarning(
+                        "Ignoring empty BasePath for audiobook '{Title}' (ID: {Id}); the existing value was kept. " +
+                        "Send a non-empty path to change it.",
+                        LogRedaction.SanitizeText(existingAudiobook.Title),
+                        id);
+                }
+                else
+                {
+                    existingAudiobook.BasePath = FileUtils.NormalizeStoredPath(updatedAudiobook.BasePath);
+                    _logger.LogInformation("Updated BasePath for audiobook '{Title}' to: {BasePath}", LogRedaction.SanitizeText(existingAudiobook.Title), LogRedaction.SanitizeFilePath(updatedAudiobook.BasePath));
+                }
             }
 
             if (legacyIdentifierFieldsTouched)
@@ -108,7 +124,11 @@ namespace Bookmarkarr.Api.Features.Library
 
             _logger.LogInformation("Updated audiobook '{Title}' (ID: {Id})", LogRedaction.SanitizeText(existingAudiobook.Title), id);
 
-            return new OkObjectResult(new { message = "Audiobook updated successfully", audiobook = existingAudiobook });
+            // Serialising the entity walks Audiobook -> Editions -> Book -> Editions and dies on the
+            // serializer's depth limit, so the write commits and the caller still sees a 500 for a
+            // change that actually persisted. Every other library endpoint already answers with the
+            // DTO; this one was the outlier.
+            return new OkObjectResult(new { message = "Audiobook updated successfully", audiobook = AudiobookDtoFactory.BuildFromEntity(existingAudiobook) });
         }
 
         private static void ApplySeriesMembershipUpdates(Audiobook existingAudiobook, Audiobook updatedAudiobook)

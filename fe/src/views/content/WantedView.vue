@@ -77,7 +77,7 @@
           <span
             class="resize-handle"
             :class="{ active: resizingColumn === column.key }"
-            title="Drag to resize, double-click to reset"
+            v-tooltip="'Drag to resize, double-click to reset'"
             @pointerdown="startResize(column.key, $event)"
             @dblclick="resetWidths"
           />
@@ -110,7 +110,7 @@
             </div>
             <div class="col-title">
               <div class="title-cell">
-                <span v-if="hasActiveDownload(item)" class="download-indicator" title="Downloading">
+                <span v-if="hasActiveDownload(item)" class="download-indicator" v-tooltip="'Downloading'">
                   <PhDownloadSimple :size="14" weight="fill" />
                 </span>
                 <RouterLink :to="`/audiobooks/${item.id}`" class="title-link">{{
@@ -162,7 +162,7 @@
                   class="btn-icon rename-toggle"
                   :class="{ 'is-active': isRenameOverridden(item) }"
                   :disabled="renameSaving[item.wantedKey]"
-                  :title="renameToggleTitle(item)"
+                  v-tooltip="renameToggleTitle(item)"
                   :aria-label="renameToggleTitle(item)"
                   :aria-pressed="isRenameOverridden(item)"
                   @click="toggleRenameOverride(item, !isRenameOverridden(item))"
@@ -174,18 +174,25 @@
                   class="btn-icon"
                   @click="searchAudiobook(item)"
                   :disabled="searching[item.wantedKey]"
-                  title="Automatic Search"
+                  v-tooltip="'Automatic Search'"
+                  aria-label="Automatic Search"
                 >
                   <PhRobot />
                 </button>
-                <button class="btn-icon" @click="openManualSearch(item)" :title="item.wantedEdition?.mediaType === 'Ebook' ? 'Search ebook releases' : 'Manual Search'">
+                <button
+                  class="btn-icon"
+                  @click="openManualSearch(item)"
+                  v-tooltip="item.wantedEdition?.mediaType === 'Ebook' ? 'Search ebook releases' : 'Manual Search'"
+                  :aria-label="item.wantedEdition?.mediaType === 'Ebook' ? 'Search ebook releases' : 'Manual Search'"
+                >
                   <PhMagnifyingGlass />
                 </button>
                 <button
                   class="btn-icon btn-danger-icon"
                   @click="markAsSkipped(item)"
                   :disabled="searching[item.wantedKey]"
-                  title="Unmonitor edition"
+                  v-tooltip="'Unmonitor edition'"
+                  aria-label="Unmonitor edition"
                 >
                   <PhX />
                 </button>

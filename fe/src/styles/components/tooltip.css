@@ -1,0 +1,49 @@
+/*
+ * Anchored tooltip rendered by the v-tooltip directive.
+ *
+ * Positioned in viewport coordinates by the directive, so `position: fixed` here is load-bearing —
+ * the top/left it writes are already viewport-relative and must not be re-based on a scroll
+ * container. Colours come from the shared tokens, which the dark-scheme block already overrides,
+ * so this needs no theme rules of its own.
+ */
+
+.bmk-tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2147483000;
+
+  max-width: min(320px, calc(100vw - 2rem));
+  padding: 0.5rem 0.625rem;
+
+  border: 1px solid var(--border-color);
+  border-radius: var(--btn-radius, 8px);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-lg);
+
+  color: var(--text-color);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+
+  opacity: 0;
+  visibility: hidden;
+  /* Never let the tooltip itself take the pointer — it would steal the mouseleave that hides it. */
+  pointer-events: none;
+  transition:
+    opacity 120ms ease,
+    visibility 120ms ease;
+}
+
+.bmk-tooltip.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bmk-tooltip {
+    transition: none;
+  }
+}

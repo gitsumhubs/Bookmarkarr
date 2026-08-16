@@ -92,13 +92,17 @@ namespace Bookmarkarr.Application.Search.Scoring
             // Size checks (skip for NZB)
             if (!isNzb && searchResult.Size > 0)
             {
-                if (profile.MinimumSize > 0 && searchResult.Size < profile.MinimumSize * 1024 * 1024)
+                // The casts are load-bearing. MinimumSize/MaximumSize are megabytes held in an int,
+                // so the byte conversion overflowed for any limit above 2047 MB and wrapped to a
+                // negative number — at which point every release is "larger than the maximum" and
+                // the profile silently rejects everything it is asked to score.
+                if (profile.MinimumSize > 0 && searchResult.Size < (long)profile.MinimumSize * 1024 * 1024)
                 {
                     score.RejectionReasons.Add($"File too small (< {profile.MinimumSize} MB)");
                     score.TotalScore = -1;
                     return score;
                 }
-                if (profile.MaximumSize > 0 && searchResult.Size > profile.MaximumSize * 1024 * 1024)
+                if (profile.MaximumSize > 0 && searchResult.Size > (long)profile.MaximumSize * 1024 * 1024)
                 {
                     score.RejectionReasons.Add($"File too large (> {profile.MaximumSize} MB)");
                     score.TotalScore = -1;

@@ -89,13 +89,18 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.DownloadClients.Qbittorrent
 
             Assert.True(success);
             Assert.Contains("Successfully connected to qBittorrent", message, StringComparison.OrdinalIgnoreCase);
-            Assert.NotNull(mock.GetLastRequest());
 
-            var uri = mock.GetLastRequest().RequestUri;
+            // A successful test also verifies the client's reported paths, so the version probe is
+            // no longer the last request on the wire. Assert against the probe itself rather than
+            // whatever happens to be last, so this keeps testing host normalisation and nothing else.
+            var versionProbes = mock.RequestHistory
+                .Where(request => request.RequestUri.AbsolutePath == "/api/v2/app/version")
+                .ToList();
+            Assert.NotEmpty(versionProbes);
+            var uri = versionProbes[0].RequestUri;
             Assert.Equal("http", uri.Scheme);
             Assert.Equal("192.168.50.111", uri.Host);
             Assert.Equal(8080, uri.Port);
-            Assert.Equal("/api/v2/app/version", uri.AbsolutePath);
         }
 
         [Fact]

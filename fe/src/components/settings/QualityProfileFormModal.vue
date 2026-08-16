@@ -791,7 +791,9 @@ const formData = ref<QualityProfile>({
   qualities: [],
   cutoffQuality: '',
   minimumSize: undefined,
-  maximumSize: undefined,
+  // 5 GB, matching the server-side default for a new profile. A guard against a mislabelled
+  // release that is a whole series rather than one title, not a quality judgement.
+  maximumSize: 5 * 1024,
   preferredFormats: [],
   preferredWords: [],
   mustNotContain: [],

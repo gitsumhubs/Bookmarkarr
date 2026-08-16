@@ -22,6 +22,7 @@ import './assets/main.css'
 import '@/styles/global.css'
 // Consolidated view styles (buttons, badges, forms, layout utilities)
 import '@/styles/views/addnew-consolidated.css'
+import '@/styles/components/tooltip.css'
 import '@/styles/appearance.css'
 // Restore legacy Phosphor CSS classes (e.g. <i class="ph ph-grid-four">)
 // This provides the `.ph` + `.ph-<name>` mappings that many templates use.
@@ -38,11 +39,16 @@ import { useToast } from './services/toastService'
 import { errorTracking } from './services/errorTracking'
 import { apiService } from '@/services/api'
 import { initAppearance } from '@/services/appearance'
+import { vTooltip } from '@/directives/tooltip'
 
 // Apply persisted appearance before Vue mounts to avoid a light/dark flash.
 initAppearance()
 
 const app = createApp(App)
+
+// Anchored tooltips: `title` renders at the pointer, so a large cursor covers it and no styling
+// can move it. See fe/src/directives/tooltip.ts.
+app.directive('tooltip', vTooltip)
 
 // Global error handler - prevents white screen of death
 app.config.errorHandler = (err, instance, info) => {
