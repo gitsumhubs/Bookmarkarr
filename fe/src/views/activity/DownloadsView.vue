@@ -92,7 +92,7 @@
             <div
               v-for="download in visibleDownloads"
               :key="download.id"
-              v-memo="[download.id, download.status, download.progress]"
+              v-memo="[download.id, download.status, download.progress, download.isStalled]"
               class="download-card"
             >
               <div class="download-info">
@@ -110,6 +110,16 @@
               <div class="download-status-section">
                 <div class="download-status" :class="download.status.toLowerCase()">
                   {{ download.status }}
+                </div>
+
+                <!-- Alongside the status rather than replacing it: the download really is still
+                     downloading as far as the client is concerned, it just is not moving. -->
+                <div
+                  v-if="download.isStalled"
+                  class="download-stalled"
+                  :title="stalledTitle(download)"
+                >
+                  Stalled
                 </div>
 
                 <div v-if="download.status === 'Downloading'" class="download-progress">
@@ -373,6 +383,29 @@ const formatDate = (dateString: string): string => {
   return new Date(dateString).toLocaleDateString() + ' ' + new Date(dateString).toLocaleTimeString()
 }
 
+/**
+ * Says how long the download has been going nowhere, so the badge is a fact rather than a mood.
+ * The backend already stores the moment it last moved; falling back to the bare label keeps the
+ * badge useful on a row whose clock has not been written yet.
+ */
+const stalledTitle = (download: Download): string => {
+  const changedAt = download.metadata?.['StateChangedAt']
+  if (typeof changedAt !== 'string') {
+    return 'The download client reports this as stalled'
+  }
+
+  const since = new Date(changedAt).getTime()
+  if (Number.isNaN(since)) {
+    return 'The download client reports this as stalled'
+  }
+
+  const hours = (Date.now() - since) / 3_600_000
+  const elapsed =
+    hours < 1 ? `${Math.max(1, Math.round(hours * 60))} minutes` : `${hours.toFixed(1)} hours`
+
+  return `No progress for ${elapsed}. Bookmarkarr gives up on a stalled download after 6 hours and searches again.`
+}
+
 onMounted(async () => {
   updateDownloadsLayoutMode()
   if (typeof window !== 'undefined') {
@@ -602,6 +635,22 @@ onBeforeUnmount(() => {
 .download-status.ready {
   background-color: #27ae60;
   color: white;
+}
+
+/* Outlined rather than filled, so it reads as a qualifier on the status beside it rather than
+   competing with it for the same job. Amber: something to look at, not yet something that failed. */
+.download-stalled {
+  display: inline-block;
+  padding: 0.4rem 0.85rem;
+  margin-left: 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid #f39c12;
+  border-radius: 6px;
+  color: #f39c12;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: help;
 }
 
 /* ProgressBar component styling is now in ProgressBar.vue */

@@ -28,17 +28,27 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
         internal static readonly TimeSpan StallWarningThreshold = TimeSpan.FromHours(6);
 
         internal const string StallFingerprintKey = "StallFingerprint";
-        internal const string StateChangedAtKey = "StateChangedAt";
+        internal const string StateChangedAtKey = DownloadStallState.StateChangedAtKey;
         internal const string StallWarnedAtKey = "StallWarnedAt";
 
         /// <summary>
-        /// Notices a download whose state has stopped moving.
+        /// Notices a download whose state has stopped moving, and gives up on one the client has
+        /// been calling stalled for hours.
         ///
         /// Every individual poll of a stuck download looks perfectly healthy — a status, a progress
         /// figure, no error — so nothing in the log ever says a transfer has gone nowhere for days.
         /// That silence is how a whole queue can sit at the same status indefinitely while the app
         /// reports no problem at all. Comparing each poll against the last state that actually
         /// differed turns "not moving" into something the log can say out loud.
+        ///
+        /// Reporting it was never enough on its own, though. An active download suppresses
+        /// automatic search for its book, so a torrent with no seeds does not merely sit there —
+        /// it holds the book hostage, and no amount of warning in the log releases it. Past
+        /// <see cref="DownloadStallState.AbandonThreshold"/> the download is failed outright, which
+        /// hands it to machinery that already exists: the failure counts a strike toward the
+        /// blocklist, a second strike bars that release from being grabbed again, the book's search
+        /// window is cleared, and the next pass picks the next best candidate. Nothing here needs
+        /// to know about any of that; it only has to stop pretending the download is alive.
         ///
         /// The bookkeeping lives in metadata rather than a column so this needs no migration, and
         /// the warning repeats on the same interval so a long stall stays visible without filling
@@ -48,13 +58,7 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
         {
             // Import-owned and finished states are not "stalled" in any sense the user can act on;
             // their progress is deliberately frozen while another worker owns them.
-            if (current.Status is DownloadStatus.Completed
-                or DownloadStatus.Moved
-                or DownloadStatus.Failed
-                or DownloadStatus.Processing
-                or DownloadStatus.ImportPending
-                or DownloadStatus.ImportBlocked
-                or DownloadStatus.ImportNameMismatch)
+            if (!DownloadStallState.CanStall(current.Status))
             {
                 return;
             }
@@ -70,7 +74,7 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
                 return;
             }
 
-            if (!TryReadTimestamp(current, StateChangedAtKey, out var changedAt))
+            if (DownloadStallState.UnchangedFor(current, now) is not TimeSpan stalledFor)
             {
                 // First poll after this code shipped, or a hand-edited row: start the clock now
                 // rather than reporting a stall we have no evidence for.
@@ -78,13 +82,22 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
                 return;
             }
 
-            var stalledFor = now - changedAt;
+            // Checked before the warning threshold rather than under it, so the two durations stay
+            // independent of each other and abandoning is never gated on a warning having fired.
+            if (stalledFor >= DownloadStallState.AbandonThreshold
+                && DownloadStallState.IsClientReportingStall(current.GetMetadataString(DownloadStallState.ClientStateKey)))
+            {
+                AbandonStalledDownload(client, current, stalledFor);
+                return;
+            }
+
             if (stalledFor < StallWarningThreshold)
             {
                 return;
             }
 
-            if (TryReadTimestamp(current, StallWarnedAtKey, out var warnedAt) && now - warnedAt < StallWarningThreshold)
+            if (DownloadStallState.TryReadTimestamp(current, StallWarnedAtKey, out var warnedAt)
+                && now - warnedAt < StallWarningThreshold)
             {
                 return;
             }
@@ -101,19 +114,33 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
                 current.Progress);
         }
 
-        private static bool TryReadTimestamp(Download download, string key, out DateTime value)
+        /// <summary>
+        /// Fails a download the client has been reporting as stalled for hours.
+        /// </summary>
+        /// <remarks>
+        /// Only the status is set here. Persisting it is what triggers everything else — the
+        /// blocklist strike in <c>DownloadService.UpdateAsync</c>, and the client cleanup and
+        /// re-search in <c>OnDownloadFailed</c> — because the monitor calls this immediately
+        /// before saving the row and comparing it against its previous state.
+        /// </remarks>
+        private void AbandonStalledDownload(DownloadClientConfiguration client, Download current, TimeSpan stalledFor)
         {
-            // Written with "O" against a UTC DateTime, so the stored text carries its own offset and
-            // RoundtripKind is the correct style. It cannot be combined with AdjustToUniversal —
-            // DateTime.TryParse throws on that pair — so the conversion happens after parsing.
-            var raw = download.GetMetadataString(key);
-            if (!DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out value))
-            {
-                return false;
-            }
+            var clientState = current.GetMetadataString(DownloadStallState.ClientStateKey) ?? "stalled";
+            var reason = string.Format(
+                CultureInfo.InvariantCulture,
+                "Stalled in the download client for {0:F1}h with no progress (client state: {1})",
+                stalledFor.TotalHours,
+                clientState);
 
-            value = value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime();
-            return true;
+            current.Failed(reason);
+
+            logger.LogWarning(
+                "Giving up on download {DownloadId} '{Title}' on client {ClientName}: {Reason}. " +
+                "The release counts a failure so the book can be searched again.",
+                current.Id,
+                current.Title,
+                client.Name ?? client.Id ?? client.Type,
+                reason);
         }
     }
 }

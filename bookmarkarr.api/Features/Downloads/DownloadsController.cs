@@ -333,6 +333,10 @@ public class DownloadsController : ControllerBase
         var downloadClients = await _configurationService.GetDownloadClientConfigurationsAsync();
         var clientLookup = downloadClients.ToDictionary(c => c.Id, c => c.Name);
 
+        // One reading for the whole page, so two rows in the same response cannot disagree about
+        // how long ago "now" was.
+        var now = DateTime.UtcNow;
+
         return downloads.Select(d =>
         {
             // Remove any client-local content path information before returning to the frontend.
@@ -369,6 +373,9 @@ public class DownloadsController : ControllerBase
                 downloadClientName = d.DownloadClientId == "DDL" ? "Direct Download" :
                                    clientLookup.TryGetValue(d.DownloadClientId, out var clientName) ? clientName : "Unknown Client",
                 metadata = sanitizedMetadata,
+                // Derived rather than stored: the client's stall label alone is too momentary to
+                // be trusted, so this is it plus a duration. See DownloadStallState.
+                isStalled = DownloadStallState.IsStalled(d, now, DownloadStallState.ReportingThreshold),
                 // Sprint 2: Error handling and import blocking fields
                 importBlockReason = d.ImportBlockReason,
                 importBlockMessages = d.ImportBlockMessages,

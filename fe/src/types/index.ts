@@ -163,6 +163,11 @@ export interface Download {
   errorMessage?: string
   downloadClientId: string
   metadata: Record<string, unknown>
+  // The download client has been reporting this as stalled for long enough to be worth saying.
+  // Derived server-side rather than a status of its own, because the client's own label flickers
+  // on and off during a healthy transfer. Absent on rows that exist only in a client queue
+  // snapshot, which have no stall clock behind them.
+  isStalled?: boolean
   // Optional link to an audiobook record when the download was queued for a specific audiobook
   audiobookId?: number
   editionId?: number

@@ -61,7 +61,11 @@ namespace Bookmarkarr.Infrastructure.Realtime.Downloads
                 completedAt = download.CompletedAt,
                 errorMessage = download.ErrorMessage,
                 downloadClientId = download.DownloadClientId,
-                metadata = sanitizedMetadata
+                metadata = sanitizedMetadata,
+                // Derived rather than stored: the client's stall label alone is too momentary to
+                // be trusted, so this is it plus a duration. See DownloadStallState.
+                isStalled = DownloadStallState.IsStalled(
+                    download, DateTime.UtcNow, DownloadStallState.ReportingThreshold)
             };
         }
 
