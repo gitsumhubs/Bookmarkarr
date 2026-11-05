@@ -80,7 +80,7 @@ export const useDownloadsStore = defineStore('downloads', () => {
       for (const updated of updatedDownloads) {
         const status = (updated.status || '').toString().toLowerCase()
         if (
-          (status === 'completed' || status === 'ready' || status === 'importpending') &&
+          (['completed', 'ready', 'importpending', 'sourcemissing', 'failed', 'moved'].includes(status)) &&
           typeof updated.audiobookId === 'number'
         ) {
           const aid = updated.audiobookId as number

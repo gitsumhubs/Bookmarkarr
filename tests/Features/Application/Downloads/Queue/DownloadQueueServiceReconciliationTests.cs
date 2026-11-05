@@ -57,6 +57,8 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Queue
                 queueFetcher.Object,
                 metrics,
                 NullLogger<DownloadClientQueuePoller>.Instance);
+            clientQueuePoller.FreshSnapshotMaxAge = TimeSpan.Zero; // These tests deliberately exercise separate live polls.
+
             var service = new DownloadQueueService(
                 resolvedMemoryCache,
                 configurationService,
@@ -327,8 +329,8 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Queue
 
             Assert.Empty(result);
             downloadRepoMock.Verify(r => r.GetQueueDisplayCandidatesAsync(), Times.Once);
-            downloadRepoMock.Verify(r => r.GetQueueMatchingCandidatesAsync(), Times.Once);
-            downloadRepoMock.Verify(r => r.GetKnownClientItemIdsAsync(), Times.Once);
+            downloadRepoMock.Verify(r => r.GetQueueMatchingCandidatesAsync(), Times.Never);
+            downloadRepoMock.Verify(r => r.GetKnownClientItemIdsAsync(), Times.Never);
             downloadRepoMock.Verify(r => r.GetAllAsync(), Times.Never);
         }
 

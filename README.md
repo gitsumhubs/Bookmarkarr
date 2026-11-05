@@ -62,7 +62,7 @@ Open <http://localhost:3018>.
 > Network names come from the **folder** the other compose file lives in, not the service name — a
 > Prowlarr in `prowlarr-abb/` creates `prowlarr-abb_default`. Copy them from `docker network ls`.
 > Skip that block entirely if everything is in one compose file or your services run on the host;
-> just use their LAN URL, like `http://192.168.1.50:6789`.
+> just use their LAN URL, like `http://download-client:6789`.
 
 On first run Bookmarkarr creates default quality profiles, library roots, and staging folders — only
 if they're missing. Both default profiles block `hindi`, `arabic`, and `spanish` release titles so a
@@ -148,7 +148,12 @@ Longer explanations for each of these: **[docs/TROUBLESHOOTING.md](docs/TROUBLES
 | AudiobookBay finds nothing / stops at nine | See [AudiobookBay](docs/AUDIOBOOKBAY.md) |
 | Something looks unconfigured after upgrade | `docker logs bookmarkarr` — look for mount warnings |
 
-Health check: `curl --fail http://localhost:3018/api/v1/system/ready`
+Health check: `curl --fail http://localhost:3018/api/v1/system/ready`. System Info reports process
+uptime and the image's source revision. A client item confirmed missing in separate successful
+snapshots becomes `SourceMissing` with its history retained; choose another release or retry it.
+
+Upgrading from 0.1.42/0.1.43: review the one-time monitoring alignment described in
+[release notes](docs/RELEASES.md#edition-monitoring-upgrade).
 
 ---
 
@@ -158,6 +163,7 @@ Health check: `curl --fail http://localhost:3018/api/v1/system/ready`
   category, search, import, upgrade, and wanted state
 - Strict server-side filtering, so ebook searches never surface audiobooks
 - Prowlarr (including AudiobookBay), direct Newznab/Torznab, NZBGet, SABnzbd, qBittorrent, RDT Client
+- Automatic searching and manual release selection for each media edition
 - Live Wanted status — Queued, Downloading, Import Pending, Import Blocked
 - A search ladder from precise to broad, so a book held under an awkward title is still found
 - **Grab as collection** — a box set lands as many books rather than merging into one

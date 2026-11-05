@@ -146,9 +146,11 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
                 return;
             }
 
-            var activeDownloads = await downloadRepository.GetActiveAsync();
+            var deferredClientIds = configuredClients.Where(c => !string.Equals(c.RemoveCompletedDownloads, "none", StringComparison.OrdinalIgnoreCase)).Select(c => c.Id);
+            var activeDownloads = await downloadRepository.GetMonitorCandidatesAsync(enabledClientIds, deferredClientIds)
+                ?? await downloadRepository.GetActiveAsync();
 
-            logger.LogInformation("DownloadMonitorService found {Count} active downloads", activeDownloads.Count);
+            logger.LogDebug("DownloadMonitorService found {Count} active downloads", activeDownloads.Count);
             foreach (var dl in activeDownloads)
             {
                 logger.LogDebug("Active download: {Id} - {Title} - Status: {Status} - Client: {ClientId}",
@@ -198,7 +200,7 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
                 _lastFullBroadcast = DateTime.UtcNow;
             }
 
-            logger.LogInformation($"Calling PollDownloadClientsAsync with {activeDownloads.Count} downloads");
+            logger.LogDebug($"Calling PollDownloadClientsAsync with {activeDownloads.Count} downloads");
 
             // Group downloads by client
             var downloadsByClient = activeDownloads
@@ -221,7 +223,7 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
                 }
 
                 var clientDownloads = group.ToList();
-                logger.LogInformation($"Processing client group: ClientId={client.Id}, Count={clientDownloads.Count}");
+                logger.LogDebug($"Processing client group: ClientId={client.Id}, Count={clientDownloads.Count}");
 
                 try
                 {
@@ -252,6 +254,8 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
                             clientDownloads,
                             clientQueuePoller,
                             orphanCleanupService);
+                        foreach (var missing in clientDownloads.Where(d => d.Status == DownloadStatus.SourceMissing))
+                            await downloadPushService.HandlePushAsync(missing, cancellationToken);
                         ScheduleNextOrphanCleanup(client);
                     }
                 }
@@ -386,14 +390,16 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
         /// </summary>
         private async Task OnDownloadUpdated(Download download, CancellationToken cancellationToken)
         {
-            logger.LogInformation($"Broadcasting download update for {download.Id}");
+            logger.LogDebug($"Broadcasting download update for {download.Id}");
             await downloadPushService.HandlePushAsync(download, cancellationToken);
         }
 
         private async Task OnDownloadsUpdated(List<Download> downloads, CancellationToken cancellationToken)
         {
-            logger.LogInformation($"Broadcasting downloads update");
-            await downloadPushService.HandlePushAsync(downloads, cancellationToken);
+            // This is a partial active set, so emit deltas. A replacement snapshot would erase
+            // blocked and terminal downloads from every connected browser.
+            foreach (var download in downloads)
+                await downloadPushService.HandlePushAsync(download, cancellationToken);
         }
 
         private async Task OnDownloadFailed(

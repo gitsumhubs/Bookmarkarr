@@ -922,7 +922,10 @@ onMounted(async () => {
   await refreshQueue()
   await syncActivityLayout()
 
+  let refreshInProgress = false
   queueRefreshInterval = setInterval(async () => {
+    if (document.hidden || refreshInProgress) return
+    refreshInProgress = true
     try {
       await refreshQueue()
     } catch (err) {
@@ -930,8 +933,10 @@ onMounted(async () => {
         component: 'ActivityView',
         operation: 'queueRefreshInterval',
       })
+    } finally {
+      refreshInProgress = false
     }
-  }, 30000)
+  }, 60000)
 })
 
 onUnmounted(() => {

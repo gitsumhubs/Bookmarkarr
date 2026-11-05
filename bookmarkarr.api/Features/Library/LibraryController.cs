@@ -184,7 +184,7 @@ namespace Bookmarkarr.Api.Features.Library
         /// <param name="id">Audiobook ID.</param>
         /// <param name="updatedAudiobook">Fields to update (null fields are left unchanged).</param>
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateAudiobook(int id, [FromBody] Audiobook updatedAudiobook)
+        public async Task<IActionResult> UpdateAudiobook(int id, [FromBody] LibraryUpdateRequest updatedAudiobook)
         {
             return await _updateWorkflow.UpdateAsync(id, updatedAudiobook);
         }

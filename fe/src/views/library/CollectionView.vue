@@ -1857,7 +1857,9 @@ async function confirmBulkDelete() {
   if (!ok) return
   deleting.value = true
   try {
-    await libraryStore.bulkRemoveFromLibrary(idsToDelete)
+    const result = await libraryStore.bulkRemoveFromLibrary(idsToDelete)
+    if (result.failedIds.length) useToast().warning('Some books could not be deleted', libraryStore.error || 'Retry the remaining selected books.')
+    else useToast().success('Books deleted', `${result.deletedCount} book(s) removed from the library.`)
   } catch (err) {
     errorTracking.captureException(err as Error, {
       component: 'CollectionView',

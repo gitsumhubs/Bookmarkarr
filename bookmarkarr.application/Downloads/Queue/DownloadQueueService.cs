@@ -51,19 +51,6 @@ namespace Bookmarkarr.Application.Downloads.Queue
 
             var enabledClients = downloadClients.Where(c => c.IsEnabled).ToList();
 
-            var candidateSet = await candidateLoader.LoadAsync();
-            var bookmarkarrDownloads = candidateSet.VisibleDownloads;
-            var allDownloadsForMatching = candidateSet.MatchingDownloads;
-            var allKnownClientItemIds = candidateSet.KnownClientItemIds;
-
-            // Direct downloads are internal work items, not rows reported by an
-            // external client queue. Add them from the DB before polling clients
-            // so DDL reservations, progress, completion, and import-pending work
-            // are visible in Activity.
-            queueItems.AddRange(bookmarkarrDownloads
-                .Where(download => string.Equals(download.DownloadClientId, DirectDownloadMetadataKeys.ClientId, StringComparison.OrdinalIgnoreCase))
-                .Select(ToDirectDownloadQueueItem));
-
             ApplicationSettings? appSettings = await cache.GetOrCreateAsync("ApplicationSettings", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(ClientStatusCacheExpirationSeconds);
@@ -84,6 +71,19 @@ namespace Bookmarkarr.Application.Downloads.Queue
                 _clientQueueTimeout,
                 _staleSnapshotMaxAge,
                 _maxParallelClientPolls);
+            var candidateSet = await candidateLoader.LoadAsync(clientQueueResults.SelectMany(r => r.QueueItems).Select(q => q.Id));
+            var bookmarkarrDownloads = candidateSet.VisibleDownloads;
+            var allDownloadsForMatching = candidateSet.MatchingDownloads;
+            var allKnownClientItemIds = candidateSet.KnownClientItemIds;
+
+            // Direct downloads are internal work items, not rows reported by an
+            // external client queue. Add them from the DB before polling clients
+            // so DDL reservations, progress, completion, and import-pending work
+            // are visible in Activity.
+            queueItems.AddRange(bookmarkarrDownloads
+                .Where(download => string.Equals(download.DownloadClientId, DirectDownloadMetadataKeys.ClientId, StringComparison.OrdinalIgnoreCase))
+                .Select(ToDirectDownloadQueueItem));
+
             var clientStatuses = DownloadQueueSnapshotMapper.BuildClientStatuses(clientQueueResults);
 
             foreach (var clientQueueResult in clientQueueResults)
@@ -94,8 +94,8 @@ namespace Bookmarkarr.Application.Downloads.Queue
 
                 try
                 {
-                    logger.LogInformation("Client {ClientName} has {TotalItems} queue items", client.Name ?? client.Id, clientQueue.Count);
-                    logger.LogInformation("Database has {DatabaseItems} Bookmarkarr downloads for metadata enrichment", bookmarkarrDownloads.Count);
+                    logger.LogDebug("Client {ClientName} has {TotalItems} queue items", client.Name ?? client.Id, clientQueue.Count);
+                    logger.LogDebug("Database has {DatabaseItems} Bookmarkarr downloads for metadata enrichment", bookmarkarrDownloads.Count);
 
                     if (clientQueueResult.UsedCachedSnapshot)
                     {

@@ -17,6 +17,7 @@
  */
 using Bookmarkarr.Application.Common;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Bookmarkarr.Application.Downloads.Common
 {
@@ -40,6 +41,16 @@ namespace Bookmarkarr.Application.Downloads.Common
             HashSet<string> matchedIds,
             int returnedItemCount)
         {
+            var unmatched = ids.Where(id => !matchedIds.Contains(id)).Order(StringComparer.OrdinalIgnoreCase).ToList();
+            var warningKey = "download-client:missing-warning:" + client.Id;
+            if (unmatched.Count == 0)
+            {
+                diagnosticsCache?.Remove(warningKey);
+                return;
+            }
+            var fingerprint = string.Join(',', unmatched);
+            if (diagnosticsCache?.Get<string>(warningKey) == fingerprint) return;
+            diagnosticsCache?.Set(warningKey, fingerprint, TimeSpan.FromMinutes(10));
             var clientName = client.Name ?? client.Id ?? client.Type;
 
             if (returnedItemCount == 0)
@@ -52,7 +63,6 @@ namespace Bookmarkarr.Application.Downloads.Common
                 return;
             }
 
-            var unmatched = ids.Where(id => !matchedIds.Contains(id)).ToList();
             if (unmatched.Count == 0)
             {
                 return;

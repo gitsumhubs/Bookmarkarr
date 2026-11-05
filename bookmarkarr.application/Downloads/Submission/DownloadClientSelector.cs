@@ -24,10 +24,10 @@ namespace Bookmarkarr.Application.Downloads.Submission
         IConfigurationService configurationService,
         ILogger<DownloadClientSelector> logger)
     {
-        public async Task<string?> GetAppropriateDownloadClientAsync(bool isTorrent)
+        public async Task<string?> GetAppropriateDownloadClientAsync(bool isTorrent, string? category = null)
         {
             var downloadClients = await configurationService.GetDownloadClientConfigurationsAsync();
-            var enabledClients = downloadClients.Where(c => c.IsEnabled).ToList();
+            var enabledClients = downloadClients.Where(c => c.IsEnabled).OrderBy(c => string.Equals(c.Category, category, StringComparison.OrdinalIgnoreCase) ? 0 : 1).ToList();
 
             logger.LogInformation("Looking for {ClientType} client. Found {Count} enabled download clients: {Clients}",
                 isTorrent ? "torrent" : "NZB",

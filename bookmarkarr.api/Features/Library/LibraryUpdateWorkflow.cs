@@ -38,12 +38,20 @@ namespace Bookmarkarr.Api.Features.Library
             _logger = logger;
         }
 
-        public async Task<IActionResult> UpdateAsync(int id, Audiobook updatedAudiobook)
+        public async Task<IActionResult> UpdateAsync(int id, LibraryUpdateRequest updatedAudiobook)
         {
             var existingAudiobook = await _repo.GetByIdAsync(id);
             if (existingAudiobook == null)
             {
                 return new NotFoundObjectResult(new { message = "Audiobook not found" });
+            }
+
+            if (updatedAudiobook.QualityProfileId is > 0)
+            {
+                using var profileScope = _scopeFactory.CreateScope();
+                var profile = await profileScope.ServiceProvider.GetRequiredService<IQualityProfileService>().GetByIdAsync(updatedAudiobook.QualityProfileId.Value);
+                if (profile is null || profile.MediaType != EditionMediaType.Audiobook)
+                    return new BadRequestObjectResult(new { error = "Choose an audiobook quality profile." });
             }
 
             var legacyIdentifierFieldsTouched = false;
@@ -84,15 +92,18 @@ namespace Bookmarkarr.Api.Features.Library
 
             ApplySeriesMembershipUpdates(existingAudiobook, updatedAudiobook);
 
-            existingAudiobook.Explicit = updatedAudiobook.Explicit;
-            existingAudiobook.Abridged = updatedAudiobook.Abridged;
-            existingAudiobook.Monitored = updatedAudiobook.Monitored;
+            if (updatedAudiobook.Explicit.HasValue) existingAudiobook.Explicit = updatedAudiobook.Explicit.Value;
+            if (updatedAudiobook.Abridged.HasValue) existingAudiobook.Abridged = updatedAudiobook.Abridged.Value;
+            if (updatedAudiobook.Monitored.HasValue)
+                BookEditionSynchronization.ApplyLegacyAudioSettings(existingAudiobook, updatedAudiobook.Monitored, null);
 
             if (updatedAudiobook.FilePath != null) existingAudiobook.FilePath = updatedAudiobook.FilePath;
             if (updatedAudiobook.FileSize.HasValue) existingAudiobook.FileSize = updatedAudiobook.FileSize;
             if (updatedAudiobook.Quality != null) existingAudiobook.Quality = updatedAudiobook.Quality;
 
             await ApplyQualityProfileAsync(existingAudiobook, updatedAudiobook);
+            if (updatedAudiobook.QualityProfileId.HasValue)
+                BookEditionSynchronization.ApplyLegacyAudioSettings(existingAudiobook, null, existingAudiobook.QualityProfileId);
 
             // An empty BasePath is a blank form field, not a request to unset the folder this
             // audiobook lives in. Taking it literally stores a path that resolves to nothing and
@@ -131,7 +142,7 @@ namespace Bookmarkarr.Api.Features.Library
             return new OkObjectResult(new { message = "Audiobook updated successfully", audiobook = AudiobookDtoFactory.BuildFromEntity(existingAudiobook) });
         }
 
-        private static void ApplySeriesMembershipUpdates(Audiobook existingAudiobook, Audiobook updatedAudiobook)
+        private static void ApplySeriesMembershipUpdates(Audiobook existingAudiobook, LibraryUpdateRequest updatedAudiobook)
         {
             var seriesMembershipsTouched =
                 updatedAudiobook.SeriesMemberships != null ||
@@ -170,7 +181,7 @@ namespace Bookmarkarr.Api.Features.Library
             AudiobookSeriesMembershipHelper.ApplyPrimarySeriesFields(existingAudiobook);
         }
 
-        private async Task ApplyQualityProfileAsync(Audiobook existingAudiobook, Audiobook updatedAudiobook)
+        private async Task ApplyQualityProfileAsync(Audiobook existingAudiobook, LibraryUpdateRequest updatedAudiobook)
         {
             if (!updatedAudiobook.QualityProfileId.HasValue)
             {

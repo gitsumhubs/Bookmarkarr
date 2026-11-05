@@ -35,5 +35,6 @@ jobs:
           ASPNETCORE_ENVIRONMENT: Test
           Playwright__Enabled: 'false'
       - run: python3 -m unittest discover -s tools/bookmarkarr-migrate -p 'test_*.py'
+      - run: python3 -m unittest discover -s scripts -p 'test_*.py'
       - run: docker compose -f docker-compose.yml -f docker-compose.dev.yml config --quiet
       - run: docker build --check .

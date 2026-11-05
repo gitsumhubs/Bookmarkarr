@@ -81,15 +81,18 @@ namespace Bookmarkarr.Infrastructure.Persistence.Repositories
             var normalizedIsbn = NormalizeIsbn(isbn);
             if (string.IsNullOrWhiteSpace(normalizedIsbn)) return null;
 
-            var audiobooks = await _db.Audiobooks
-                .Include(a => a.ExternalIdentifiers)
-                .ToListAsync();
-
-            return audiobooks.FirstOrDefault(a =>
-                (a.Isbn != null && a.Isbn.Any(i => NormalizeIsbn(i) == normalizedIsbn)) ||
-                (a.ExternalIdentifiers != null && a.ExternalIdentifiers.Any(i =>
-                    i.Type == AudiobookExternalIdentifierType.Isbn &&
-                    string.Equals(i.ValueNormalized, normalizedIsbn, StringComparison.OrdinalIgnoreCase))));
+            var indexed = await _db.Audiobooks.Include(a => a.ExternalIdentifiers)
+                .FirstOrDefaultAsync(a => a.ExternalIdentifiers != null && a.ExternalIdentifiers.Any(i =>
+                    i.Type == AudiobookExternalIdentifierType.Isbn && i.ValueNormalized == normalizedIsbn));
+            if (indexed is not null) return indexed;
+            // Legacy ISBN arrays remain searchable without loading every book and identifier.
+            if (_db.Database.IsSqlite())
+                return await _db.Audiobooks.FromSqlInterpolated($@"SELECT b.* FROM Books b WHERE EXISTS (
+                    SELECT 1 FROM json_each(CASE WHEN json_valid(b.Isbn) THEN b.Isbn ELSE '[]' END) i
+                    WHERE upper(replace(replace(replace(i.value, '-', ''), ' ', ''), char(9), '')) = {normalizedIsbn})")
+                    .Include(a => a.ExternalIdentifiers).FirstOrDefaultAsync();
+            return await _db.Audiobooks.Include(a => a.ExternalIdentifiers)
+                .FirstOrDefaultAsync(a => a.Isbn != null && a.Isbn.Contains(normalizedIsbn));
         }
 
         public async Task<Audiobook?> GetByIdAsync(int id)

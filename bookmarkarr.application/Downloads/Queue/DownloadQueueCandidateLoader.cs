@@ -24,13 +24,16 @@ namespace Bookmarkarr.Application.Downloads.Queue
         IDownloadProcessingJobRepository downloadProcessingJobRepository,
         ILogger<DownloadQueueCandidateLoader> logger)
     {
-        public async Task<DownloadQueueCandidateSet> LoadAsync()
+        public async Task<DownloadQueueCandidateSet> LoadAsync(IEnumerable<string>? liveClientIds = null)
         {
             var queueDisplayCandidates = await downloadRepository.GetQueueDisplayCandidatesAsync();
-            var queueMatchingCandidates = await downloadRepository.GetQueueMatchingCandidatesAsync();
-            var knownClientItemIds = await downloadRepository.GetKnownClientItemIdsAsync();
+            var ids = liveClientIds?.ToArray();
+            var queueMatchingCandidates = ids is null ? await downloadRepository.GetQueueMatchingCandidatesAsync()
+                : ids.Length == 0 ? [] : await downloadRepository.GetQueueMatchingCandidatesAsync(ids) ?? await downloadRepository.GetQueueMatchingCandidatesAsync();
+            var knownClientItemIds = ids is null ? await downloadRepository.GetKnownClientItemIdsAsync()
+                : ids.Length == 0 ? [] : await downloadRepository.GetKnownClientItemIdsAsync(ids) ?? await downloadRepository.GetKnownClientItemIdsAsync();
 
-            logger.LogInformation(
+            logger.LogDebug(
                 "Loaded {DisplayCount} queue display candidates, {MatchingCount} queue matching candidates, and {KnownClientIdCount} known client IDs",
                 queueDisplayCandidates.Count,
                 queueMatchingCandidates.Count,
@@ -81,7 +84,7 @@ namespace Bookmarkarr.Application.Downloads.Queue
                     .ToList();
 
                 ddlToShow.AddRange(ddlCompletedToShow);
-                logger.LogInformation(
+                logger.LogDebug(
                     "DDL pending jobs count: {PendingJobs}, All job downloads count: {AllJobs}, DDL completed to show: {CompletedToShow}",
                     pendingJobs.Count,
                     allJobDownloads.Count,

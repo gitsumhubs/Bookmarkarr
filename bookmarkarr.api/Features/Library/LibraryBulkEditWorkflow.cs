@@ -168,7 +168,7 @@ namespace Bookmarkarr.Api.Features.Library
                                 ? je.ValueKind == JsonValueKind.True
                                 : Convert.ToBoolean(monitoredObj);
 
-                            audiobook.Monitored = monVal;
+                            BookEditionSynchronization.ApplyLegacyAudioSettings(audiobook, monVal, null);
                             changed = true;
                             _logger.LogInformation("Set Monitored={Monitored} for audiobook id={Id}", monVal, id);
 
@@ -188,7 +188,11 @@ namespace Bookmarkarr.Api.Features.Library
                                 ? jq.GetInt32()
                                 : Convert.ToInt32(qpObj);
 
-                            audiobook.QualityProfileId = qpVal;
+                            using var profileScope = _scopeFactory.CreateScope();
+                            var profile = await profileScope.ServiceProvider.GetRequiredService<IQualityProfileService>().GetByIdAsync(qpVal);
+                            if (profile is null || profile.MediaType != EditionMediaType.Audiobook)
+                                throw new ArgumentException("Choose an audiobook quality profile.");
+                            BookEditionSynchronization.ApplyLegacyAudioSettings(audiobook, null, qpVal);
                             changed = true;
                             _logger.LogInformation("Set QualityProfileId={Profile} for audiobook id={Id}", qpVal, id);
 

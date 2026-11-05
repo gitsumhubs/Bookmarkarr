@@ -38,7 +38,7 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Library
             var audiobook = await CreateAudiobook();
 
             var controller = _provider.GetRequiredService<LibraryController>();
-            var result = await controller.UpdateAudiobook(audiobook.Id, new Audiobook
+            var result = await controller.UpdateAudiobook(audiobook.Id, new LibraryUpdateRequest
             {
                 Id = audiobook.Id,
                 Title = "Renamed Title",
@@ -66,7 +66,7 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Library
             await _audiobookRepository.UpdateAsync(audiobook);
 
             var controller = _provider.GetRequiredService<LibraryController>();
-            var result = await controller.UpdateAudiobook(audiobook.Id, new Audiobook
+            var result = await controller.UpdateAudiobook(audiobook.Id, new LibraryUpdateRequest
             {
                 Id = audiobook.Id,
                 Title = audiobook.Title,
@@ -78,5 +78,21 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Library
             var stored = await _audiobookRepository.GetByIdAsync(audiobook.Id);
             Assert.Equal("/library/audiobooks/Example Author/Example Book", stored!.BasePath);
         }
+        [Fact]
+        public async Task TitleOnlyUpdate_PreservesMonitoringAndBooleanMetadata()
+        {
+            var book = await CreateAudiobook();
+            book.Monitored = false;
+            book.Abridged = true;
+            book.Explicit = true;
+            await _audiobookRepository.UpdateAsync(book);
+            var controller = _provider.GetRequiredService<LibraryController>();
+            Assert.IsType<OkObjectResult>(await controller.UpdateAudiobook(book.Id, new LibraryUpdateRequest { Title = "New title" }));
+            var stored = await _audiobookRepository.GetByIdAsync(book.Id);
+            Assert.False(stored!.Monitored);
+            Assert.True(stored.Abridged);
+            Assert.True(stored.Explicit);
+        }
+
     }
 }

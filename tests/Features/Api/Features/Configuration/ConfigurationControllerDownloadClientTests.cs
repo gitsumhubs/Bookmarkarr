@@ -43,7 +43,7 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Configuration
                 Id = "client-1",
                 Name = "NZBGet",
                 Type = "nzbget",
-                Host = "192.168.1.50",
+                Host = "198.51.100.50",
                 Port = 6789,
                 Username = "nzb-user",
                 Password = "nzb-pass",
@@ -77,7 +77,7 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Configuration
                 Id = string.Empty,
                 Name = "NZBGet",
                 Type = "nzbget",
-                Host = "192.168.1.50",
+                Host = "198.51.100.50",
                 Port = 6789,
                 Username = "nzb-user",
                 Password = "nzb-pass",
@@ -111,7 +111,7 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Configuration
 
             downloadClientGateway.Verify(
                 x => x.TestConnectionAsync(It.Is<DownloadClientConfiguration>(c =>
-                    c.Host == "192.168.1.50" && c.Port == 6789)),
+                    c.Host == "198.51.100.50" && c.Port == 6789)),
                 Times.Once);
             configurationService.VerifyNoOtherCalls();
         }
@@ -129,7 +129,7 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Configuration
                 Id = "client-2",
                 Name = "NZBGet",
                 Type = "nzbget",
-                Host = "192.168.1.50",
+                Host = "198.51.100.50",
                 Port = 6789,
                 Username = "nzb-user",
                 Password = "nzb-pass",
@@ -152,7 +152,7 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Configuration
 
             var httpContext = new DefaultHttpContext();
             // Simulate a trusted LAN/Synology-Docker caller.
-            httpContext.Connection.RemoteIpAddress = IPAddress.Parse("192.168.1.23");
+            httpContext.Connection.RemoteIpAddress = IPAddress.Parse("10.123.45.23");
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
             var request = new DownloadClientConfiguration
@@ -160,7 +160,7 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Configuration
                 Id = string.Empty,
                 Name = "NZBGet",
                 Type = "nzbget",
-                Host = "192.168.1.50",
+                Host = "198.51.100.50",
                 Port = 6789,
                 Username = "nzb-user",
                 Password = "nzb-pass",
@@ -194,7 +194,7 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Configuration
 
             downloadClientGateway.Verify(
                 x => x.TestConnectionAsync(It.Is<DownloadClientConfiguration>(c =>
-                    c.Host == "192.168.1.50" && c.Port == 6789)),
+                    c.Host == "198.51.100.50" && c.Port == 6789)),
                 Times.Once);
             configurationService.VerifyNoOtherCalls();
         }
@@ -245,7 +245,7 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Configuration
                 logger);
 
             var httpContext = new DefaultHttpContext();
-            httpContext.Connection.RemoteIpAddress = IPAddress.Parse("192.168.1.23");
+            httpContext.Connection.RemoteIpAddress = IPAddress.Parse("10.123.45.23");
             httpContext.RequestServices = new ServiceCollection()
                 .AddSingleton<IStartupConfigService>(new StartupConfigServiceMock(new StartupConfig { AuthenticationRequired = "false" }))
                 .BuildServiceProvider();

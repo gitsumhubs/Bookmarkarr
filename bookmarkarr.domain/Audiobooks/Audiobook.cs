@@ -102,6 +102,15 @@ namespace Bookmarkarr.Domain.Audiobooks
         /// <summary>Independently monitored audiobook and ebook editions for this book.</summary>
         public List<BookEdition> Editions { get; set; } = [];
 
+        /// <summary>A detached view of legacy audio metadata with the edition's own profile.</summary>
+        public Audiobook ForEditionSearch(BookEdition edition)
+        {
+            var copy = (Audiobook)MemberwiseClone();
+            copy.QualityProfile = edition.QualityProfile;
+            copy.QualityProfileId = edition.QualityProfileId;
+            return copy;
+        }
+
         // Automatic search tracking
         public DateTime? LastSearchTime { get; set; }
 

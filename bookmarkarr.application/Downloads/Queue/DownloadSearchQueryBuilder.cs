@@ -12,7 +12,7 @@ using System.Text.RegularExpressions;
 
 namespace Bookmarkarr.Application.Downloads.Queue
 {
-    internal static partial class DownloadSearchQueryBuilder
+    public static partial class DownloadSearchQueryBuilder
     {
         public static string Build(Audiobook audiobook) =>
             BuildCandidates(audiobook).FirstOrDefault() ?? string.Empty;

@@ -1219,6 +1219,10 @@ class ApiService {
     return this.request(`/books/editions/${editionId}/search`, { method: 'POST' })
   }
 
+  async searchAndDownloadEdition(editionId: number): Promise<{ success: boolean; message: string }> {
+    return this.request(`/books/editions/${editionId}/search-and-download`, { method: 'POST' })
+  }
+
   async updateBookEdition(editionId: number, update: Record<string, unknown>): Promise<unknown> {
     return this.request(`/books/editions/${editionId}`, {
       method: 'PATCH',

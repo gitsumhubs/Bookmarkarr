@@ -521,7 +521,7 @@ describe('ManualSearchModal.vue', () => {
         indexerId: 1,
       } as never,
     ])
-    vi.spyOn(apiService, 'getDefaultQualityProfile').mockResolvedValue({ id: 77 } as never)
+    vi.spyOn(apiService, 'getQualityProfiles').mockResolvedValue([{ id: 77, mediaType: 'Audiobook', isDefault: true }] as never)
     vi.spyOn(apiService, 'scoreSearchResults').mockImplementation(
       async (_profileId, searchResults) =>
         [
@@ -557,7 +557,7 @@ describe('ManualSearchModal.vue', () => {
       await new Promise((resolve) => setTimeout(resolve, 25))
     }
 
-    expect(apiService.getDefaultQualityProfile).toHaveBeenCalledTimes(1)
+    expect(apiService.getQualityProfiles).toHaveBeenCalledTimes(1)
     expect(apiService.scoreSearchResults).toHaveBeenCalledTimes(1)
 
     const badge = wrapper.find('.col-score .score-badge')

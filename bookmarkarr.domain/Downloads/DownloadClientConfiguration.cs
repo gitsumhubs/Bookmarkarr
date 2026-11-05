@@ -25,6 +25,13 @@ namespace Bookmarkarr.Domain.Downloads
 
         // Store as JSON string in database
         public string SettingsJson { get; set; } = "{}";
+
+        public DownloadClientConfiguration ForCategory(string category)
+        {
+            var copy = (DownloadClientConfiguration)MemberwiseClone();
+            copy.Category = category;
+            return copy;
+        }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Not mapped - for JSON serialization in API responses

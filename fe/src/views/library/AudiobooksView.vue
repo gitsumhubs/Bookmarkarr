@@ -794,6 +794,7 @@
 </template>
 
 <script setup lang="ts">
+import { useToast } from '@/services/toastService'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick, reactive } from 'vue'
 import {
   PhGridFour,
@@ -2259,7 +2260,9 @@ async function confirmBulkDelete() {
   deleting.value = true
   try {
     const idsToDelete = Array.from(libraryStore.selectedIds)
-    await libraryStore.bulkRemoveFromLibrary(idsToDelete)
+    const result = await libraryStore.bulkRemoveFromLibrary(idsToDelete)
+    if (result.failedIds.length) useToast().warning('Some books could not be deleted', libraryStore.error || 'Retry the remaining selected books.')
+    else useToast().success('Books deleted', `${result.deletedCount} book(s) removed from the library.`)
   } catch (err) {
     errorTracking.captureException(err as Error, {
       component: 'AudiobooksView',

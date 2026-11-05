@@ -86,9 +86,10 @@ namespace Bookmarkarr.Infrastructure.Persistence.Repositories
                 .Where(a => a.Monitored && touchedBookIds.Contains(a.Id))
                 .ToListAsync(ct);
 
-            foreach (var book in books.Where(b => b.Editions.All(e => !e.Monitored)))
+            foreach (var book in books)
             {
-                book.Monitored = false;
+                var audio = book.Editions.FirstOrDefault(e => e.MediaType == EditionMediaType.Audiobook);
+                if (audio is not null) BookEditionSynchronization.SynchronizeAudioParent(audio);
             }
 
             await _db.SaveChangesAsync(ct);

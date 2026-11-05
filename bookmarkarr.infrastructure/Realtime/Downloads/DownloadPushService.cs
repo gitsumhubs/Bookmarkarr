@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+using System.Text.Json;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
@@ -29,7 +30,7 @@ namespace Bookmarkarr.Infrastructure.Realtime.Downloads
         private const string CachePrefix = "download_push_";
 
         // TTL for recent pushes (short, e.g. 10s)
-        private readonly TimeSpan _recentPushTtl = TimeSpan.FromSeconds(10);
+        private readonly TimeSpan _recentPushTtl = TimeSpan.FromMinutes(2);
 
         private static string GetCacheEntry(Download download)
         {
@@ -48,6 +49,7 @@ namespace Bookmarkarr.Infrastructure.Realtime.Downloads
             {
                 id = download.Id,
                 audiobookId = download.AudiobookId,
+                editionId = download.EditionId,
                 title = download.Title,
                 artist = download.Artist,
                 album = download.Album,
@@ -71,24 +73,22 @@ namespace Bookmarkarr.Infrastructure.Realtime.Downloads
 
         public async Task HandlePushAsync(Download download, CancellationToken cancellationToken = default)
         {
-            if (cache.Get(GetCacheEntry(download)) == null)
-            {
-                return;
-            }
+            var downloadDto = DownloadToDto(download);
+            var fingerprint = JsonSerializer.Serialize(downloadDto);
+            if (cache.Get<string>(GetCacheEntry(download)) == fingerprint) return;
 
             try
             {
-                var downloadDto = DownloadToDto(download);
 
-                logger.LogInformation("Broadcasting pushed DownloadUpdate for {DownloadId} ({Status})", download.Id, download.Status);
+                logger.LogDebug("Broadcasting pushed DownloadUpdate for {DownloadId} ({Status})", download.Id, download.Status);
                 await hubContext.Clients.All.SendAsync("DownloadUpdate", new[] { downloadDto }, cancellationToken);
+                cache.Set(GetCacheEntry(download), fingerprint, _recentPushTtl);
             }
             catch (Exception exception) when (exception is not (OperationCanceledException or OutOfMemoryException or StackOverflowException))
             {
                 logger.LogError(exception, $"Error handling pushed download {download.Id}");
             }
 
-            cache.Set(GetCacheEntry(download), true, _recentPushTtl);
 
             logger.LogDebug("Handled pushed download {DownloadId} and cached for {Ttl}s", download.Id, _recentPushTtl.TotalSeconds);
         }
@@ -96,16 +96,10 @@ namespace Bookmarkarr.Infrastructure.Realtime.Downloads
         public async Task HandlePushAsync(List<Download> downloads, CancellationToken cancellationToken = default)
         {
             var sanitizedList = downloads
-                .Where(download => cache.Get(GetCacheEntry(download)) != null)
                 .Select(DownloadToDto)
                 .ToList();
 
-            if (sanitizedList.Count <= 0)
-            {
-                return;
-            }
-
-            logger.LogInformation($"Broadcasting DownloadsList with {sanitizedList.Count} items");
+            logger.LogDebug($"Broadcasting DownloadsList with {sanitizedList.Count} items");
 
             try
             {
@@ -116,10 +110,7 @@ namespace Bookmarkarr.Infrastructure.Realtime.Downloads
                 logger.LogError(exception, "Error handling pushed downloads");
             }
 
-            downloads.ForEach(download =>
-            {
-                cache.Set(GetCacheEntry(download), true, _recentPushTtl);
-            });
+
         }
     }
 }

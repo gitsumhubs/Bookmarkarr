@@ -47,7 +47,7 @@ namespace Bookmarkarr.Infrastructure.SystemDiagnostics.Diagnostics
             _applicationVersionService = applicationVersionService;
             _rootFolderService = rootFolderService;
             _diskSpaceProbe = diskSpaceProbe;
-            _startTime = DateTime.UtcNow;
+            _startTime = _currentProcess.StartTime.ToUniversalTime();
         }
 
         public StartupConfig GetStartupConfig()
@@ -78,6 +78,7 @@ namespace Bookmarkarr.Infrastructure.SystemDiagnostics.Diagnostics
                 return new SystemInfo
                 {
                     Version = version,
+                    Revision = Environment.GetEnvironmentVariable("BOOKMARKARR_REVISION") ?? "unknown",
                     OperatingSystem = GetOperatingSystemInfo(),
                     Runtime = GetRuntimeInfo(),
                     Uptime = uptimeFormatted,

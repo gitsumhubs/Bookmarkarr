@@ -76,7 +76,7 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.DownloadClients.Qbittorrent
             var mock = _provider.GetRequiredService<QbittorrentApiMock>();
 
             var client = await _downloadClientConfigurationRepository.SaveAsync(new DownloadClientConfigurationBuilder()
-                .WithHost("192.168.50.111")
+                .WithHost("198.51.100.111")
                 .WithPort(8080)
                 .WithoutSsl()
                 .WithType("qbittorrent")
@@ -99,7 +99,7 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.DownloadClients.Qbittorrent
             Assert.NotEmpty(versionProbes);
             var uri = versionProbes[0].RequestUri;
             Assert.Equal("http", uri.Scheme);
-            Assert.Equal("192.168.50.111", uri.Host);
+            Assert.Equal("198.51.100.111", uri.Host);
             Assert.Equal(8080, uri.Port);
         }
 

@@ -264,6 +264,23 @@ namespace Bookmarkarr.Application.Search.Scoring
                 }
             }
 
+            if (profile.MediaType == EditionMediaType.Ebook)
+            {
+                var format = profile.Qualities.OrderBy(q => !q.Allowed).ThenBy(q => q.Priority).FirstOrDefault(q =>
+                    (!string.IsNullOrEmpty(normalizedFormat) && normalizedFormat.Contains(q.Quality, StringComparison.OrdinalIgnoreCase))
+                    || System.Text.RegularExpressions.Regex.IsMatch(titleLower, @"\b" + System.Text.RegularExpressions.Regex.Escape(q.Quality) + @"\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase));
+                if (format is null || !format.Allowed)
+                {
+                    score.RejectionReasons.Add("Ebook format is unknown or not allowed by profile");
+                    score.TotalScore = -1;
+                    return score;
+                }
+                searchResult.Quality = format.Quality;
+                score.TotalScore += Math.Max(0, 20 - format.Priority);
+                score.ScoreBreakdown["EbookFormat"] = Math.Max(0, 20 - format.Priority);
+            }
+            else
+            {
             // Quality: missing -> penalty only when no format inferred and not NZB
             if (string.IsNullOrEmpty(normalizedQuality))
             {
@@ -309,6 +326,8 @@ namespace Bookmarkarr.Application.Search.Scoring
                         }
                     }
                 }
+            }
+
             }
 
             // Preferred words bonus

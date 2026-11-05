@@ -189,14 +189,14 @@
                 <FormRow
                   label="Prowlarr URL / IP"
                   labelFor="prowlarr-url"
-                  help="Enter hostname/IP with optional scheme and optional :port (for example: 192.168.1.10:4545 or http://localhost)."
+                  help="Enter hostname/IP with optional scheme and optional :port (for example: prowlarr:9696 or http://localhost)."
                 >
                   <input
                     id="prowlarr-url"
                     v-model="prowlarrUrl"
                     type="text"
                     class="form-input"
-                    placeholder="192.168.1.10:4545"
+                    placeholder="prowlarr:9696"
                     autocomplete="off"
                   />
                 </FormRow>

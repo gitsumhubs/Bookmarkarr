@@ -1410,7 +1410,7 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.DownloadClients.Nzbget
 
             var client = new DownloadClientConfiguration
             {
-                Host = "http://192.168.50.111/nzbget",
+                Host = "http://198.51.100.111/nzbget",
                 Port = 6789,
                 UseSSL = false,
                 Username = "Talis",
@@ -1423,7 +1423,7 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.DownloadClients.Nzbget
             Assert.Contains("connected", message, StringComparison.OrdinalIgnoreCase);
             Assert.NotNull(capturedUri);
             Assert.Equal("http", capturedUri!.Scheme);
-            Assert.Equal("192.168.50.111", capturedUri.Host);
+            Assert.Equal("198.51.100.111", capturedUri.Host);
             Assert.Equal(6789, capturedUri.Port);
             Assert.Equal("/xmlrpc", capturedUri.AbsolutePath);
         }
@@ -1453,7 +1453,7 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.DownloadClients.Nzbget
 
             var client = new DownloadClientConfiguration
             {
-                Host = "http://192.168.50.111:9999/legacy",
+                Host = "http://198.51.100.111:9999/legacy",
                 Port = 6789,
                 UseSSL = true
             };
@@ -1463,7 +1463,7 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.DownloadClients.Nzbget
             Assert.True(success);
             Assert.NotNull(capturedUri);
             Assert.Equal("https", capturedUri!.Scheme);
-            Assert.Equal("192.168.50.111", capturedUri.Host);
+            Assert.Equal("198.51.100.111", capturedUri.Host);
             Assert.Equal(6789, capturedUri.Port);
             Assert.Equal("/xmlrpc", capturedUri.AbsolutePath);
         }
@@ -2652,7 +2652,7 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.DownloadClients.Nzbget
 
             var client = new DownloadClientConfiguration
             {
-                Host = "http://192.168.50.111/nzbget",
+                Host = "http://198.51.100.111/nzbget",
                 Port = 6789,
                 UseSSL = false,
                 Username = "Talis",
@@ -2665,7 +2665,7 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.DownloadClients.Nzbget
             Assert.Empty(queue);
             Assert.NotNull(capturedUri);
             Assert.Equal("http", capturedUri!.Scheme);
-            Assert.Equal("192.168.50.111", capturedUri.Host);
+            Assert.Equal("198.51.100.111", capturedUri.Host);
             Assert.Equal(6789, capturedUri.Port);
             Assert.Equal("/xmlrpc", capturedUri.AbsolutePath);
         }

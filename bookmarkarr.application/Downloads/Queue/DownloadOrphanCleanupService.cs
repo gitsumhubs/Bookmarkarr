@@ -48,81 +48,43 @@ namespace Bookmarkarr.Application.Downloads.Queue
                 return;
             }
 
-            var clientQueue = clientQueueResult.QueueItems;
-            if (clientQueue.Count == 0 && clientDownloads.Any())
+            var liveIds = BuildLiveClientItemIds(clientQueueResult.QueueItems, mappedQueueItems);
+            var observedAt = clientQueueResult.SnapshotRefreshedAtUtc ?? DateTimeOffset.UtcNow;
+            foreach (var download in clientDownloads)
             {
-                logger.LogWarning(
-                    "Skipping orphan cleanup for client {ClientName}: client returned 0 queue items but {Count} downloads are tracked. Client may be temporarily unreachable.",
-                    client.Name,
-                    clientDownloads.Count);
-                return;
-            }
-
-            var liveClientItemIds = BuildLiveClientItemIds(clientQueue, mappedQueueItems);
-            var now = DateTime.UtcNow;
-            var cleanupCandidates = clientDownloads
-                .Select(download => new OrphanCleanupCandidate(
-                    download,
-                    DownloadQueueMetadataMatcher.GetKnownClientItemIds(download.Metadata)
-                        .Where(id => !string.IsNullOrWhiteSpace(id))
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .ToList()))
-                .Select(candidate => new OrphanCleanupDecision(
-                    candidate.Download,
-                    candidate.ExternalIds,
-                    GetCleanupReason(
-                        candidate.Download,
-                        candidate.ExternalIds,
-                        liveClientItemIds,
-                        now)))
-                .Where(decision => decision.Reason.HasValue)
-                .ToList();
-
-            if (!cleanupCandidates.Any())
-            {
-                return;
-            }
-
-            foreach (var candidate in cleanupCandidates)
-            {
-                var download = candidate.Download;
-
-                // There are two cleanup paths and both are intentionally logged for
-                // debugging: a known client item disappeared from a trusted snapshot,
-                // or a legacy/corrupt non-DDL active record has no external client ID
-                // and therefore cannot ever be monitored or reconciled with a client.
-                if (candidate.Reason == OrphanCleanupReason.MissingExternalId)
+                var externalIds = DownloadQueueMetadataMatcher.GetKnownClientItemIds(download.Metadata)
+                    .Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                var reason = GetCleanupReason(download, externalIds, liveIds, observedAt.UtcDateTime);
+                if (reason is null)
                 {
-                    logger.LogInformation(
-                        "Removing unreconcilable active download {DownloadId} '{Title}' for client {ClientName}: no external client ID is stored, so it cannot be monitored or reconciled",
-                        download.Id,
-                        download.Title,
-                        client.Name);
-                }
-                else
-                {
-                    var externalId = candidate.ExternalIds.First();
-                    logger.LogInformation(
-                        "Removing orphaned download {DownloadId} '{Title}' for client {ClientName}: external id {ExternalId} was not found in live queue snapshot",
-                        download.Id,
-                        download.Title,
-                        client.Name,
-                        externalId);
+                    if (download.Metadata.Remove("QueueMissingSince"))
+                    {
+                        download.Metadata.Remove("QueueMissingSnapshot");
+                        await downloadRepository.UpdateAsync(download);
+                    }
+                    continue;
                 }
 
-                await downloadRepository.RemoveAsync(download.Id);
-            }
+                // Persist the first observation so restarts cannot lose the grace period. A reused
+                // snapshot never counts twice, and a client error never reaches this decision.
+                var firstSeen = download.GetMetadataString("QueueMissingSince");
+                if (!DateTimeOffset.TryParse(firstSeen, out var missingSince))
+                {
+                    download.SetMetadata("QueueMissingSince", observedAt.ToString("O"));
+                    download.SetMetadata("QueueMissingSnapshot", observedAt.ToString("O"));
+                    await downloadRepository.UpdateAsync(download);
+                    logger.LogWarning("Download {DownloadId} is absent from a successful queue snapshot for {ClientName}; awaiting confirmation", download.Id, client.Name);
+                    continue;
+                }
+                if (download.GetMetadataString("QueueMissingSnapshot") == observedAt.ToString("O")
+                    || observedAt - missingSince < OrphanedDownloadGracePeriod)
+                    continue;
 
-            var missingFromSnapshotCount = cleanupCandidates.Count(candidate => candidate.Reason == OrphanCleanupReason.MissingFromClientSnapshot);
-            var missingExternalIdCount = cleanupCandidates.Count(candidate => candidate.Reason == OrphanCleanupReason.MissingExternalId);
-            if (missingFromSnapshotCount > 0)
-            {
-                DownloadQueueDiagnostics.TryIncrementMetric(metrics, "download.orphan.removed", missingFromSnapshotCount);
-            }
-
-            if (missingExternalIdCount > 0)
-            {
-                DownloadQueueDiagnostics.TryIncrementMetric(metrics, "download.orphan.unlinked_removed", missingExternalIdCount);
+                download.SetStatus(DownloadStatus.SourceMissing);
+                download.ErrorMessage = "Download no longer exists in the client queue (confirmed by separate successful snapshots). Retry or choose another release.";
+                await downloadRepository.UpdateAsync(download);
+                logger.LogWarning("Marked download {DownloadId} SourceMissing after confirmed absence from {ClientName}; history retained", download.Id, client.Name);
+                DownloadQueueDiagnostics.TryIncrementMetric(metrics, "download.orphan.source_missing");
             }
         }
 
@@ -194,13 +156,5 @@ namespace Bookmarkarr.Application.Downloads.Queue
             MissingFromClientSnapshot
         }
 
-        private sealed record OrphanCleanupCandidate(
-            Download Download,
-            List<string> ExternalIds);
-
-        private sealed record OrphanCleanupDecision(
-            Download Download,
-            List<string> ExternalIds,
-            OrphanCleanupReason? Reason);
     }
 }

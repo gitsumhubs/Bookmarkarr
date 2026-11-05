@@ -222,6 +222,7 @@
     <ManualSearchModal
       :is-open="showManualSearchModal"
       :audiobook="selectedAudiobook"
+      :edition="selectedEdition"
       @close="closeManualSearch"
       @downloaded="handleDownloaded"
     />
@@ -442,6 +443,7 @@ const searching = ref<Record<string, boolean>>({})
 const searchResults = ref<Record<string, string>>({})
 const showManualSearchModal = ref(false)
 const selectedAudiobook = ref<Audiobook | null>(null)
+const selectedEdition = ref<NonNullable<Audiobook['editions']>[number]>()
 const showManualImportModal = ref(false)
 
 const syncWantedLayout = async () => {
@@ -754,10 +756,7 @@ const searchMissing = async () => {
 }
 
 function openManualSearch(item: WantedItem) {
-  if (item.wantedEdition?.mediaType === 'Ebook') {
-    void searchAudiobook(item)
-    return
-  }
+  selectedEdition.value = item.wantedEdition
   selectedAudiobook.value = item
   showManualSearchModal.value = true
 }
@@ -779,6 +778,7 @@ async function handleImported(result: { imported: number }) {
 function closeManualSearch() {
   showManualSearchModal.value = false
   selectedAudiobook.value = null
+  selectedEdition.value = undefined
 }
 
 function handleDownloaded(result: SearchResult) {
@@ -802,11 +802,11 @@ const searchAudiobook = async (item: WantedItem) => {
 
   try {
     if (item.wantedEdition?.mediaType === 'Ebook') {
-      const response = await apiService.searchBookEdition(item.wantedEdition.id)
-      searchResults.value[item.wantedKey] = response.results.length
-        ? `${response.results.length} ebook release(s) found`
-        : 'No ebook matches found'
-      searching.value[item.wantedKey] = false
+      const result = await apiService.searchAndDownloadEdition(item.wantedEdition.id)
+      searchResults.value[item.wantedKey] = result.message
+      await downloadsStore.loadDownloads()
+      await libraryStore.fetchLibrary()
+      delete searching.value[item.wantedKey]
       return
     }
     const result = await apiService.searchAndDownload(item.id)

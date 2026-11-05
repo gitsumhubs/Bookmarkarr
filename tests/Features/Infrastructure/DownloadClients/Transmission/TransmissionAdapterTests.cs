@@ -90,7 +90,7 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.DownloadClients.Transmission
                 .WithId("tr-1")
                 .WithName("Transmission")
                 .WithType("transmission")
-                .WithHost("http://192.168.50.111:9999/legacy")
+                .WithHost("http://198.51.100.111:9999/legacy")
                 .WithPort(9091)
                 .WithSsl()
                 .WithUrlBase("/rpc")
@@ -106,7 +106,7 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.DownloadClients.Transmission
             Assert.NotNull(capturedRequest);
             Assert.NotNull(capturedRequest.RequestUri);
             Assert.Equal("https", capturedRequest.RequestUri.Scheme);
-            Assert.Equal("192.168.50.111", capturedRequest.RequestUri.Host);
+            Assert.Equal("198.51.100.111", capturedRequest.RequestUri.Host);
             Assert.Equal(9091, capturedRequest.RequestUri.Port);
             Assert.Equal("/rpc", capturedRequest.RequestUri.AbsolutePath);
         }

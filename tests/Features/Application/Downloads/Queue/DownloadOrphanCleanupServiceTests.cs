@@ -35,9 +35,10 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Queue
                 [new QueueItem { Id = "other-live-item" }],
                 [download]);
 
-            Assert.Null(await _downloadRepository.GetByIdAsync(download.Id));
-            _metricsMock.Verify(m => m.Increment("download.orphan.unlinked_removed", 1), Times.Once);
-            _metricsMock.Verify(m => m.Increment("download.orphan.removed", It.IsAny<double>()), Times.Never);
+            Assert.Equal(DownloadStatus.Downloading, (await _downloadRepository.GetByIdAsync(download.Id))!.Status);
+            await ConfirmMissingAsync(service, client, download);
+            Assert.Equal(DownloadStatus.SourceMissing, (await _downloadRepository.GetByIdAsync(download.Id))!.Status);
+            _metricsMock.Verify(m => m.Increment("download.orphan.source_missing", 1), Times.Once);
         }
 
         [Fact]
@@ -155,9 +156,11 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Queue
                 [new QueueItem { Id = "other-live-item" }],
                 [download]);
 
-            Assert.Null(await _downloadRepository.GetByIdAsync(download.Id));
-            _metricsMock.Verify(m => m.Increment("download.orphan.removed", 1), Times.Once);
-            _metricsMock.Verify(m => m.Increment("download.orphan.unlinked_removed", It.IsAny<double>()), Times.Never);
+            await ConfirmMissingAsync(service, client, download);
+            var stored = await _downloadRepository.GetByIdAsync(download.Id);
+            Assert.Equal(DownloadStatus.SourceMissing, stored!.Status);
+            Assert.Equal("missing-client-id", stored.GetMetadataString("ClientDownloadId"));
+            _metricsMock.Verify(m => m.Increment("download.orphan.source_missing", 1), Times.Once);
         }
 
         [Theory]
@@ -210,6 +213,38 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Queue
             download.Metadata = metadata ?? new Dictionary<string, object>();
 
             return await _downloadRepository.AddAsync(download);
+        }
+
+        private static Task ConfirmMissingAsync(DownloadOrphanCleanupService service, DownloadClientConfiguration client, Download download)
+        {
+            var later = DateTimeOffset.Parse(download.GetMetadataString("QueueMissingSince")!).AddMinutes(6);
+            return service.RemoveOrphansAsync(client, new ClientQueueFetchResult(client, [], false, false, null, null, "live", later), [], [download]);
+        }
+
+        [Fact]
+        public async Task RepeatedLiveEmptySnapshots_MarkMissingButRetainHistory()
+        {
+            var client = CreateClient();
+            var download = await AddDownloadAsync("empty-confirmed", client.Id, DownloadStatus.Downloading, DateTime.UtcNow.AddHours(-2));
+            var service = _provider.GetRequiredService<DownloadOrphanCleanupService>();
+            var snapshot = CreateLiveSnapshot(client, []);
+            await service.RemoveOrphansAsync(client, snapshot, [], [download]);
+            await service.RemoveOrphansAsync(client, snapshot, [], [download]);
+            Assert.Equal(DownloadStatus.Downloading, (await _downloadRepository.GetByIdAsync(download.Id))!.Status);
+            await ConfirmMissingAsync(service, client, download);
+            Assert.Equal(DownloadStatus.SourceMissing, (await _downloadRepository.GetByIdAsync(download.Id))!.Status);
+        }
+
+        [Fact]
+        public async Task ReturningItem_ClearsAbsenceEvidence()
+        {
+            var client = CreateClient();
+            var download = await AddDownloadAsync("returned", client.Id, DownloadStatus.Downloading, DateTime.UtcNow.AddHours(-2),
+                new Dictionary<string, object> { ["ClientDownloadId"] = "external" });
+            var service = _provider.GetRequiredService<DownloadOrphanCleanupService>();
+            await service.RemoveOrphansAsync(client, CreateLiveSnapshot(client, []), [], [download]);
+            await service.RemoveOrphansAsync(client, CreateLiveSnapshot(client, [new QueueItem { Id = "external" }]), [], [download]);
+            Assert.Null((await _downloadRepository.GetByIdAsync(download.Id))!.GetMetadataString("QueueMissingSince"));
         }
 
         private static DownloadClientConfiguration CreateClient() => new()

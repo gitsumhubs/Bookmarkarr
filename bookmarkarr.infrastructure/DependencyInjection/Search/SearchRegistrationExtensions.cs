@@ -27,6 +27,7 @@ internal static class SearchRegistrationExtensions
         services.AddScoped<MetadataSourceCatalog>();
         services.AddScoped<SearchFinalDispositionLogger>();
         services.AddScoped<ISearchService, SearchService>();
+        services.AddScoped<IEditionSearchService, Bookmarkarr.Infrastructure.HostedServices.Search.EditionSearchService>();
         return services;
     }
 

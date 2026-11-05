@@ -21,6 +21,7 @@ namespace Bookmarkarr.Domain.SystemDiagnostics
     public class SystemInfo
     {
         public string Version { get; set; } = string.Empty;
+        public string Revision { get; set; } = "unknown";
         public string OperatingSystem { get; set; } = string.Empty;
         public string Runtime { get; set; } = string.Empty;
         public string Uptime { get; set; } = string.Empty;

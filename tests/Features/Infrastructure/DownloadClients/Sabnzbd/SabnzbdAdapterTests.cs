@@ -34,7 +34,7 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.DownloadClients.Sabnzbd
             sabnzbdApiMock = _provider.GetRequiredService<SabnzbdApiMock>();
 
             _client = await _downloadClientConfigurationRepository.SaveAsync(new DownloadClientConfigurationBuilder()
-                .WithHost("http://192.168.50.111/sab")
+                .WithHost("http://198.51.100.111/sab")
                 .WithPort(8080)
                 .WithoutSsl()
                 .WithApiKey("secret")
@@ -62,7 +62,7 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.DownloadClients.Sabnzbd
                 .RequestUri;
             Assert.NotNull(capturedUri);
             Assert.Equal("http", capturedUri!.Scheme);
-            Assert.Equal("192.168.50.111", capturedUri.Host);
+            Assert.Equal("198.51.100.111", capturedUri.Host);
             Assert.Equal(8080, capturedUri.Port);
             Assert.Equal("/api", capturedUri.AbsolutePath);
             Assert.Contains("output=json", capturedUri.Query, StringComparison.Ordinal);

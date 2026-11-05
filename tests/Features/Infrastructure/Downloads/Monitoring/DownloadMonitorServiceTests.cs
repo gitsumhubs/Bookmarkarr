@@ -16,6 +16,8 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.Downloads.Monitoring
 
         public override async Task InitializeAsync()
         {
+            _provider.GetRequiredService<ClientQueueRequestCache>().Enabled = false;
+            _provider.GetRequiredService<DownloadClientQueuePoller>().FreshSnapshotMaxAge = TimeSpan.Zero;
             downloadMonitorService = _provider.GetRequiredService<DownloadMonitorService>();
             var method = typeof(DownloadMonitorService).GetMethod("MonitorDownloadsAsync", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(method);
@@ -151,7 +153,9 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.Downloads.Monitoring
 
             await downloadMonitorService.MonitorDownloadsAsync(CancellationToken.None);
 
-            Assert.Null(await _downloadRepository.GetByIdAsync(orphan.Id));
+            var observed = await _downloadRepository.GetByIdAsync(orphan.Id);
+            Assert.Equal(DownloadStatus.Downloading, observed!.Status);
+            Assert.NotNull(observed.GetMetadataString("QueueMissingSince"));
             Assert.NotNull(await _downloadRepository.GetByIdAsync(present.Id));
         }
 
@@ -168,7 +172,9 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.Downloads.Monitoring
 
             await downloadMonitorService.MonitorDownloadsAsync(CancellationToken.None);
 
-            Assert.Null(await _downloadRepository.GetByIdAsync(unlinked.Id));
+            var observed = await _downloadRepository.GetByIdAsync(unlinked.Id);
+            Assert.Equal(DownloadStatus.Downloading, observed!.Status);
+            Assert.NotNull(observed.GetMetadataString("QueueMissingSince"));
         }
 
         [Fact]
@@ -201,6 +207,8 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.Downloads.Monitoring
         {
             var timeProvider = new MutableTimeProvider(DateTimeOffset.UtcNow);
             Init(services => services.WithSingleton<TimeProvider>(timeProvider));
+            _provider.GetRequiredService<ClientQueueRequestCache>().Enabled = false;
+            _provider.GetRequiredService<DownloadClientQueuePoller>().FreshSnapshotMaxAge = TimeSpan.Zero;
             downloadMonitorService = _provider.GetRequiredService<DownloadMonitorService>();
             client = await _downloadClientConfigurationRepository.SaveAsync(new DownloadClientConfigurationBuilder()
                 .WithType("mock")

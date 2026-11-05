@@ -56,6 +56,13 @@ RUN dotnet build "Bookmarkarr.Api.csproj" -c Release -o /app/build /p:SkipFronte
 COPY --from=frontend /src/fe/dist /app/publish/wwwroot
 
 FROM base AS final
+ARG VERSION=0.1.44
+ARG VCS_REF=unknown
+LABEL org.opencontainers.image.title="Bookmarkarr" \
+      org.opencontainers.image.version=$VERSION \
+      org.opencontainers.image.revision=$VCS_REF \
+      org.opencontainers.image.source="https://github.com/gitsumhubs/Bookmarkarr"
+ENV BOOKMARKARR_REVISION=$VCS_REF
 WORKDIR /app
 COPY docker/runtime/ /tmp/bookmarkarr-runtime/
 

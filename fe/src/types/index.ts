@@ -862,6 +862,7 @@ export interface LogEntry {
 }
 
 export interface QualityProfile {
+  mediaType?: EditionMediaType
   id?: number
   name: string
   description?: string

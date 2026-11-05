@@ -49,6 +49,12 @@ namespace Bookmarkarr.Application.Downloads.Contracts.Repositories
         /// - Failed, Cancelled (terminal states)
         /// </summary>
         Task<List<Download>> GetActiveAsync();
+        Task<List<Download>> GetMonitorCandidatesAsync(IEnumerable<string> enabledClientIds, IEnumerable<string> deferredRemovalClientIds)
+            => GetActiveAsync();
+        Task<List<Download>> GetQueueMatchingCandidatesAsync(IEnumerable<string> liveClientIds)
+            => GetQueueMatchingCandidatesAsync();
+        Task<List<string>> GetKnownClientItemIdsAsync(IEnumerable<string> liveClientIds)
+            => GetKnownClientItemIdsAsync();
 
         /// <summary>Returns the most recent <paramref name="count"/> downloads ordered by StartedAt descending.</summary>
         Task<List<Download>> GetRecentAsync(int count);

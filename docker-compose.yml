@@ -1,7 +1,7 @@
 ---
 services:
   bookmarkarr:
-    image: ${BOOKMARKARR_IMAGE:-ghcr.io/gitsumhubs/bookmarkarr:latest}
+    image: ghcr.io/gitsumhubs/bookmarkarr:latest
     container_name: bookmarkarr
     environment:
       - PUID=${PUID:-1000}

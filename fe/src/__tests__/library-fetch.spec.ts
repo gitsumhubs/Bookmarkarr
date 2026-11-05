@@ -18,13 +18,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
-const { getLibraryMock } = vi.hoisted(() => ({
+const { getLibraryMock, removeMock } = vi.hoisted(() => ({
   getLibraryMock: vi.fn(),
+  removeMock: vi.fn(),
 }))
 
 vi.mock('@/services/api', () => ({
   apiService: {
     getLibrary: getLibraryMock,
+    removeFromLibrary: removeMock,
   },
 }))
 
@@ -68,4 +70,18 @@ describe('library store fetchLibrary', () => {
     expect(store.audiobooks).toHaveLength(1)
     expect(store.audiobooks[0]?.title).toBe('Book 1')
   })
+  it('keeps failed bulk deletions visible and selected for retry', async () => {
+    const store = useLibraryStore()
+    store.audiobooks = [{ id: 1, title: 'First' }, { id: 2, title: 'Second' }]
+    store.selectedIds.add(1)
+    store.selectedIds.add(2)
+    removeMock.mockResolvedValueOnce({}).mockRejectedValueOnce(new Error('Disk error'))
+    const result = await store.bulkRemoveFromLibrary([1, 2])
+    expect(result.deletedCount).toBe(1)
+    expect(result.failedIds).toEqual([2])
+    expect(store.audiobooks.map(book => book.id)).toEqual([2])
+    expect([...store.selectedIds]).toEqual([2])
+    expect(store.error).toContain('could not be deleted')
+  })
+
 })

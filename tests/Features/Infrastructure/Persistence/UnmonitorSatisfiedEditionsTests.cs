@@ -97,10 +97,10 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.Persistence
         }
 
         [Fact]
-        public async Task KeepsTheBookMonitored_WhileAnyEditionStillWantsSomething()
+        public async Task RetiresAudioParent_WhileEbookRemainsIndependentlyMonitored()
         {
-            // The audiobook arrived, the ebook has not. Retiring the book here would stop the
-            // ebook being searched — the exact silent loss this sweep must not cause.
+            // The legacy parent mirrors audio only; the scheduler now selects ebook editions
+            // independently, so retiring audio must leave the ebook eligible.
             var book = await AddBookAsync(
                 "Half done",
                 Edition(EditionWantedStatus.Imported),
@@ -116,7 +116,7 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.Persistence
 
             Assert.Equal(1, retired);
             var reloaded = await _audiobookRepository.GetByIdAsync(book.Id);
-            Assert.True(reloaded!.Monitored);
+            Assert.False(reloaded!.Monitored);
             Assert.Single(reloaded.Editions, e => e.Monitored && e.MediaType == EditionMediaType.Ebook);
         }
     }

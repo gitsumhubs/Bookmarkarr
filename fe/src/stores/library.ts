@@ -99,33 +99,20 @@ export const useLibraryStore = defineStore('library', () => {
   }
 
   async function bulkRemoveFromLibrary(ids: number[]) {
-    if (ids.length === 0) return { success: false, deletedCount: 0 }
-
-    try {
-      // Backend no longer exposes a single bulk-remove endpoint; perform safe per-id removes
-      let deleted = 0
-      for (const id of ids) {
-        try {
-          await apiService.removeFromLibrary(id)
-          deleted++
-        } catch {
-          // Continue attempting remaining deletions even if one fails
-        }
+    const deletedIds = new Set<number>()
+    const failedIds: number[] = []
+    for (const id of new Set(ids)) {
+      try {
+        await apiService.removeFromLibrary(id)
+        deletedIds.add(id)
+        selectedIds.value.delete(id)
+      } catch {
+        failedIds.push(id)
       }
-      // Remove from local state
-      audiobooks.value = audiobooks.value.filter((book) => !ids.includes(book.id))
-      // Clear selection
-      clearSelection()
-      return { success: deleted > 0, deletedCount: deleted }
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to bulk remove audiobooks'
-      errorTracking.captureException(err as Error, {
-        component: 'LibraryStore',
-        operation: 'bulkRemoveFromLibrary',
-        metadata: { count: ids.length },
-      })
-      return { success: false, deletedCount: 0 }
     }
+    audiobooks.value = audiobooks.value.filter((book) => !deletedIds.has(book.id))
+    error.value = failedIds.length ? `${failedIds.length} book(s) could not be deleted. They remain selected for retry.` : null
+    return { success: failedIds.length === 0, deletedCount: deletedIds.size, failedIds }
   }
 
   // Apply a safe, local-only update when the server tells us files were removed for an audiobook

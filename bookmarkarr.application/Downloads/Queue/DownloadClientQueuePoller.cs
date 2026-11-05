@@ -64,7 +64,28 @@ namespace Bookmarkarr.Application.Downloads.Queue
             }
         }
 
+        internal TimeSpan FreshSnapshotMaxAge { get; set; } = TimeSpan.FromSeconds(10);
+        private readonly SemaphoreSlim[] gates = Enumerable.Range(0, 16).Select(_ => new SemaphoreSlim(1)).ToArray();
+
         private async Task<ClientQueueFetchResult> FetchAsync(
+            DownloadClientConfiguration client,
+            TimeSpan clientQueueTimeout,
+            TimeSpan staleSnapshotMaxAge)
+        {
+            var gate = gates[(uint)StringComparer.Ordinal.GetHashCode(client.Id) % gates.Length];
+            await gate.WaitAsync();
+            try
+            {
+                if (cache.TryGetValue(DownloadQueueSnapshotMapper.GetClientQueueSnapshotCacheKey(client), out ClientQueueSnapshotCacheEntry? snapshot)
+                    && snapshot is not null && DateTimeOffset.UtcNow - snapshot.RefreshedAtUtc < FreshSnapshotMaxAge)
+                    return new ClientQueueFetchResult(client, DownloadQueueSnapshotMapper.CloneQueueItems(snapshot.QueueItems), false, false,
+                        DateTimeOffset.UtcNow - snapshot.RefreshedAtUtc, null, "live", snapshot.RefreshedAtUtc);
+                return await FetchLiveAsync(client, clientQueueTimeout, staleSnapshotMaxAge);
+            }
+            finally { gate.Release(); }
+        }
+
+        private async Task<ClientQueueFetchResult> FetchLiveAsync(
             DownloadClientConfiguration client,
             TimeSpan clientQueueTimeout,
             TimeSpan staleSnapshotMaxAge)

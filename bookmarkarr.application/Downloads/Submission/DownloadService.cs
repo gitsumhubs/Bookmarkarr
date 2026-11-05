@@ -146,7 +146,7 @@ namespace Bookmarkarr.Application.Downloads.Submission
                 audiobookId);
 
             var downloadId = Guid.NewGuid().ToString();
-            var editionId = await ResolveEditionIdAsync(audiobookId, contentType);
+            var (editionId, editionCategory) = await ResolveEditionAsync(audiobookId, contentType);
             if (audiobookId is int audiobookIdValue && audiobookIdValue > 0)
             {
                 try
@@ -189,7 +189,7 @@ namespace Bookmarkarr.Application.Downloads.Submission
 
             if (downloadClientId == null)
             {
-                downloadClientId = await downloadClientSelector.GetAppropriateDownloadClientAsync(isTorrent);
+                downloadClientId = await downloadClientSelector.GetAppropriateDownloadClientAsync(isTorrent, editionCategory);
 
                 if (downloadClientId == null)
                 {
@@ -207,12 +207,10 @@ namespace Bookmarkarr.Application.Downloads.Submission
                 throw new Exception("Download client not found or disabled");
             }
 
-            if (contentType == SearchContentType.Ebook)
-            {
-                var clientSettings = downloadClient.Settings;
-                clientSettings["category"] = "ebooks";
-                downloadClient.Settings = clientSettings;
-            }
+            var effectiveCategory = editionCategory ?? (contentType == SearchContentType.Ebook
+                ? Environment.GetEnvironmentVariable("BOOKMARKARR_EBOOK_CATEGORY") ?? "ebooks" : null);
+            if (!string.IsNullOrWhiteSpace(effectiveCategory))
+                downloadClient = downloadClient.ForCategory(effectiveCategory);
 
             logger.LogInformation("Sending to {ClientType} download client: {ClientName}", downloadClient.Type, downloadClient.Name);
 
@@ -328,14 +326,15 @@ namespace Bookmarkarr.Application.Downloads.Submission
             return downloadId;
         }
 
-        private async Task<int?> ResolveEditionIdAsync(int? bookId, SearchContentType contentType)
+        private async Task<(int? Id, string? Category)> ResolveEditionAsync(int? bookId, SearchContentType contentType)
         {
-            if (bookId is null or <= 0) return null;
+            if (bookId is null or <= 0) return (null, null);
             var book = await audiobookRepository.GetByIdAsync(bookId.Value);
             var mediaType = contentType == SearchContentType.Ebook
                 ? EditionMediaType.Ebook
                 : EditionMediaType.Audiobook;
-            return book?.Editions.FirstOrDefault(e => e.MediaType == mediaType)?.Id;
+            var edition = book?.Editions.FirstOrDefault(e => e.MediaType == mediaType);
+            return (edition?.Id, edition?.DownloadCategory);
         }
 
         private async Task RemoveProvisionalDownloadAsync(string downloadId)

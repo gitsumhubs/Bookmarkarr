@@ -105,7 +105,7 @@ docker exec bookmarkarr getent hosts nzbget
 No output means Bookmarkarr cannot see it. Revisit the `networks:` block — the name comes from the
 folder the other compose file lives in, not the service name, so a Prowlarr in a folder called
 `prowlarr-abb` creates `prowlarr-abb_default`. Copy names from `docker network ls` rather than
-guessing. Or skip the whole thing and use the LAN URL, `http://192.168.1.50:6789`.
+guessing. Or skip the whole thing and use the LAN URL, `http://198.51.100.50:6789`.
 
 ## Something looks unconfigured after upgrading
 

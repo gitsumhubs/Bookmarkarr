@@ -22,7 +22,9 @@ namespace Bookmarkarr.Application.Downloads.Queue
     {
         public static string GetClientQueueSnapshotCacheKey(DownloadClientConfiguration client)
         {
-            return $"download-queue:snapshot:{client.Id}";
+            var configurationHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+                System.Text.Encoding.UTF8.GetBytes($"{client.Type}|{client.Host}|{client.Port}|{client.UseSSL}|{client.Username}|{client.Password}|{client.SettingsJson}")));
+            return $"download-queue:snapshot:{client.Id}:{configurationHash}";
         }
 
         public static List<QueueItem> CloneQueueItems(IEnumerable<QueueItem>? queueItems)

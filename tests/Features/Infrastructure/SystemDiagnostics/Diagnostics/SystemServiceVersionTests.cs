@@ -52,6 +52,15 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.SystemDiagnostics.Diagnostic
             Assert.NotEqual("1.0.0.0", serviceHealth.Version);
         }
 
+        [Fact]
+        public void NewScopesReportTheSameProcessStartTime()
+        {
+            var first = CreateSystemService().GetSystemInfo();
+            var second = CreateSystemService().GetSystemInfo();
+            Assert.Equal(first.StartTime, second.StartTime);
+            Assert.Equal(System.Diagnostics.Process.GetCurrentProcess().StartTime.ToUniversalTime(), first.StartTime);
+        }
+
         private static SystemService CreateSystemService()
         {
             var configurationService = new Mock<IConfigurationService>();

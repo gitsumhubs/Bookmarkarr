@@ -74,13 +74,13 @@ namespace Bookmarkarr.Tests.Features.Api.Services.Search.Providers
 
             var result = await harness.Controller.ImportFromProwlarr(new ProwlarrImportRequestDto
             {
-                Url = "192.168.1.10:4545",
+                Url = "198.51.100.10:4545",
                 ApiKey = "test-key"
             });
 
             Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(harness.Handler.LastRequest);
-            Assert.Equal("http://192.168.1.10:4545/api/v1/indexer", harness.Handler.LastRequest!.RequestUri!.ToString());
+            Assert.Equal("http://198.51.100.10:4545/api/v1/indexer", harness.Handler.LastRequest!.RequestUri!.ToString());
         }
 
         [Fact]
@@ -90,14 +90,14 @@ namespace Bookmarkarr.Tests.Features.Api.Services.Search.Providers
 
             var result = await harness.Controller.ImportFromProwlarr(new ProwlarrImportRequestDto
             {
-                Url = "192.168.1.10",
+                Url = "198.51.100.10",
                 Port = 4545,
                 ApiKey = "test-key"
             });
 
             Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(harness.Handler.LastRequest);
-            Assert.Equal("http://192.168.1.10:4545/api/v1/indexer", harness.Handler.LastRequest!.RequestUri!.ToString());
+            Assert.Equal("http://198.51.100.10:4545/api/v1/indexer", harness.Handler.LastRequest!.RequestUri!.ToString());
         }
 
         [Fact]
@@ -107,14 +107,14 @@ namespace Bookmarkarr.Tests.Features.Api.Services.Search.Providers
 
             var result = await harness.Controller.ImportFromProwlarr(new ProwlarrImportRequestDto
             {
-                Url = "https://192.168.1.10",
+                Url = "https://198.51.100.10",
                 Port = 4545,
                 ApiKey = "test-key"
             });
 
             Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(harness.Handler.LastRequest);
-            Assert.Equal("https://192.168.1.10:4545/api/v1/indexer", harness.Handler.LastRequest!.RequestUri!.ToString());
+            Assert.Equal("https://198.51.100.10:4545/api/v1/indexer", harness.Handler.LastRequest!.RequestUri!.ToString());
         }
 
         [Fact]
@@ -124,14 +124,14 @@ namespace Bookmarkarr.Tests.Features.Api.Services.Search.Providers
 
             await harness.ConfigurationService.SaveProwlarrImportSettingsAsync(new ProwlarrImportConnectionSettings
             {
-                Url = "192.168.1.10",
+                Url = "198.51.100.10",
                 Port = 4545,
                 ApiKey = "saved-test-key"
             });
 
             var result = await harness.Controller.ImportFromProwlarr(new ProwlarrImportRequestDto
             {
-                Url = "192.168.1.10",
+                Url = "198.51.100.10",
                 Port = 4545,
                 ApiKey = string.Empty
             });

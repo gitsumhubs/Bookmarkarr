@@ -433,6 +433,7 @@ import { safeText } from '@/utils/textUtils'
 interface Props {
   isOpen: boolean
   audiobook: Audiobook | null
+  edition?: NonNullable<Audiobook['editions']>[number]
 }
 
 const props = defineProps<Props>()
@@ -644,7 +645,7 @@ watch(
 
     if (props.audiobook) {
       // Prefill the query from the book and hand the user the cursor. No search runs yet.
-      contentMode.value = 'audiobook'
+      contentMode.value = props.edition?.mediaType === 'Ebook' ? 'ebook' : 'audiobook'
       searchQuery.value = buildSearchQuery()
       hasSearched.value = false
       results.value = []
@@ -1108,14 +1109,12 @@ async function search() {
 
 async function loadQualityProfileAndScore() {
   try {
-    // Get the audiobook's quality profile or default
-    if (props.audiobook?.qualityProfileId) {
-      qualityProfile.value = await apiService.getQualityProfileById(
-        props.audiobook.qualityProfileId,
-      )
-    } else {
-      qualityProfile.value = await apiService.getDefaultQualityProfile()
-    }
+    const mediaType = contentMode.value === 'ebook' ? 'Ebook' : 'Audiobook'
+    const edition = props.audiobook?.editions?.find((entry) => entry.mediaType === mediaType)
+    const profileId = edition?.qualityProfileId ?? (mediaType === 'Audiobook' ? props.audiobook?.qualityProfileId : undefined)
+    const profiles = await apiService.getQualityProfiles()
+    qualityProfile.value = profiles.find((profile) => profile.id === profileId && (profile.mediaType ?? 'Audiobook') === mediaType)
+      ?? profiles.find((profile) => profile.isDefault && (profile.mediaType ?? 'Audiobook') === mediaType) ?? null
 
     // Score the search results
     if (qualityProfile.value?.id && results.value.length > 0) {

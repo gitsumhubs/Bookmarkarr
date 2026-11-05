@@ -51,6 +51,16 @@ namespace Bookmarkarr.Infrastructure.Persistence.Repositories
             ApplyActiveDeduplicationKey(download);
             await using var ctx = await _dbFactory.CreateDbContextAsync();
             ctx.Downloads.Update(download);
+            if (download.Status == DownloadStatus.SourceMissing && download.EditionId.HasValue)
+            {
+                var edition = await ctx.BookEditions.Include(e => e.Files).SingleOrDefaultAsync(e => e.Id == download.EditionId);
+                if (edition is not null && edition.Status is EditionWantedStatus.Queued or EditionWantedStatus.Downloading)
+                {
+                    edition.Status = edition.Files.Count > 0 ? EditionWantedStatus.Imported : EditionWantedStatus.Failed;
+                    edition.LastSearchTime = null;
+                    edition.UpdatedAt = DateTime.UtcNow;
+                }
+            }
             await ctx.SaveChangesAsync();
         }
 
@@ -182,6 +192,50 @@ namespace Bookmarkarr.Infrastructure.Persistence.Repositories
                 .OrderByDescending(d => d.CompletedAt)
                 .Take(limit)
                 .ToListAsync();
+        }
+
+        public async Task<List<Download>> GetMonitorCandidatesAsync(IEnumerable<string> enabledClientIds, IEnumerable<string> deferredRemovalClientIds)
+        {
+            var enabled = enabledClientIds.ToArray();
+            var deferred = deferredRemovalClientIds.ToArray();
+            await using var ctx = await _dbFactory.CreateDbContextAsync();
+            return await ctx.Downloads.AsNoTracking().Where(d => enabled.Contains(d.DownloadClientId))
+                .Where(d => d.Status == DownloadStatus.Queued || d.Status == DownloadStatus.Downloading
+                    || d.Status == DownloadStatus.Paused || d.Status == DownloadStatus.Processing
+                    || d.Status == DownloadStatus.Completed || d.Status == DownloadStatus.ImportPending
+                    || (d.Status == DownloadStatus.Moved && deferred.Contains(d.DownloadClientId)))
+                .ToListAsync();
+        }
+
+        private static IQueryable<Download> MatchingLiveIds(BookmarkarrDbContext ctx, IEnumerable<string> liveClientIds)
+        {
+            var liveIds = liveClientIds.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            if (!ctx.Database.IsSqlite())
+                return ctx.Downloads.Where(d => liveIds.Contains(d.Id)
+                    || (d.Metadata.ContainsKey("ClientDownloadId") && liveIds.Contains(d.Metadata["ClientDownloadId"].ToString()!))
+                    || (d.Metadata.ContainsKey("TorrentHash") && liveIds.Contains(d.Metadata["TorrentHash"].ToString()!)));
+            var json = System.Text.Json.JsonSerializer.Serialize(liveIds);
+            return ctx.Downloads.FromSqlInterpolated($@"SELECT * FROM Downloads WHERE
+                Id COLLATE NOCASE IN (SELECT value FROM json_each({json})) OR
+                json_extract(Metadata, '$.ClientDownloadId') COLLATE NOCASE IN (SELECT value FROM json_each({json})) OR
+                json_extract(Metadata, '$.TorrentHash') COLLATE NOCASE IN (SELECT value FROM json_each({json}))");
+        }
+
+        public async Task<List<Download>> GetQueueMatchingCandidatesAsync(IEnumerable<string> liveClientIds)
+        {
+            await using var ctx = await _dbFactory.CreateDbContextAsync();
+            // Only materialize historical rows for items that are actually in a live queue.
+            var ids = await MatchingLiveIds(ctx, liveClientIds).Select(d => d.Id).ToListAsync();
+            return await ctx.Downloads.AsNoTracking().Where(d => d.DownloadClientId != DirectDownloadMetadataKeys.ClientId
+                && d.Status != DownloadStatus.Failed && (d.Status != DownloadStatus.Moved && d.Status != DownloadStatus.SourceMissing || ids.Contains(d.Id))).ToListAsync();
+        }
+
+        public async Task<List<string>> GetKnownClientItemIdsAsync(IEnumerable<string> liveClientIds)
+        {
+            await using var ctx = await _dbFactory.CreateDbContextAsync();
+            var entries = await MatchingLiveIds(ctx, liveClientIds).AsNoTracking().Select(d => d.Metadata).ToListAsync();
+            return entries.SelectMany(m => new[] { m.GetValueOrDefault("ClientDownloadId")?.ToString(), m.GetValueOrDefault("TorrentHash")?.ToString() })
+                .OfType<string>().Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         }
 
         public async Task<List<Download>> GetActiveAsync()

@@ -127,7 +127,7 @@ namespace Bookmarkarr.Tests.Features.Api.Services.Search.Providers
                 Name = "private-indexer",
                 Type = "Usenet",
                 Implementation = "Generic",
-                Url = "http://192.168.1.25"
+                Url = "http://198.51.100.25"
             };
 
             // Act
@@ -135,7 +135,7 @@ namespace Bookmarkarr.Tests.Features.Api.Services.Search.Providers
 
             // Assert
             Assert.NotNull(handler.LastRequest);
-            Assert.Equal("192.168.1.25", handler.LastRequest!.RequestUri!.Host);
+            Assert.Equal("198.51.100.25", handler.LastRequest!.RequestUri!.Host);
             var ok = Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(ok.Value);
             var payload = ok.Value!;
@@ -157,7 +157,7 @@ namespace Bookmarkarr.Tests.Features.Api.Services.Search.Providers
             var controller = MockUtils.CreateIndexersController(_provider, handler);
 
             var httpContext = new DefaultHttpContext();
-            httpContext.Connection.RemoteIpAddress = IPAddress.Parse("192.168.1.20");
+            httpContext.Connection.RemoteIpAddress = IPAddress.Parse("10.123.45.20");
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
             var indexer = new Indexer
@@ -165,7 +165,7 @@ namespace Bookmarkarr.Tests.Features.Api.Services.Search.Providers
                 Name = "private-indexer",
                 Type = "Usenet",
                 Implementation = "Generic",
-                Url = "http://192.168.1.25"
+                Url = "http://198.51.100.25"
             };
 
             // Act
@@ -173,7 +173,7 @@ namespace Bookmarkarr.Tests.Features.Api.Services.Search.Providers
 
             // Assert
             Assert.NotNull(handler.LastRequest);
-            Assert.Equal("192.168.1.25", handler.LastRequest!.RequestUri!.Host);
+            Assert.Equal("198.51.100.25", handler.LastRequest!.RequestUri!.Host);
             var ok = Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(ok.Value);
             var payload = ok.Value!;
