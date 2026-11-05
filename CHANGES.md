@@ -1,6 +1,6 @@
 # Changes
 
-## 2026-11-05 — codex — Function and performance review fixes (0.1.44)
+## 2026-11-05 02:48 EST — codex — Function and performance review fixes (0.1.44)
 
 Why: implement the ten findings from the function/performance review.
 Before → after: empty-queue orphans stayed active → confirmed missing downloads retain history as
@@ -15,6 +15,10 @@ Backup: deployment backups and monitoring before/after records are kept outside 
 see the private instance recreation notes for the applied deployment backup location.
 Deployment: running image 0.1.42 → 0.1.44 after backup and monitoring alignment; the existing
 Compose definition, volume mappings and port remain in use.
-Validation: regression coverage for recovery, edition updates/search, snapshots, bulk deletion,
-SQL filtering/lookup and monitor candidates. Release/deployment verification is recorded in the
-project tracker after publishing.
+Validation: 1,535 backend tests and 444 frontend tests passed locally and in public release CI;
+frontend type/lint checks, four existing migration tests, the backup/monitoring script regression,
+Docker build/check, and Compose validation passed. Fresh-config startup and the live LAN library
+were checked in a browser; ebook query/grab requests were verified with mocked releases, without
+submitting test downloads to live clients. The live monitor confirmed the missing download and
+retained its record. Exact instance backup and rollout details are in the private recreation notes
+and project tracker.
