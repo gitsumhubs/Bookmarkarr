@@ -4,9 +4,12 @@
 # Build gosu with a modern Go toolchain to avoid golang/stdlib CVEs present in
 # the Debian-packaged version (compiled with Go 1.19.x). Use Go 1.26 (current
 # stable) to pick up all 2026 stdlib security patches.
-FROM golang:1.26.2-alpine AS gosu-builder
+FROM --platform=$BUILDPLATFORM golang:1.26.2-alpine AS gosu-builder
+ARG TARGETARCH
 ARG GOSU_VERSION=1.19
-RUN CGO_ENABLED=0 go install github.com/tianon/gosu@${GOSU_VERSION}
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go install github.com/tianon/gosu@${GOSU_VERSION} \
+    && mkdir /out \
+    && if [ -f /go/bin/gosu ]; then cp /go/bin/gosu /out/gosu; else cp /go/bin/linux_${TARGETARCH}/gosu /out/gosu; fi
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
@@ -34,7 +37,8 @@ WORKDIR /src/fe
 RUN npm ci
 RUN npm run build
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+ARG TARGETARCH
 WORKDIR /src
 COPY ["Directory.Build.props", "./"]
 COPY ["Directory.Packages.props", "./"]
@@ -42,21 +46,21 @@ COPY ["bookmarkarr.api/Bookmarkarr.Api.csproj", "bookmarkarr.api/"]
 COPY ["bookmarkarr.domain/Bookmarkarr.Domain.csproj", "bookmarkarr.domain/"]
 COPY ["bookmarkarr.application/Bookmarkarr.Application.csproj", "bookmarkarr.application/"]
 COPY ["bookmarkarr.infrastructure/Bookmarkarr.Infrastructure.csproj", "bookmarkarr.infrastructure/"]
-RUN dotnet restore "bookmarkarr.api/Bookmarkarr.Api.csproj"
+RUN dotnet restore "bookmarkarr.api/Bookmarkarr.Api.csproj" -a $TARGETARCH
 WORKDIR "/src/bookmarkarr.api"
 # No Node here: the frontend arrives prebuilt from the stage above, so SkipFrontendBuild leaves
 # MSBuild with nothing to shell out to. That also spares this stage an apt+NodeSource install
 # under emulation, which was itself several minutes of the arm64 build.
 COPY . /src
-RUN dotnet build "Bookmarkarr.Api.csproj" -c Release -o /app/build /p:SkipFrontendBuild=true \
-	&& dotnet publish "Bookmarkarr.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false /p:SkipFrontendBuild=true
+RUN dotnet build "Bookmarkarr.Api.csproj" -a $TARGETARCH --no-restore -c Release -o /app/build /p:SkipFrontendBuild=true \
+	&& dotnet publish "Bookmarkarr.Api.csproj" -a $TARGETARCH --no-restore --self-contained false -c Release -o /app/publish /p:UseAppHost=false /p:SkipFrontendBuild=true
 
 # The two MSBuild targets that would have populated wwwroot are skipped with the frontend build,
 # so place the compiled assets where they would have landed.
 COPY --from=frontend /src/fe/dist /app/publish/wwwroot
 
 FROM base AS final
-ARG VERSION=0.1.44
+ARG VERSION=0.1.45
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.title="Bookmarkarr" \
       org.opencontainers.image.version=$VERSION \
@@ -67,7 +71,7 @@ WORKDIR /app
 COPY docker/runtime/ /tmp/bookmarkarr-runtime/
 
 # Use the gosu binary built above instead of the apt package.
-COPY --from=gosu-builder /go/bin/gosu /usr/local/bin/gosu
+COPY --from=gosu-builder /out/gosu /usr/local/bin/gosu
 RUN chmod +x /usr/local/bin/gosu
 
 RUN sh /tmp/bookmarkarr-runtime/create-bookmarkarr-user.sh

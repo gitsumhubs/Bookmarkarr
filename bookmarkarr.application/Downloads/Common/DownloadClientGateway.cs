@@ -236,6 +236,7 @@ namespace Bookmarkarr.Application.Downloads.Common
 
                 matchedIds.Add(item.Id);
                 download = QueueItemConverter.UpdateFromQueueItem(download, item);
+                download.SetMetadata("ClientLastSeenAt", DateTimeOffset.UtcNow.ToString("O"));
             }
 
             WarnOnUnreportedDownloads(client, ids!, matchedIds, items.Count);

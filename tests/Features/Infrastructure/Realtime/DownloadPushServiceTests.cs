@@ -18,6 +18,7 @@ public sealed class DownloadPushServiceTests
         var service = new DownloadPushService(hub.Object, cache, NullLogger<DownloadPushService>.Instance);
         var download = new Download { Id = "first", EditionId = 9, Status = DownloadStatus.Downloading };
         await service.HandlePushAsync(download);
+        download.SetMetadata("ClientLastSeenAt", DateTimeOffset.UtcNow.ToString("O"));
         await service.HandlePushAsync(download);
         download.Progress = 50;
         await service.HandlePushAsync(download);

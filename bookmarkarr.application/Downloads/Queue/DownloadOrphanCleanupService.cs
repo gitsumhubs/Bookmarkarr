@@ -118,6 +118,12 @@ namespace Bookmarkarr.Application.Downloads.Queue
                 return null;
             }
 
+            // A full queue can be category-filtered while id-based monitoring spans both media.
+            // Recent direct evidence that this item exists takes precedence over an empty category.
+            if (DateTimeOffset.TryParse(download.GetMetadataString("ClientLastSeenAt"), out var lastSeen)
+                && now - lastSeen.UtcDateTime < OrphanedDownloadGracePeriod)
+                return null;
+
             var age = now - download.StartedAt;
             if (age < OrphanedDownloadGracePeriod)
             {

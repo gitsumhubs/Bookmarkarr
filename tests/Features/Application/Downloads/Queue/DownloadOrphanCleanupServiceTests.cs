@@ -215,6 +215,24 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Queue
             return await _downloadRepository.AddAsync(download);
         }
 
+        [Fact]
+        public async Task RecentIdBasedObservationWinsOverCategoryFilteredEmptyQueue()
+        {
+            var client = CreateClient();
+            var download = await AddDownloadAsync("ebook-outside-audio-category", client.Id, DownloadStatus.Downloading,
+                DateTime.UtcNow.AddHours(-2), new Dictionary<string, object>
+                {
+                    ["ContentType"] = "ebook",
+                    ["ClientDownloadId"] = "ebook-hash",
+                    ["ClientLastSeenAt"] = DateTimeOffset.UtcNow.ToString("O"),
+                    ["QueueMissingSince"] = DateTimeOffset.UtcNow.AddHours(-1).ToString("O")
+                });
+            await _provider.GetRequiredService<DownloadOrphanCleanupService>().RemoveOrphansAsync(client, CreateLiveSnapshot(client, []), [], [download]);
+            var stored = await _downloadRepository.GetByIdAsync(download.Id);
+            Assert.Equal(DownloadStatus.Downloading, stored!.Status);
+            Assert.Null(stored.GetMetadataString("QueueMissingSince"));
+        }
+
         private static Task ConfirmMissingAsync(DownloadOrphanCleanupService service, DownloadClientConfiguration client, Download download)
         {
             var later = DateTimeOffset.Parse(download.GetMetadataString("QueueMissingSince")!).AddMinutes(6);

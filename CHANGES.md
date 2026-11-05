@@ -1,5 +1,19 @@
 # Changes
 
+## 2026-11-05 03:07 EST — codex — Preserve active ebooks during recovery (0.1.45)
+
+Why: an ID-based poll can see an active ebook while the same client's category-filtered snapshot
+omits it. Before → after: repeated empty category snapshots could outweigh recent progress → a
+recent successful client observation protects the record and resets absence evidence. Internal
+observation timestamps do not trigger otherwise identical realtime updates.
+Build: emulated .NET SDK/Go compilers → native compilers targeting amd64/arm64 using Docker's target
+architecture. The superseded 0.1.44 publication job was cancelled; 0.1.45 includes all review fixes.
+Backup: the existing pre-upgrade database/config/Compose backup remains the recovery point; this
+follow-up changes no schema or configured paths.
+Validation: 1,536 backend tests passed, including recent ebook observations and unchanged push
+suppression. The native-built amd64 image passed fresh SQLite startup and ebook browser checks.
+ARM64 publishing produced the expected Linux runtime target and ARM64 SQLite/gosu ELF binaries.
+
 ## 2026-11-05 02:48 EST — codex — Function and performance review fixes (0.1.44)
 
 Why: implement the ten findings from the function/performance review.

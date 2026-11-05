@@ -42,7 +42,8 @@ namespace Bookmarkarr.Infrastructure.Realtime.Downloads
             // Broadcast the single download update to all clients
             // Construct a sanitized DTO that omits DownloadPath and removes client-local metadata
             var sanitizedMetadata = (download.Metadata ?? new Dictionary<string, object>())
-                .Where(kvp => !string.Equals(kvp.Key, "ClientContentPath", StringComparison.OrdinalIgnoreCase))
+                .Where(kvp => !string.Equals(kvp.Key, "ClientContentPath", StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(kvp.Key, "ClientLastSeenAt", StringComparison.OrdinalIgnoreCase))
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value!);
 
             return new

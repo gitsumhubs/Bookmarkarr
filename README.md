@@ -152,7 +152,7 @@ Health check: `curl --fail http://localhost:3018/api/v1/system/ready`. System In
 uptime and the image's source revision. A client item confirmed missing in separate successful
 snapshots becomes `SourceMissing` with its history retained; choose another release or retry it.
 
-Upgrading from 0.1.42/0.1.43: review the one-time monitoring alignment described in
+Upgrading from 0.1.42/0.1.43 to 0.1.45: review the one-time monitoring alignment described in
 [release notes](docs/RELEASES.md#edition-monitoring-upgrade).
 
 ---

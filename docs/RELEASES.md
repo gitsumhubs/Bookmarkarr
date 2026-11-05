@@ -59,4 +59,8 @@ curl --fail http://localhost:3018/api/v1/system/info
 
 The published image includes `org.opencontainers.image.version` and
 `org.opencontainers.image.revision`. Compare the revision with System Info to identify the running
-source. Manual image builds can set `--build-arg VERSION=0.1.44 --build-arg VCS_REF=<commit>`.
+source. Manual image builds can set `--build-arg VERSION=0.1.45 --build-arg VCS_REF=<commit>`.
+
+The .NET SDK and Go compiler run natively on the build host and target the requested Docker
+architecture. The final amd64/arm64 runtime image uses the matching target dependencies. This uses
+[Microsoft's recommended cross-compilation pattern](https://devblogs.microsoft.com/dotnet/improving-multiplatform-container-support/).
