@@ -240,17 +240,8 @@ namespace Bookmarkarr.Domain.Search
     /// </summary>
     public static class SearchResultConverters
     {
-        // Helper: do a lightweight language detection on a text block when Indexer did not provide language
-        private static string? DetectLanguageFromText(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text)) return null;
-            var t = text.ToUpperInvariant();
-            if (System.Text.RegularExpressions.Regex.IsMatch(t, "\\b(ENG|EN)\\b")) return "English";
-            if (System.Text.RegularExpressions.Regex.IsMatch(t, "\\b(FRE|FR)\\b")) return "French";
-            if (System.Text.RegularExpressions.Regex.IsMatch(t, "\\b(GER|DE)\\b")) return "German";
-            if (System.Text.RegularExpressions.Regex.IsMatch(t, "\\b(DUT|NL)\\b")) return "Dutch";
-            return null;
-        }
+        // Guess a language from the release name when the indexer did not provide one.
+        private static string? DetectLanguageFromText(string text) => ReleaseLanguageDetector.FromText(text);
 
         // Normalize language tokens that should be treated as absent (e.g., unknown)
         private static string? NormalizeLanguage(string? value)

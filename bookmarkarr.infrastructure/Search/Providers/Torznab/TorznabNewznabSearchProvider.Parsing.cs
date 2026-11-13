@@ -142,7 +142,7 @@ public partial class TorznabNewznabSearchProvider : IIndexerSearchProvider
                                 // Standardized language codes (e.g., ENG, FR)
                                 try
                                 {
-                                    var parsedLang = TorznabNewznabValueParser.ParseLanguageFromText(value);
+                                    var parsedLang = ReleaseLanguageDetector.FromField(value);
                                     if (!string.IsNullOrEmpty(parsedLang)) result.Language = parsedLang;
                                 }
                                 catch (Exception caughtEx_1) when (caughtEx_1 is not OperationCanceledException && caughtEx_1 is not OutOfMemoryException && caughtEx_1 is not StackOverflowException)
@@ -161,7 +161,7 @@ public partial class TorznabNewznabSearchProvider : IIndexerSearchProvider
                                 {
                                     try
                                     {
-                                        var pl = TorznabNewznabValueParser.ParseLanguageFromText(value);
+                                        var pl = ReleaseLanguageDetector.FromField(value);
                                         if (!string.IsNullOrEmpty(pl)) result.Language = pl;
                                     }
                                     catch (Exception caughtEx_2) when (caughtEx_2 is not OperationCanceledException && caughtEx_2 is not OutOfMemoryException && caughtEx_2 is not StackOverflowException)

@@ -154,7 +154,7 @@ namespace Bookmarkarr.Application.Search.Indexers.Torznab
                                     // Standardized language codes (e.g., ENG, FR)
                                     try
                                     {
-                                        var parsedLang = SearchResultAttributeParser.ParseLanguageFromText(value);
+                                        var parsedLang = ReleaseLanguageDetector.FromField(value);
                                         if (!string.IsNullOrEmpty(parsedLang)) result.Language = parsedLang;
                                     }
                                     catch (Exception caughtEx_22) when (caughtEx_22 is not OperationCanceledException && caughtEx_22 is not OutOfMemoryException && caughtEx_22 is not StackOverflowException)
@@ -173,7 +173,7 @@ namespace Bookmarkarr.Application.Search.Indexers.Torznab
                                     {
                                         try
                                         {
-                                            var pl = SearchResultAttributeParser.ParseLanguageFromText(value);
+                                            var pl = ReleaseLanguageDetector.FromField(value);
                                             if (!string.IsNullOrEmpty(pl)) result.Language = pl;
                                         }
                                         catch (Exception caughtEx_23) when (caughtEx_23 is not OperationCanceledException && caughtEx_23 is not OutOfMemoryException && caughtEx_23 is not StackOverflowException)

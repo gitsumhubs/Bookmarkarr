@@ -359,47 +359,6 @@ namespace Bookmarkarr.Application.Audiobooks.Quality
                 // allow matching patterns like ".m4b", "[m4b]", "m4b" in the title
                 .FirstOrDefault(token => titleLower.Contains(token) || titleLower.Contains("[" + token + "]") || titleLower.Contains("(" + token + ")") || titleLower.Contains("." + token));
         }
-
-        /// <summary>
-        /// Attempts to detect language from title using the profile's preferred languages as hints.
-        /// Returns the detected language string (as provided in the profile) or null if none matched.
-        /// </summary>
-        private static string? DetectLanguageFromTitle(string titleLower, List<string>? preferredLanguages)
-        {
-            if (preferredLanguages == null || preferredLanguages.Count == 0 || string.IsNullOrEmpty(titleLower))
-                return null;
-
-            foreach (var lang in preferredLanguages.Where(lang => !string.IsNullOrWhiteSpace(lang)))
-            {
-                var token = lang.ToLower().Trim();
-
-                // Basic match for language name or common short forms
-                if (titleLower.Contains(token) || titleLower.Contains("[" + token + "]") || titleLower.Contains("(" + token + ")") || titleLower.Contains(" " + token + " "))
-                {
-                    return lang; // return original (possibly capitalised) profile language value
-                }
-            }
-
-            // Also check a small set of common language tokens to detect language even when not present in profile
-            var common = new Dictionary<string, string>
-            {
-                { "eng", "English" },
-                { "english", "English" },
-                { "es", "Spanish" },
-                { "spanish", "Spanish" },
-                { "de", "German" },
-                { "german", "German" },
-                { "fr", "French" },
-                { "french", "French" }
-            };
-
-            foreach (var (token, name) in common)
-            {
-                if (titleLower.Contains(token)) return name;
-            }
-
-            return null;
-        }
     }
 
 }

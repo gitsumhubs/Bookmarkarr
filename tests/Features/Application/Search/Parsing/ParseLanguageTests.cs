@@ -36,5 +36,73 @@ namespace Bookmarkarr.Tests.Features.Application.Search.Parsing
             var result = SearchResultAttributeParser.ParseLanguageFromText(input);
             Assert.Equal(expected, result);
         }
+
+        // A lower-case "de", "en", "es", "fr" or "nl" in running text is a word, not a tag. The
+        // first row is the release that was reported as German.
+        [Theory]
+        [InlineData("Discount Dan’s Backroom Bargains Book 2 - Cul-de-Sac Carnage - James Hunter [M4B]")]
+        [InlineData("Tour de France: The Complete History [MP3]")]
+        [InlineData("Bel-Ami - Guy de Maupassant")]
+        [InlineData("Le Morte d'Arthur - Sir Thomas Malory")]
+        [InlineData("Como agua para chocolate es una novela")]
+        [InlineData("The Hidden Garden (de luxe edition)")]
+        [InlineData("CUL-DE-SAC")]
+        [InlineData("DEN OF THIEVES")]
+        public void ParseLanguageFromText_IgnoresWordsThatOnlyLookLikeCodes(string input)
+        {
+            Assert.Null(SearchResultAttributeParser.ParseLanguageFromText(input));
+        }
+
+        [Theory]
+        [InlineData("[eng / m4b] Some Title", "English")]
+        [InlineData("Some Title (de)", "German")]
+        [InlineData("Some Title [German]", "German")]
+        [InlineData("Some Title [MP3 64kbps ENG]", "English")]
+        [InlineData("Some.Book.Title.DE.MP3", "German")]
+        [InlineData("Autor - Titel (Ungekürzt) [DEU]", "German")]
+        public void ParseLanguageFromText_RecognizesTagsInBracketsAndCapitals(string input, string expected)
+        {
+            Assert.Equal(expected, SearchResultAttributeParser.ParseLanguageFromText(input));
+        }
+
+        // A language field holds nothing but the language, so its case carries no meaning.
+        [Theory]
+        [InlineData("en", "English")]
+        [InlineData("ENG", "English")]
+        [InlineData("English", "English")]
+        [InlineData(" de ", "German")]
+        [InlineData("deutsch", "German")]
+        [InlineData("[ENG / M4B]", "English")]
+        [InlineData("Klingon", null)]
+        [InlineData("", null)]
+        public void FromField_ReadsAnIndexerLanguageValue(string input, string? expected)
+        {
+            Assert.Equal(expected, ReleaseLanguageDetector.FromField(input));
+        }
+
+        [Theory]
+        [InlineData("en", "English", true)]
+        [InlineData("English", "english", true)]
+        [InlineData("German", "de", true)]
+        [InlineData("English", "German", false)]
+        [InlineData("Klingon", "klingon", true)]
+        [InlineData("English", null, false)]
+        public void AreSameLanguage_ComparesLanguagesNotStrings(string? left, string? right, bool expected)
+        {
+            Assert.Equal(expected, ReleaseLanguageDetector.AreSameLanguage(left, right));
+        }
+
+        // The conversion every torrent result passes through on its way to scoring and the UI.
+        [Fact]
+        public void ToSearchResult_DoesNotCallAnEnglishTorrentGerman()
+        {
+            var converted = SearchResultConverters.ToSearchResult(new IndexerSearchResult
+            {
+                Title = "Discount Dan’s Backroom Bargains Book 2 - Cul-de-Sac Carnage - James Hunter [M4B]",
+                DownloadType = "Torrent"
+            });
+
+            Assert.Null(converted.Language);
+        }
     }
 }

@@ -1,5 +1,19 @@
 # Changes
 
+## 2026-11-13 02:43 EST — claude — Stop reading ordinary words as language codes
+
+Why: an English release titled "Cul-de-Sac Carnage" was shown as German and scored 15 points lower.
+Before → after: any standalone two-letter code in a release title counted as a language whatever
+its case, so the hyphen-bounded "de" matched; the usenet scorer also matched "es", "de" and "fr" as
+substrings of any word → a language tag must be inside brackets or written in capitals, and
+language names match as whole words only. Four separate detectors → one, `ReleaseLanguageDetector`.
+An indexer's own language field is still read in any case, and a profile language written as a
+code ("en") now accepts the same language reported by name ("English").
+Not changed: the patched AudioBook Bay definition still does not carry the site's Language field.
+No schema, setting or configured path changed; nothing to back up.
+Validation: 1,570 backend tests passed, including new cases for the reported title. Not released or
+deployed with this entry; the running image is unchanged until a version is tagged.
+
 ## 2026-11-05 03:07 EST — codex — Preserve active ebooks during recovery (0.1.45)
 
 Why: an ID-based poll can see an active ebook while the same client's category-filtered snapshot

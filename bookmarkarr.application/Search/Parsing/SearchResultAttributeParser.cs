@@ -16,22 +16,10 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System.Text.RegularExpressions;
-
 namespace Bookmarkarr.Application.Search.Parsing;
 
 public static class SearchResultAttributeParser
 {
-    private static readonly IReadOnlyDictionary<string, string> LanguageCodes =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "ENG", "English" }, { "EN", "English" },
-            { "DUT", "Dutch" },   { "NLD", "Dutch" },   { "NL", "Dutch" },
-            { "GER", "German" },  { "DEU", "German" },  { "DE", "German" },
-            { "FRE", "French" },  { "FRA", "French" },  { "FR", "French" },
-            { "SPA", "Spanish" }, { "ES", "Spanish" }
-        };
-
     public static string DetectQualityFromTags(string tags)
     {
         var lowerTags = tags.ToLowerInvariant();
@@ -107,38 +95,12 @@ public static class SearchResultAttributeParser
         return "MP3";
     }
 
-    public static string? ParseLanguageFromText(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text)) return null;
+    /// <summary>
+    /// Looks for a language tag in free text. See <see cref="ReleaseLanguageDetector.FromText"/>
+    /// for what counts as one.
+    /// </summary>
+    public static string? ParseLanguageFromText(string text) => ReleaseLanguageDetector.FromText(text);
 
-        var normalized = Regex.Replace(text, "\\s+", " ", RegexOptions.Compiled | RegexOptions.IgnoreCase).Trim();
-        var alternation = string.Join("|", LanguageCodes.Keys.Select(Regex.Escape));
-        var bracketedPattern = $@"[\[\(]\s*(?:{alternation})\b";
-        var wordBoundaryPattern = $"\\b(?:{alternation})\\b";
-
-        var bracketMatch = Regex.Match(normalized, bracketedPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        if (bracketMatch.Success)
-        {
-            var code = bracketMatch.Value.TrimStart('[', '(').Trim().Split(' ', '/', ',')[0];
-            if (LanguageCodes.TryGetValue(code.ToUpperInvariant(), out var language)) return language;
-        }
-
-        var wordMatch = Regex.Match(normalized, wordBoundaryPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        if (wordMatch.Success)
-        {
-            var code = wordMatch.Value.Trim();
-            if (LanguageCodes.TryGetValue(code.ToUpperInvariant(), out var language)) return language;
-        }
-
-        return null;
-    }
-
-    public static string? ParseLanguageFromCode(string? code)
-    {
-        if (string.IsNullOrWhiteSpace(code)) return null;
-
-        return LanguageCodes.TryGetValue(code.ToUpperInvariant(), out var language)
-            ? language
-            : null;
-    }
+    /// <summary>Reads a value that is a language code or name and nothing else.</summary>
+    public static string? ParseLanguageFromCode(string? code) => ReleaseLanguageDetector.FromCode(code);
 }

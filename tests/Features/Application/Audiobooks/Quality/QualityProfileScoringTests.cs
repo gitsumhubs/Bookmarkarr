@@ -345,6 +345,84 @@ namespace Bookmarkarr.Tests.Features.Application.Audiobooks.Quality
             Assert.True(score.TotalScore > 0, "NZB result with detected format/language should have positive score");
         }
 
+        // "James" holds "es" and "hidden" holds "de". Matching those as substrings made nearly every
+        // usenet title Spanish or German and charged it the mismatch penalty.
+        [Theory]
+        [InlineData("James Hunter - Cul-de-Sac Carnage")]
+        [InlineData("The Hidden Garden - From Africa With Friends")]
+        public async Task NZB_OrdinaryWordsInTitle_AreNotReadAsALanguage(string title)
+        {
+            var service = CreateService();
+            var profile = new QualityProfile
+            {
+                PreferredFormats = new System.Collections.Generic.List<string> { "m4b" },
+                PreferredLanguages = new System.Collections.Generic.List<string> { "English" },
+                MinimumSeeders = 0
+            };
+
+            var score = await service.ScoreSearchResult(new SearchResult
+            {
+                Title = title,
+                Language = null,
+                DownloadType = "nzb",
+                NzbUrl = "http://example.com/test.nzb",
+                PublishedDate = DateTime.UtcNow.AddDays(-10).ToString("o")
+            }, profile);
+
+            Assert.DoesNotContain("LanguageMismatch", score.ScoreBreakdown.Keys);
+            Assert.DoesNotContain("Language", score.ScoreBreakdown.Keys);
+        }
+
+        [Theory]
+        [InlineData("Autor - Ein Buch German MP3")]
+        [InlineData("Autor.-.Ein.Buch.DE.MP3")]
+        public async Task NZB_TaggedGermanRelease_IsStillPenalizedForAnEnglishProfile(string title)
+        {
+            var service = CreateService();
+            var profile = new QualityProfile
+            {
+                PreferredFormats = new System.Collections.Generic.List<string> { "mp3" },
+                PreferredLanguages = new System.Collections.Generic.List<string> { "English" },
+                MinimumSeeders = 0
+            };
+
+            var score = await service.ScoreSearchResult(new SearchResult
+            {
+                Title = title,
+                Language = null,
+                DownloadType = "nzb",
+                NzbUrl = "http://example.com/test.nzb",
+                PublishedDate = DateTime.UtcNow.AddDays(-10).ToString("o")
+            }, profile);
+
+            Assert.Contains("LanguageMismatch", score.ScoreBreakdown.Keys);
+        }
+
+        [Fact]
+        public async Task PreferredLanguageWrittenAsACode_AcceptsTheSameLanguageByName()
+        {
+            var service = CreateService();
+            var profile = new QualityProfile
+            {
+                PreferredFormats = new System.Collections.Generic.List<string> { "mp3" },
+                PreferredLanguages = new System.Collections.Generic.List<string> { "en" },
+                MinimumSeeders = 0
+            };
+
+            var score = await service.ScoreSearchResult(new SearchResult
+            {
+                Title = "Some Book",
+                Format = "mp3",
+                Quality = "256",
+                Language = "English",
+                DownloadType = "torrent",
+                Seeders = 2,
+                PublishedDate = DateTime.UtcNow.ToString("o")
+            }, profile);
+
+            Assert.DoesNotContain("LanguageMismatch", score.ScoreBreakdown.Keys);
+        }
+
         [Fact]
         public async Task LanguageMismatch_ShouldBePenalized()
         {

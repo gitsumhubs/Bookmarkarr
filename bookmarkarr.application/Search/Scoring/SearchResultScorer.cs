@@ -187,7 +187,7 @@ namespace Bookmarkarr.Application.Search.Scoring
             // Language detection for NZB
             if (isNzb && string.IsNullOrEmpty(normalizedLanguage) && HasPreferredLanguages(profile))
             {
-                var detected = DetectLanguageFromTitle(titleLower, profile.PreferredLanguages);
+                var detected = ReleaseLanguageDetector.FromUsenetReleaseName(searchResult.Title, profile.PreferredLanguages);
                 if (!string.IsNullOrEmpty(detected))
                 {
                     normalizedLanguage = detected;
@@ -209,7 +209,9 @@ namespace Bookmarkarr.Application.Search.Scoring
                 }
                 else
                 {
-                    var matches = profile.PreferredLanguages.Any(l => normalizedLanguage.Equals(l, StringComparison.OrdinalIgnoreCase));
+                    // Compared as languages rather than as strings, so a profile that lists "en"
+                    // accepts a release an indexer reports as "English".
+                    var matches = profile.PreferredLanguages.Any(l => ReleaseLanguageDetector.AreSameLanguage(normalizedLanguage, l));
                     if (!matches)
                     {
                         score.TotalScore += LanguageMismatchPenalty;
@@ -412,26 +414,6 @@ namespace Bookmarkarr.Application.Search.Scoring
                 .Where(format => !string.IsNullOrWhiteSpace(format))
                 .Select(format => format.ToLower().Trim())
                 .FirstOrDefault(token => titleLower.Contains(token) || titleLower.Contains("[" + token + "]") || titleLower.Contains("(" + token + ")") || titleLower.Contains("." + token));
-        }
-
-        private static string? DetectLanguageFromTitle(string titleLower, List<string>? preferredLanguages)
-        {
-            if (preferredLanguages == null || preferredLanguages.Count == 0 || string.IsNullOrEmpty(titleLower)) return null;
-            foreach (var lang in preferredLanguages.Where(language => !string.IsNullOrWhiteSpace(language)))
-            {
-                var token = lang.ToLower().Trim();
-                if (titleLower.Contains(token) || titleLower.Contains("[" + token + "]") || titleLower.Contains("(" + token + ")") || titleLower.Contains(" " + token + " "))
-                {
-                    return lang;
-                }
-            }
-            var common = new Dictionary<string, string>
-            {
-                { "eng", "English" }, { "english", "English" }, { "es", "Spanish" }, { "spanish", "Spanish" },
-                { "de", "German" }, { "german", "German" }, { "fr", "French" }, { "french", "French" }
-            };
-            foreach (var (token, name) in common) if (titleLower.Contains(token)) return name;
-            return null;
         }
 
         private int GetQualityScore(string quality)
