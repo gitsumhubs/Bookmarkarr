@@ -1,5 +1,25 @@
 # Changes
 
+## 2026-11-13 14:15 EST — claude — Add a "is this the wanted book" check for releases (not yet wired)
+
+Why: unattended grabs pick the best-scored result of whatever a search returned, with no check
+that it is the wanted book. That is how an 846 GB "Entire Audiobooks Collection" was grabbed for
+one title and twelve-book packs were filed as single books.
+Before → after: no such check existed → `ReleaseRelevanceEvaluator` (domain) answers accept or
+reject with a reason for a wanted book and a release name: multi-book pack, title not found, one
+part of a book, a different volume, a longer title that contains the wanted one, another author.
+Not changed: nothing calls it yet. Both automatic search paths still grab as before; wiring it in
+is the next step of the same task. No schema, setting or configured path changed; nothing to back up.
+Validation: replayed against the 73 real grabs in the live database (12 wrong ones all rejected,
+59 correct ones all accepted) and against every one of 115 recorded release names paired with
+every one of 102 books (11,621 wrong pairings, none accepted; 100 of 103 correct pairings accepted,
+the three misses being "Philosopher's Stone" and "Sorcerer's Stone" asked for under the other name).
+On 274 release names fetched fresh from the usenet indexer, the first version accepted one wrong
+book (Act I for "The Sandman: Act II"); after that fix, none, with 49 of 54 correct pairings
+accepted. Known gaps: a release in another language under the same title is still accepted, and
+releases named only by series and number are refused. 1,615 backend tests passed. No request was
+sent to AudioBook Bay. Not released or deployed.
+
 ## 2026-11-13 02:43 EST — claude — Stop reading ordinary words as language codes
 
 Why: an English release titled "Cul-de-Sac Carnage" was shown as German and scored 15 points lower.
