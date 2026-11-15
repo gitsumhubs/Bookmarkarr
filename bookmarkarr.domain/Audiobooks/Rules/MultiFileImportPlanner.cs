@@ -117,6 +117,7 @@ namespace Bookmarkarr.Domain.Audiobooks.Rules
         /// a "CD 2" folder, "Disc 3" in the name — carried forward over files that do not say.
         /// With nothing to go on, or numbers that run backwards, everything is disc 1.
         /// </summary>
+        /// <param name="plans">The files being imported together, as planned by <see cref="BuildPlans"/>.</param>
         /// <param name="namingPattern">
         /// The pattern the numbers are for. When it has no chapter token the disc number is the
         /// only thing telling the files apart, so it stays one per file as it always was.
