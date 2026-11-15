@@ -542,10 +542,11 @@ namespace Bookmarkarr.Tests.Features.Application.Downloads.Import
 
             var files = await _audiobookFileRepository.GetAllAsync();
             Assert.Equal(4, files.Count);
+            // One disc, four tracks. The disc number used to repeat the track number.
             Assert.True(File.Exists(Path.Join(basePath, "Seconde Fondation-01-01.mp3")));
-            Assert.True(File.Exists(Path.Join(basePath, "Seconde Fondation-02-02.mp3")));
-            Assert.True(File.Exists(Path.Join(basePath, "Seconde Fondation-03-03.mp3")));
-            Assert.True(File.Exists(Path.Join(basePath, "Seconde Fondation-04-04.mp3")));
+            Assert.True(File.Exists(Path.Join(basePath, "Seconde Fondation-01-02.mp3")));
+            Assert.True(File.Exists(Path.Join(basePath, "Seconde Fondation-01-03.mp3")));
+            Assert.True(File.Exists(Path.Join(basePath, "Seconde Fondation-01-04.mp3")));
             Assert.False(File.Exists(Path.Join(basePath, "Seconde Fondation Isaac Asimov.nfo")));
         }
 

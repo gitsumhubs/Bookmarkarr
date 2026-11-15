@@ -20,12 +20,12 @@ public sealed class GoodreadsCatalogImportsApiTests : IClassFixture<BookmarkarrW
     [Fact]
     public async Task PreviewAndCommit_DefaultBothEditions_IsAdditiveIdempotentAndDoesNotSearch()
     {
-        var downloadServiceMock = new Mock<IDownloadService>(MockBehavior.Strict);
+        var downloadServiceMock = new Mock<IEditionSearchService>(MockBehavior.Strict);
 
         using var factory = _factory.WithWebHostBuilder(builder =>
             builder.ConfigureServices(services =>
             {
-                services.RemoveAll<IDownloadService>();
+                services.RemoveAll<IEditionSearchService>();
                 services.AddSingleton(downloadServiceMock.Object);
             }));
         using var client = factory.CreateClient();
@@ -96,7 +96,7 @@ public sealed class GoodreadsCatalogImportsApiTests : IClassFixture<BookmarkarrW
         }
 
         // Strict mock with no setup: any search attempt would have thrown.
-        downloadServiceMock.Verify(service => service.SearchAndDownloadAsync(It.IsAny<int>()), Times.Never);
+        downloadServiceMock.Verify(service => service.SearchAndDownloadForBookAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
 
         var secondPreview = await PreviewAsync(client, csv);
         var secondRow = secondPreview.RootElement.GetProperty("rows")[0];
@@ -145,7 +145,7 @@ public sealed class GoodreadsCatalogImportsApiTests : IClassFixture<BookmarkarrW
         var original = await verificationDb.Audiobooks.Include(book => book.Editions)
             .SingleAsync(book => book.GoodreadsId == "990001");
         Assert.All(original.Editions, edition => Assert.True(edition.Monitored));
-        downloadServiceMock.Verify(service => service.SearchAndDownloadAsync(It.IsAny<int>()), Times.Never);
+        downloadServiceMock.Verify(service => service.SearchAndDownloadForBookAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -153,10 +153,10 @@ public sealed class GoodreadsCatalogImportsApiTests : IClassFixture<BookmarkarrW
     {
         var searched = new System.Collections.Concurrent.ConcurrentBag<int>();
         var firstSearch = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var downloadServiceMock = new Mock<IDownloadService>();
+        var downloadServiceMock = new Mock<IEditionSearchService>();
         downloadServiceMock
-            .Setup(service => service.SearchAndDownloadAsync(It.IsAny<int>()))
-            .Callback<int>(audiobookId =>
+            .Setup(service => service.SearchAndDownloadForBookAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback<int, CancellationToken>((audiobookId, _) =>
             {
                 searched.Add(audiobookId);
                 firstSearch.TrySetResult();
@@ -172,7 +172,7 @@ public sealed class GoodreadsCatalogImportsApiTests : IClassFixture<BookmarkarrW
         using var factory = _factory.WithWebHostBuilder(builder =>
             builder.ConfigureServices(services =>
             {
-                services.RemoveAll<IDownloadService>();
+                services.RemoveAll<IEditionSearchService>();
                 services.AddSingleton(downloadServiceMock.Object);
             }));
         using var client = factory.CreateClient();

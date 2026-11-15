@@ -64,7 +64,9 @@ namespace Bookmarkarr.Infrastructure.Search.Quota
                 return IndexerQuotaState.Unlimited(indexerId, $"Indexer {indexerId}");
             }
 
-            var limit = indexer.RequestsPerHour;
+            // An AudioBook Bay indexer with nothing set still gets a budget: the setting was only
+            // ever filled in by the in-app patch, and a hand-installed definition left it empty.
+            var limit = AudiobookBayPolicy.EffectiveRequestsPerHour(indexer);
             if (!limit.HasValue || limit.Value <= 0)
             {
                 return IndexerQuotaState.Unlimited(indexerId, indexer.Name);
@@ -79,26 +81,34 @@ namespace Bookmarkarr.Infrastructure.Search.Quota
             await ConsumeLock.WaitAsync(ct);
             try
             {
+                if (await GetCooldownAsync(indexerId, ct) != null)
+                {
+                    return false;
+                }
+
                 var state = await GetStateAsync(indexerId, ct);
-                if (state.IsLimited && !CanSpend(state, purpose))
+                var cost = await CostAsync(indexerId, purpose, state, ct);
+                if (state.IsLimited && !CanSpend(state, purpose, cost))
                 {
                     _logger.LogInformation(
-                        "Indexer {Name} budget spent for {Purpose}: {Used}/{Limit} used this hour",
+                        "Indexer {Name} budget spent for {Purpose}: {Used}/{Limit} used this hour, {Cost} needed",
                         state.IndexerName,
                         purpose,
                         state.Used,
-                        state.RequestsPerHour);
+                        state.RequestsPerHour,
+                        cost);
                     return false;
                 }
 
                 if (state.IsLimited)
                 {
-                    _db.IndexerQuotaUsages.Add(new IndexerQuotaUsage
+                    // One row per request the site will see, so a three-page search fills the
+                    // window three times as fast as a grab does.
+                    var now = DateTime.UtcNow;
+                    for (var i = 0; i < cost; i++)
                     {
-                        IndexerId = indexerId,
-                        OccurredAtUtc = DateTime.UtcNow,
-                        Purpose = purpose
-                    });
+                        _db.IndexerQuotaUsages.Add(new IndexerQuotaUsage { IndexerId = indexerId, OccurredAtUtc = now, Purpose = purpose });
+                    }
 
                     await _db.SaveChangesAsync(ct);
                 }
@@ -113,21 +123,100 @@ namespace Bookmarkarr.Infrastructure.Search.Quota
 
         public async Task<TimeSpan?> TimeUntilAvailableAsync(int indexerId, IndexerQuotaPurpose purpose, CancellationToken ct = default)
         {
+            var cooldown = await GetCooldownAsync(indexerId, ct);
+            var cooldownWait = cooldown == null ? (TimeSpan?)null : cooldown.UntilUtc - DateTime.UtcNow;
+
             var state = await GetStateAsync(indexerId, ct);
-            if (!state.IsLimited || CanSpend(state, purpose))
+            var cost = await CostAsync(indexerId, purpose, state, ct);
+            if (!state.IsLimited || CanSpend(state, purpose, cost))
             {
-                return null;
+                return cooldownWait;
             }
 
             var occurrences = await WindowOccurrencesAsync(indexerId, ct);
-            var freeAt = NextSlotFor(state, purpose, occurrences);
+            var freeAt = NextSlotFor(state, purpose, occurrences, cost);
             if (freeAt == null)
             {
-                return null;
+                return cooldownWait;
             }
 
             var wait = freeAt.Value - DateTime.UtcNow;
-            return wait > TimeSpan.Zero ? wait : TimeSpan.Zero;
+            wait = wait > TimeSpan.Zero ? wait : TimeSpan.Zero;
+            return cooldownWait.HasValue && cooldownWait.Value > wait ? cooldownWait : wait;
+        }
+
+        public async Task<IndexerCooldown?> GetCooldownAsync(int indexerId, CancellationToken ct = default)
+        {
+            var indexer = await _db.Indexers.AsNoTracking()
+                .Where(i => i.Id == indexerId)
+                .Select(i => new { i.Name, i.UnavailableUntilUtc, i.ConsecutiveFailures, i.LastFailureReason })
+                .FirstOrDefaultAsync(ct);
+            return indexer?.UnavailableUntilUtc is { } until && until > DateTime.UtcNow
+                ? new IndexerCooldown(indexer.Name, until, indexer.ConsecutiveFailures, indexer.LastFailureReason)
+                : null;
+        }
+
+        public async Task<DateTime> RecordFailureAsync(int indexerId, bool rateLimited, TimeSpan? retryAfter, string reason, CancellationToken ct = default)
+        {
+            var indexer = await _db.Indexers.FirstOrDefaultAsync(i => i.Id == indexerId, ct);
+            if (indexer == null)
+            {
+                return DateTime.UtcNow;
+            }
+
+            indexer.ConsecutiveFailures++;
+            var wait = SearchBackoff.AfterIndexerFailures(indexer.ConsecutiveFailures, rateLimited, retryAfter);
+            indexer.UnavailableUntilUtc = DateTime.UtcNow + wait;
+            indexer.LastFailureReason = reason.Length > 300 ? reason[..300] : reason;
+            await _db.SaveChangesAsync(ct);
+            _logger.LogWarning(
+                "Indexer {Name} failed {Count} time(s) in a row; leaving it alone for {Wait}",
+                indexer.Name,
+                indexer.ConsecutiveFailures,
+                wait);
+            return indexer.UnavailableUntilUtc.Value;
+        }
+
+        public async Task RecordSuccessAsync(int indexerId, CancellationToken ct = default)
+        {
+            var indexer = await _db.Indexers.FirstOrDefaultAsync(i => i.Id == indexerId, ct);
+            if (indexer == null || (indexer.ConsecutiveFailures == 0 && indexer.UnavailableUntilUtc == null))
+            {
+                return;
+            }
+
+            indexer.ConsecutiveFailures = 0;
+            indexer.UnavailableUntilUtc = null;
+            indexer.LastFailureReason = null;
+            await _db.SaveChangesAsync(ct);
+        }
+
+        /// <summary>
+        /// Site requests this spend stands for. A grab is one. A search is as many pages as the
+        /// indexer's definition reads, capped at what the purpose could ever spend so a budget
+        /// smaller than one search does not shut the indexer for good.
+        /// </summary>
+        private async Task<int> CostAsync(int indexerId, IndexerQuotaPurpose purpose, IndexerQuotaState state, CancellationToken ct)
+        {
+            if (purpose == IndexerQuotaPurpose.Grab || !state.IsLimited)
+            {
+                return 1;
+            }
+
+            var indexer = await _db.Indexers.AsNoTracking().FirstOrDefaultAsync(i => i.Id == indexerId, ct);
+            if (indexer == null)
+            {
+                return 1;
+            }
+
+            var patch = await _db.ApplicationSettings.AsNoTracking()
+                .Select(settings => new { settings.AudiobookBayPatchIndexerId, settings.AudiobookBayPatchPages })
+                .FirstOrDefaultAsync(ct);
+            var pages = AudiobookBayPolicy.RequestsPerSearch(indexer, patch?.AudiobookBayPatchIndexerId, patch?.AudiobookBayPatchPages);
+            var ceiling = purpose == IndexerQuotaPurpose.AutomaticSearch
+                ? state.RequestsPerHour!.Value - state.InteractiveReserve
+                : state.RequestsPerHour!.Value;
+            return Math.Clamp(pages, 1, Math.Max(1, ceiling));
         }
 
         public async Task PruneAsync(CancellationToken ct = default)
@@ -183,10 +272,10 @@ namespace Bookmarkarr.Infrastructure.Search.Quota
         /// the last request. Beyond that nothing is sent, since one more request is exactly what
         /// re-arms a ban.
         /// </summary>
-        private static bool CanSpend(IndexerQuotaState state, IndexerQuotaPurpose purpose)
+        private static bool CanSpend(IndexerQuotaState state, IndexerQuotaPurpose purpose, int cost = 1)
             => purpose == IndexerQuotaPurpose.AutomaticSearch
-                ? state.AutomaticRemaining > 0
-                : state.Remaining > 0;
+                ? state.AutomaticRemaining >= cost
+                : state.Remaining >= cost;
 
         private static int ReserveFor(int limit)
         {
@@ -202,7 +291,7 @@ namespace Bookmarkarr.Infrastructure.Search.Quota
         /// <summary>
         /// When enough of the window has aged out for <paramref name="purpose"/> to spend again.
         /// </summary>
-        private static DateTime? NextSlotFor(IndexerQuotaState state, IndexerQuotaPurpose purpose, List<DateTime> occurrences)
+        private static DateTime? NextSlotFor(IndexerQuotaState state, IndexerQuotaPurpose purpose, List<DateTime> occurrences, int cost = 1)
         {
             if (occurrences.Count == 0 || !state.RequestsPerHour.HasValue)
             {
@@ -214,7 +303,7 @@ namespace Bookmarkarr.Infrastructure.Search.Quota
                 : state.RequestsPerHour.Value;
 
             // Requests that have to expire before one more fits under the ceiling.
-            var mustExpire = state.Used - ceiling + 1;
+            var mustExpire = state.Used - ceiling + cost;
             if (mustExpire <= 0)
             {
                 return null;

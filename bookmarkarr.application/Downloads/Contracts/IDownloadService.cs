@@ -16,13 +16,6 @@ namespace Bookmarkarr.Application.Downloads.Contracts
         Task<string> StartDownloadAsync(SearchResult searchResult, string downloadClientId, int? audiobookId = null);
 
         /// <summary>
-        /// Searches for an audiobook and automatically downloads the best result
-        /// </summary>
-        /// <param name="audiobookId">The audiobook ID to search and download</param>
-        /// <returns>Search and download result details</returns>
-        Task<SearchAndDownloadResult> SearchAndDownloadAsync(int audiobookId);
-
-        /// <summary>
         /// Sends a search result to a download client
         /// </summary>
         /// <param name="searchResult">The search result to download</param>

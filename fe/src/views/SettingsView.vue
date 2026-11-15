@@ -1227,7 +1227,7 @@ async function loadTabContents(tab: string) {
           await configStore.loadApplicationSettings()
           // Ensure sensible default
           if (settings.value && !settings.value.completedFileAction)
-            settings.value.completedFileAction = 'copy'
+            settings.value.completedFileAction = 'hardlink/copy'
           // Ensure new settings have sensible defaults when not present
           if (
             settings.value &&

@@ -101,7 +101,10 @@ namespace Bookmarkarr.Application.Mapping
                         QualityProfileId = edition.QualityProfileId,
                         RootFolderId = edition.RootFolderId,
                         RootPath = edition.RootPath,
-                        DownloadCategory = edition.DownloadCategory
+                        DownloadCategory = edition.DownloadCategory,
+                        LastSearchTime = edition.LastSearchTime,
+                        LastSearchOutcome = edition.LastSearchOutcome,
+                        NextSearchTime = edition.NextSearchTime
                     })
                     .ToArray()
             };

@@ -32,7 +32,8 @@ public sealed class BooksController(BookmarkarrDbContext db, ISearchService sear
                 b.Editions.OrderBy(e => e.MediaType).Select(e => new BookEditionDto(e.Id, e.MediaType, e.Monitored,
                     e.UpgradeAllowed, e.Status, e.Monitored && wantedStatuses.Contains(e.Status), e.QualityProfileId, e.RootFolderId,
                     e.RootPath, e.DownloadCategory, e.LastSearchTime,
-                    includeFiles ? e.Files.Select(f => new EditionFileDto(f.Id, f.Path, f.Extension, f.Size)).ToList() : new List<EditionFileDto>())).ToList()))
+                    includeFiles ? e.Files.Select(f => new EditionFileDto(f.Id, f.Path, f.Extension, f.Size)).ToList() : new List<EditionFileDto>(),
+                    e.LastSearchOutcome, e.NextSearchTime)).ToList()))
             .ToListAsync(ct);
         if (HttpContext is not null)
         {
@@ -161,14 +162,16 @@ public sealed class BooksController(BookmarkarrDbContext db, ISearchService sear
 
     private static BookEditionDto ToEditionDto(BookEdition edition) => new(edition.Id, edition.MediaType, edition.Monitored,
         edition.UpgradeAllowed, edition.Status, edition.IsWanted, edition.QualityProfileId, edition.RootFolderId, edition.RootPath,
-        edition.DownloadCategory, edition.LastSearchTime, edition.Files.Select(f => new EditionFileDto(f.Id, f.Path, f.Extension, f.Size)).ToList());
+        edition.DownloadCategory, edition.LastSearchTime, edition.Files.Select(f => new EditionFileDto(f.Id, f.Path, f.Extension, f.Size)).ToList(),
+        edition.LastSearchOutcome, edition.NextSearchTime);
 }
 
 public sealed record BookDto(int Id, string Title, List<string> Authors, string? GoodreadsId, List<string> Isbn,
     string? ImageUrl, string? PublishedDate, string? Series, List<BookEditionDto> Editions);
 public sealed record BookEditionDto(int Id, EditionMediaType MediaType, bool Monitored, bool UpgradeAllowed,
     EditionWantedStatus Status, bool IsWanted, int? QualityProfileId, int? RootFolderId, string? RootPath,
-    string DownloadCategory, DateTime? LastSearchTime, List<EditionFileDto> Files);
+    string DownloadCategory, DateTime? LastSearchTime, List<EditionFileDto> Files,
+    string? LastSearchOutcome = null, DateTime? NextSearchTime = null);
 public sealed record EditionFileDto(int Id, string Path, string Extension, long Size);
 public sealed class UpdateEditionRequest
 {

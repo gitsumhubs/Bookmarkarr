@@ -30,6 +30,16 @@ namespace Bookmarkarr.Domain.Search
         public string? Series { get; init; }
         public string? SeriesNumber { get; init; }
         public IReadOnlyList<string> Narrators { get; init; } = [];
+
+        public static WantedBook From(Bookmarkarr.Domain.Audiobooks.Audiobook book) => new()
+        {
+            Title = book.Title,
+            Subtitle = book.Subtitle,
+            Authors = book.Authors ?? [],
+            Series = book.Series,
+            SeriesNumber = book.SeriesNumber,
+            Narrators = book.Narrators ?? []
+        };
     }
 
     /// <summary>

@@ -193,6 +193,13 @@ public class DownloadsController : ControllerBase
                 });
             }
 
+            // Retrying a download held as several books is the person saying "it is this one
+            // book": the hold is not applied a second time.
+            if (string.Equals(download.ImportBlockReason, Bookmarkarr.Infrastructure.Downloads.Processing.DownloadProcessingJobProcessor.MultiBookBlockReason, StringComparison.Ordinal))
+            {
+                download.SetMetadata(Bookmarkarr.Infrastructure.Downloads.Processing.DownloadProcessingJobProcessor.MultiBookAllowedMetadataKey, bool.TrueString);
+            }
+
             download.Unblock();
 
             await _downloadService.UpdateAsync(download);

@@ -539,6 +539,13 @@ const onTypeChange = () => {
   } else {
     formData.value.apiKey = ''
   }
+
+  // A new usenet client cleans up after a confirmed import: nothing seeds, and keeping the
+  // payload doubles the space every book takes. Torrents keep theirs so they can seed. An
+  // existing client's choice is never changed here.
+  if (!props.editingClient) {
+    formData.value.removeCompletedDownloads = isUsenet.value ? 'remove_and_delete' : 'none'
+  }
 }
 
 // Watch for editing client changes

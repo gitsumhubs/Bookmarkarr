@@ -667,6 +667,11 @@ export interface Audiobook {
     qualityProfileId?: number
     rootFolderId?: number
     rootPath?: string
+    lastSearchTime?: string
+    /** What the last search came to, in words: what was grabbed, or why nothing was. */
+    lastSearchOutcome?: string
+    /** When the automatic pass will next look for this edition; absent when it is due. */
+    nextSearchTime?: string
   }[]
   publisher?: string
   language?: string

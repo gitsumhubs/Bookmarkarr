@@ -64,7 +64,25 @@ and deliberately. Nothing here is configurable — the values are the point.
   `requestDelay` spreads a three-page search over about half a minute instead of firing it inside
   six seconds. This one is not randomised — Cardigann takes a single number, not a range.
 
-Usenet indexers are exempt from all of it — they are not what bans. A manual search therefore fills
+- **The hourly budget is counted in site requests, not searches.** A patched search reads several
+  pages and the site sees each one, so a search is charged a request per page: three by default, or
+  the page count the patch recorded. Sixty an hour, with a fifth held back for a person's own
+  searches, is sixteen unattended searches. A grab is one request.
+- **An AudioBook Bay indexer always has a budget.** The patch used to be the only thing that set
+  one, so an indexer pointed at a hand-installed definition had none. An empty setting now means
+  sixty; a number somebody typed, including zero for unlimited, is left alone.
+- **Usenet is asked first.** An unattended search tries the usenet indexers through the whole
+  query ladder before the torrent ones, and a book found there never reaches this site.
+- **A refusal stops the search.** When the site, or Prowlarr on its behalf, answers 429, 403 or
+  503, nothing more is sent for an hour; a second refusal in a row makes it six hours, then a day,
+  three days and a week. A timeout or gateway error is a shorter wait starting at ten minutes. The
+  wait is stored on the indexer, so restarting does not clear it, and the first good answer does.
+  A book whose search was cut short this way is not recorded as searched and comes round again.
+- **A book that is not there is asked for less often.** After a search that finds nothing to take,
+  the next unattended search for that edition waits six hours, then twelve, doubling to a week.
+  Searching by hand is never held back.
+
+Usenet indexers are exempt from the lanes and the gaps — they are not what bans. A manual search therefore fills
 in twice: NZB results appear at once, and torrent results join them as each torrent search reaches
 the front of the queue. A search that looks stuck is usually waiting its turn; the log says so.
 

@@ -89,8 +89,9 @@ namespace Bookmarkarr.Application.Search.Scoring
             // Detect NZB/Usenet more broadly
             var isNzb = IsNzbResult(searchResult);
 
-            // Size checks (skip for NZB)
-            if (!isNzb && searchResult.Size > 0)
+            // Size checks. Usenet used to be exempt, which left a profile's maximum doing
+            // nothing for half the indexers; an NZB's size is as real as a torrent's.
+            if (searchResult.Size > 0)
             {
                 // The casts are load-bearing. MinimumSize/MaximumSize are megabytes held in an int,
                 // so the byte conversion overflowed for any limit above 2047 MB and wrapped to a

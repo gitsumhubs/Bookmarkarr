@@ -66,6 +66,12 @@ namespace Bookmarkarr.Application.Search.Contracts
         Task<List<IndexerSearchResult>> SearchIndexersAsync(string query, string? category = null, SearchSortBy sortBy = SearchSortBy.Seeders, SearchSortDirection sortDirection = SearchSortDirection.Descending, bool isAutomaticSearch = false, SearchRequest? request = null);
 
         /// <summary>
+        /// Searches the enabled indexers of one protocol and reports which of them did not answer,
+        /// so a caller can tell "nothing there" from "could not ask".
+        /// </summary>
+        Task<IndexerSearchOutcome> SearchIndexersWithOutcomeAsync(string query, string? category = null, bool isAutomaticSearch = false, SearchRequest? request = null, IndexerProtocolFilter protocol = IndexerProtocolFilter.Any);
+
+        /// <summary>
         /// Gets all enabled metadata sources (Audible, Audnexus, OpenLibrary, etc.)
         /// </summary>
         /// <returns>List of enabled metadata source configurations</returns>

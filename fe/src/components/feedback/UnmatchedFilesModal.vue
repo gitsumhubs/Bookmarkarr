@@ -249,7 +249,7 @@ const destinationFolder = computed(
   () => rootFoldersStore.folders.find((f) => f.id === destinationFolderId.value) ?? null,
 )
 
-const fileAction = computed(() => configStore.applicationSettings?.completedFileAction ?? 'copy')
+const fileAction = computed(() => configStore.applicationSettings?.completedFileAction ?? 'hardlink/copy')
 const fileInputMode = computed<'move' | 'copy' | 'hardlink/copy'>(() =>
   fileAction.value === 'move' || fileAction.value === 'copy' || fileAction.value === 'hardlink/copy'
     ? fileAction.value

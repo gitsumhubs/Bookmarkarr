@@ -31,7 +31,10 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.Search
     /// </summary>
     public class IndexerQuotaServiceTests
     {
-        private static (IndexerQuotaService Service, BookmarkarrDbContext Db) Build(int? requestsPerHour)
+        // The general rules are tested on an ordinary indexer, where a search costs one request.
+        // AudioBook Bay has its own rules and its own tests at the bottom.
+        private static (IndexerQuotaService Service, BookmarkarrDbContext Db) Build(
+            int? requestsPerHour, string name = "Some Indexer", string url = "http://indexer.invalid/api")
         {
             var options = new DbContextOptionsBuilder<BookmarkarrDbContext>()
                 .UseInMemoryDatabase("quota_" + Guid.NewGuid().ToString("N"))
@@ -41,10 +44,10 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.Search
             db.Indexers.Add(new Indexer
             {
                 Id = 1,
-                Name = "AudioBook Bay",
+                Name = name,
                 Type = "Torrent",
                 Implementation = "Torznab",
-                Url = "http://prowlarr:9696/2/api",
+                Url = url,
                 RequestsPerHour = requestsPerHour
             });
             db.SaveChanges();
@@ -166,6 +169,84 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.Search
             Assert.False(await service.TryConsumeAsync(1, IndexerQuotaPurpose.InteractiveSearch));
 
             Assert.True(await service.TryConsumeAsync(2, IndexerQuotaPurpose.InteractiveSearch));
+        }
+
+        [Fact]
+        public async Task AnAudiobookBayIndexerWithNoBudgetSet_StillGetsOne()
+        {
+            var (service, _) = Build(requestsPerHour: null, name: "AudioBook Bay (Prowlarr)");
+
+            var state = await service.GetStateAsync(1);
+
+            Assert.True(state.IsLimited);
+            Assert.Equal(AudiobookBayPolicy.DefaultRequestsPerHour, state.RequestsPerHour);
+        }
+
+        [Fact]
+        public async Task AnAudiobookBaySearch_IsChargedOneRequestPerPage()
+        {
+            // 60 an hour with 12 held back for a person leaves automation 48: sixteen searches of
+            // three pages, not forty-eight.
+            var (service, db) = Build(requestsPerHour: null, name: "AudioBook Bay (Prowlarr)");
+
+            for (var i = 0; i < 16; i++)
+            {
+                Assert.True(await service.TryConsumeAsync(1, IndexerQuotaPurpose.AutomaticSearch));
+            }
+
+            Assert.Equal(48, db.IndexerQuotaUsages.Count());
+            Assert.False(await service.TryConsumeAsync(1, IndexerQuotaPurpose.AutomaticSearch));
+            Assert.NotNull(await service.TimeUntilAvailableAsync(1, IndexerQuotaPurpose.AutomaticSearch));
+
+            // A grab is one request to the site, whatever the search cost.
+            Assert.True(await service.TryConsumeAsync(1, IndexerQuotaPurpose.Grab));
+            Assert.Equal(49, db.IndexerQuotaUsages.Count());
+        }
+
+        [Fact]
+        public async Task TheRecordedPatchPageCount_IsWhatASearchCosts()
+        {
+            var (service, db) = Build(requestsPerHour: 60, name: "AudioBook Bay");
+            db.ApplicationSettings.Add(new ApplicationSettings { AudiobookBayPatchIndexerId = 1, AudiobookBayPatchPages = 5 });
+            db.SaveChanges();
+
+            Assert.True(await service.TryConsumeAsync(1, IndexerQuotaPurpose.InteractiveSearch));
+
+            Assert.Equal(5, db.IndexerQuotaUsages.Count());
+        }
+
+        [Fact]
+        public async Task ARefusal_ShutsTheIndexer_ForLongerEachTime_UntilItAnswers()
+        {
+            var (service, db) = Build(requestsPerHour: null);
+
+            var first = await service.RecordFailureAsync(1, rateLimited: true, retryAfter: null, "429 Too Many Requests");
+            Assert.InRange(first - DateTime.UtcNow, TimeSpan.FromMinutes(59), TimeSpan.FromMinutes(61));
+            Assert.False(await service.TryConsumeAsync(1, IndexerQuotaPurpose.InteractiveSearch));
+            Assert.NotNull(await service.TimeUntilAvailableAsync(1, IndexerQuotaPurpose.AutomaticSearch));
+            Assert.Equal("429 Too Many Requests", (await service.GetCooldownAsync(1))!.Reason);
+
+            var second = await service.RecordFailureAsync(1, rateLimited: true, retryAfter: null, "429 Too Many Requests");
+            Assert.InRange(second - DateTime.UtcNow, TimeSpan.FromHours(5.9), TimeSpan.FromHours(6.1));
+
+            // Stored on the indexer, so a restart does not hand the site a fresh start.
+            Assert.Equal(2, db.Indexers.Single().ConsecutiveFailures);
+
+            await service.RecordSuccessAsync(1);
+            Assert.Null(await service.GetCooldownAsync(1));
+            Assert.True(await service.TryConsumeAsync(1, IndexerQuotaPurpose.AutomaticSearch));
+        }
+
+        [Fact]
+        public async Task AFailureThatIsNotARefusal_IsAShortWait_AndRetryAfterIsHonoured()
+        {
+            var (service, _) = Build(requestsPerHour: null);
+
+            var until = await service.RecordFailureAsync(1, rateLimited: false, retryAfter: null, "did not answer");
+            Assert.InRange(until - DateTime.UtcNow, TimeSpan.FromMinutes(9), TimeSpan.FromMinutes(11));
+
+            var asked = await service.RecordFailureAsync(1, rateLimited: false, retryAfter: TimeSpan.FromHours(3), "503");
+            Assert.InRange(asked - DateTime.UtcNow, TimeSpan.FromHours(2.9), TimeSpan.FromHours(3.1));
         }
     }
 }

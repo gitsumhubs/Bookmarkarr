@@ -134,7 +134,7 @@ public sealed class ManualImportPathPlanner
             : normalizedBasePath + Path.DirectorySeparatorChar + relativePath;
     }
 
-    public static List<ManualImportItemDto> BuildOrderedItems(IEnumerable<ManualImportItemDto> items)
+    public static List<ManualImportItemDto> BuildOrderedItems(IEnumerable<ManualImportItemDto> items, string? multiFileNamingPattern = null)
     {
         var ordered = new List<ManualImportItemDto>();
 
@@ -147,7 +147,7 @@ public sealed class ManualImportPathPlanner
 
             var plans = MultiFileImportPlanner.BuildPlans(validItems.Select(i => (i.FullPath!, string.IsNullOrWhiteSpace(i.RelativePath) ? null : i.RelativePath)));
             var itemLookup = validItems.ToDictionary(i => i.FullPath!, StringComparer.OrdinalIgnoreCase);
-            var diskNumbersForNaming = MultiFileImportPlanner.BuildStableNamingNumbers(plans, p => p.DiskNumberHint);
+            var diskNumbersForNaming = MultiFileImportPlanner.BuildDiskNumbers(plans, multiFileNamingPattern);
             var chapterNumbersForNaming = MultiFileImportPlanner.BuildStableNamingNumbers(plans, p => p.ChapterNumberHint);
 
             ordered.AddRange(plans

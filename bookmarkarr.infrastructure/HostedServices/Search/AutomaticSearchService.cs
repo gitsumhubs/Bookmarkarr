@@ -59,10 +59,14 @@ namespace Bookmarkarr.Infrastructure.HostedServices.Search
             var settings = await configuration.GetApplicationSettingsAsync();
             if (settings.UnmonitorImportedEditions)
                 await scope.ServiceProvider.GetRequiredService<IAudiobookRepository>().UnmonitorSatisfiedEditionsAsync(cancellationToken);
-            var cutoff = DateTime.UtcNow.AddHours(-6);
+            var now = DateTime.UtcNow;
+            var cutoff = now.AddHours(-6);
+            // NextSearchTime is the backoff: an edition whose searches keep finding nothing is
+            // left for longer each time instead of being walked through the ladder every pass.
             var ids = await db.BookEditions.AsNoTracking()
                 .Where(e => e.Monitored && e.QualityProfileId != null
-                    && (e.LastSearchTime == null || e.LastSearchTime < cutoff))
+                    && (e.LastSearchTime == null || e.LastSearchTime < cutoff)
+                    && (e.NextSearchTime == null || e.NextSearchTime <= now))
                 .OrderBy(e => e.LastSearchTime).ThenBy(e => e.Id).Select(e => e.Id).ToListAsync(cancellationToken);
             var search = scope.ServiceProvider.GetRequiredService<IEditionSearchService>();
             logger.LogInformation("Automatic search: {Count} editions eligible", ids.Count);

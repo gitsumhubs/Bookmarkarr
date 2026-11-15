@@ -45,9 +45,9 @@ public sealed class GoodreadsCatalogImportAutoDownloadWorkflow(
             try
             {
                 using var scope = scopeFactory.CreateScope();
-                var downloadService = scope.ServiceProvider.GetRequiredService<IDownloadService>();
+                var editionSearch = scope.ServiceProvider.GetRequiredService<IEditionSearchService>();
 
-                var result = await downloadService.SearchAndDownloadAsync(audiobookId);
+                var result = await editionSearch.SearchAndDownloadForBookAsync(audiobookId);
                 if (!result.Success)
                 {
                     logger.LogInformation(

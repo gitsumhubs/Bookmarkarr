@@ -87,7 +87,16 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
             if (stalledFor >= DownloadStallState.AbandonThreshold
                 && DownloadStallState.IsClientReportingStall(current.GetMetadataString(DownloadStallState.ClientStateKey)))
             {
-                AbandonStalledDownload(client, current, stalledFor);
+                AbandonStalledDownload(client, current, stalledFor, "Stalled in the download client");
+                return;
+            }
+
+            // Nothing moved for days while it claims to be downloading. Only the downloading
+            // state: a paused download was paused by somebody, and a queued one waits on the
+            // client's own limits.
+            if (stalledFor >= DownloadStallState.NoProgressAbandonThreshold && current.Status == DownloadStatus.Downloading)
+            {
+                AbandonStalledDownload(client, current, stalledFor, "No progress in the download client");
                 return;
             }
 
@@ -123,12 +132,13 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
         /// re-search in <c>OnDownloadFailed</c> — because the monitor calls this immediately
         /// before saving the row and comparing it against its previous state.
         /// </remarks>
-        private void AbandonStalledDownload(DownloadClientConfiguration client, Download current, TimeSpan stalledFor)
+        private void AbandonStalledDownload(DownloadClientConfiguration client, Download current, TimeSpan stalledFor, string what)
         {
-            var clientState = current.GetMetadataString(DownloadStallState.ClientStateKey) ?? "stalled";
+            var clientState = current.GetMetadataString(DownloadStallState.ClientStateKey) ?? "unknown";
             var reason = string.Format(
                 CultureInfo.InvariantCulture,
-                "Stalled in the download client for {0:F1}h with no progress (client state: {1})",
+                "{0} for {1:F1}h with no progress (client state: {2})",
+                what,
                 stalledFor.TotalHours,
                 clientState);
 

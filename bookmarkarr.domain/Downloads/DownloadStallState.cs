@@ -62,6 +62,14 @@ namespace Bookmarkarr.Domain.Downloads
         public static readonly TimeSpan AbandonThreshold = TimeSpan.FromHours(6);
 
         /// <summary>
+        /// How long a download may sit at exactly the same progress, whatever its client calls it,
+        /// before it is given up on. The client's stall label is not always there to go on: an
+        /// 846 GB torrent sat at 50% for four weeks while it was reported as downloading, and held
+        /// its book out of search the whole time. Three days is far past any real pause.
+        /// </summary>
+        public static readonly TimeSpan NoProgressAbandonThreshold = TimeSpan.FromDays(3);
+
+        /// <summary>
         /// Whether this status is one a stall can even be measured against.
         ///
         /// Terminal and import-owned states have deliberately frozen progress — another worker owns

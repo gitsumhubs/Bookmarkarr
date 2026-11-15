@@ -892,6 +892,10 @@ namespace Bookmarkarr.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("LastSearchOutcome")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("LastSearchTime")
                         .HasColumnType("TEXT");
 
@@ -901,6 +905,9 @@ namespace Bookmarkarr.Infrastructure.Persistence.Migrations
                     b.Property<bool>("Monitored")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("NextSearchTime")
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("QualityProfileId")
                         .HasColumnType("INTEGER");
 
@@ -909,6 +916,9 @@ namespace Bookmarkarr.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("RootPath")
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("SearchMisses")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
@@ -1685,6 +1695,9 @@ namespace Bookmarkarr.Infrastructure.Persistence.Migrations
                     b.Property<string>("Categories")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("ConsecutiveFailures")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -1706,6 +1719,10 @@ namespace Bookmarkarr.Infrastructure.Persistence.Migrations
 
                     b.Property<bool>("IsEnabled")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("LastFailureReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("LastTestError")
                         .HasColumnType("TEXT");
@@ -1740,6 +1757,9 @@ namespace Bookmarkarr.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Type")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UnavailableUntilUtc")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedAt")

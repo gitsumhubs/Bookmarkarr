@@ -156,5 +156,8 @@ namespace Bookmarkarr.Application.Search.Core
             return await _indexerSearchWorkflow.SearchIndexersAsync(query, category, sortBy, sortDirection, isAutomaticSearch, request);
         }
 
+        public Task<IndexerSearchOutcome> SearchIndexersWithOutcomeAsync(string query, string? category = null, bool isAutomaticSearch = false, SearchRequest? request = null, IndexerProtocolFilter protocol = IndexerProtocolFilter.Any)
+            => _indexerSearchWorkflow.SearchIndexersWithOutcomeAsync(query, category, isAutomaticSearch, request, protocol);
+
     }
 }

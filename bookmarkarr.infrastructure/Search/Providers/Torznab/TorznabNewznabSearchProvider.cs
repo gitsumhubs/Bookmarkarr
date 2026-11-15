@@ -67,7 +67,11 @@ public partial class TorznabNewznabSearchProvider : IIndexerSearchProvider
                 // read as unfindable.
                 _logger.LogWarning("Indexer {Name} returned status {Status}", indexer.Name, response.StatusCode);
 
-                var rateLimited = response.StatusCode == System.Net.HttpStatusCode.TooManyRequests;
+                // 429 is the plain case. 403 and 503 are how a site, or the Cloudflare in front of
+                // it, turns away an address it has had enough of.
+                var rateLimited = response.StatusCode is System.Net.HttpStatusCode.TooManyRequests
+                    or System.Net.HttpStatusCode.Forbidden
+                    or System.Net.HttpStatusCode.ServiceUnavailable;
                 throw new IndexerUnavailableException(
                     indexer.Name,
                     $"{indexer.Name} returned {(int)response.StatusCode} {response.StatusCode}",
@@ -82,6 +86,18 @@ public partial class TorznabNewznabSearchProvider : IIndexerSearchProvider
 
             _logger.LogInformation("Indexer {Name} returned {Count} results", indexer.Name, results.Count);
             return results;
+        }
+        catch (IndexerUnavailableException)
+        {
+            // Raised above on purpose. Catching it here turned every refusal back into "no results".
+            throw;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or TimeoutException)
+        {
+            // No answer at all — refused connection, DNS, timeout — is the indexer being
+            // unavailable, not the indexer having nothing.
+            _logger.LogWarning(ex, "Indexer {Name} did not answer", indexer.Name);
+            throw new IndexerUnavailableException(indexer.Name, $"{indexer.Name} did not answer: {ex.Message}", innerException: ex);
         }
         catch (Exception ex) when (ex is not OperationCanceledException && ex is not OutOfMemoryException && ex is not StackOverflowException)
         {

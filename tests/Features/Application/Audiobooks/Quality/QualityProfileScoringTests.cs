@@ -298,13 +298,36 @@ namespace Bookmarkarr.Tests.Features.Application.Audiobooks.Quality
             Assert.True(score.TotalScore < 0, "Old NZB should be auto-rejected based on profile maximum age when configured");
         }
 
+        // An NZB's size is as real as a torrent's. Usenet used to skip both limits, so a profile
+        // maximum did nothing for half the indexers.
+        [Theory]
+        [InlineData(120, "File too small")]
+        [InlineData(9000, "File too large")]
+        public async Task NZB_IsHeldToTheProfileSizeLimits(int megabytes, string expectedReason)
+        {
+            var service = CreateService();
+            var profile = new QualityProfile { MinimumSize = 150, MaximumSize = 5120, MinimumSeeders = 0 };
+            var result = new SearchResult
+            {
+                Title = "Author - Great Book [English] [M4B]",
+                Size = (long)megabytes * 1024 * 1024,
+                DownloadType = "nzb",
+                NzbUrl = "http://example.com/test.nzb",
+                PublishedDate = DateTime.UtcNow.AddDays(-60).ToString("o")
+            };
+
+            var score = await service.ScoreSearchResult(result, profile);
+
+            Assert.Contains(score.RejectionReasons, reason => reason.Contains(expectedReason));
+        }
+
         [Fact]
-        public async Task NZB_TitleParsing_DetectsFormatAndLanguageAndIgnoresSize()
+        public async Task NZB_TitleParsing_DetectsFormatAndLanguage()
         {
             var service = CreateService();
             var profile = new QualityProfile
             {
-                MinimumSize = 150, // 150 MB limit normally enforced
+                MinimumSize = 100,
                 PreferredFormats = new System.Collections.Generic.List<string> { "m4b" },
                 PreferredWords = new System.Collections.Generic.List<string>(),
                 MustNotContain = new System.Collections.Generic.List<string>(),
@@ -317,7 +340,7 @@ namespace Bookmarkarr.Tests.Features.Application.Audiobooks.Quality
             var result = new SearchResult
             {
                 Title = "Author - Great Book [English] [M4B]",
-                Size = 120 * 1024 * 1024, // 120 MB - would be too small for profile.MinimumSize
+                Size = 120 * 1024 * 1024, // inside the profile's limits
                 Format = null,
                 Quality = null,
                 Language = null,
@@ -329,7 +352,6 @@ namespace Bookmarkarr.Tests.Features.Application.Audiobooks.Quality
 
             var score = await service.ScoreSearchResult(result, profile);
 
-            // Size should be ignored for NZB results: no size rejection and no Size penalty
             Assert.DoesNotContain(score.RejectionReasons, r => r.Contains("File too small"));
             Assert.False(score.ScoreBreakdown.TryGetValue("Size", out _), "NZB scoring should not add size penalties");
 

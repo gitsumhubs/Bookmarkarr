@@ -65,14 +65,11 @@ namespace Bookmarkarr.Domain.Audiobooks.Rules
 
                 if (ordered.Count > 1)
                 {
-                    diskNumber ??= chapterNumber;
+                    // A file named only "Disc 2" numbers itself. The reverse is not true: a track
+                    // number says nothing about which disc it is on, and copying it across is what
+                    // produced "Title-210-210".
                     chapterNumber ??= diskNumber;
-
-                    if (!diskNumber.HasValue && !chapterNumber.HasValue)
-                    {
-                        diskNumber = index + 1;
-                        chapterNumber = index + 1;
-                    }
+                    chapterNumber ??= index + 1;
                 }
 
                 plans.Add(new PlannedImportFile
@@ -110,6 +107,49 @@ namespace Bookmarkarr.Domain.Audiobooks.Rules
                 result[orderedPlans[i].FullPath] = canUseRawValues
                     ? rawValues[i]!.Value
                     : orderedPlans[i].SequenceNumber;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// The disc number each file is named with. A disc is only what the source said it was —
+        /// a "CD 2" folder, "Disc 3" in the name — carried forward over files that do not say.
+        /// With nothing to go on, or numbers that run backwards, everything is disc 1.
+        /// </summary>
+        /// <param name="namingPattern">
+        /// The pattern the numbers are for. When it has no chapter token the disc number is the
+        /// only thing telling the files apart, so it stays one per file as it always was.
+        /// </param>
+        public static Dictionary<string, int> BuildDiskNumbers(IEnumerable<PlannedImportFile> plans, string? namingPattern)
+        {
+            if (string.IsNullOrWhiteSpace(namingPattern)
+                || namingPattern.IndexOf("ChapterNumber", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return BuildStableNamingNumbers(plans, p => p.DiskNumberHint ?? p.ChapterNumberHint);
+            }
+
+            var orderedPlans = plans.OrderBy(p => p.SequenceNumber).ToList();
+            var result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var current = 1;
+            var trustworthy = orderedPlans.Any(p => p.DiskNumberHint.HasValue);
+            foreach (var plan in orderedPlans)
+            {
+                if (plan.DiskNumberHint is { } hint)
+                {
+                    trustworthy &= hint >= current || result.Count == 0;
+                    current = Math.Max(1, hint);
+                }
+
+                result[plan.FullPath] = current;
+            }
+
+            if (!trustworthy)
+            {
+                foreach (var plan in orderedPlans)
+                {
+                    result[plan.FullPath] = 1;
+                }
             }
 
             return result;

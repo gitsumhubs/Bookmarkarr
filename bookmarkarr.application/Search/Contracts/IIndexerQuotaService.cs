@@ -48,7 +48,22 @@ namespace Bookmarkarr.Application.Search.Contracts
 
         /// <summary>Drop usage rows that have aged out of every window.</summary>
         Task PruneAsync(CancellationToken ct = default);
+
+        /// <summary>
+        /// The indexer refused or failed. Nothing more is sent to it until a wait that grows with
+        /// each failure in a row has passed; the wait is stored, so it survives a restart.
+        /// </summary>
+        Task<DateTime> RecordFailureAsync(int indexerId, bool rateLimited, TimeSpan? retryAfter, string reason, CancellationToken ct = default);
+
+        /// <summary>The indexer answered, which ends any run of failures.</summary>
+        Task RecordSuccessAsync(int indexerId, CancellationToken ct = default);
+
+        /// <summary>The wait the indexer is serving after a failure, or null when it may be asked.</summary>
+        Task<IndexerCooldown?> GetCooldownAsync(int indexerId, CancellationToken ct = default);
     }
+
+    /// <summary>A wait an indexer is serving after it refused or failed.</summary>
+    public sealed record IndexerCooldown(string IndexerName, DateTime UntilUtc, int ConsecutiveFailures, string? Reason);
 
     /// <summary>A point-in-time view of one indexer's budget, shaped for display.</summary>
     /// <param name="IndexerId">Indexer the budget belongs to.</param>

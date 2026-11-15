@@ -414,7 +414,7 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
             var downloadHistoryService = scope.ServiceProvider.GetRequiredService<IDownloadHistoryService>();
             var configurationService = scope.ServiceProvider.GetRequiredService<IConfigurationService>();
             var settings = await configurationService.GetApplicationSettingsAsync();
-            var downloadService = scope.ServiceProvider.GetRequiredService<IDownloadService>();
+            var editionSearch = scope.ServiceProvider.GetRequiredService<IEditionSearchService>();
 
             await downloadHistoryService.RecordDownloadFailedAsync(
                 download.Id,
@@ -452,7 +452,11 @@ namespace Bookmarkarr.Infrastructure.Downloads.Monitoring
                     var audiobook = await audiobookRepository.GetByIdAsync(download.AudiobookId!.Value);
                     if (audiobook != null && audiobook.Monitored)
                     {
-                        await downloadService.SearchAndDownloadAsync(download.AudiobookId.Value);
+                        // Through the edition search like every other unattended grab, or by its
+                        // own edition when the failed download was an ebook.
+                        _ = download.EditionId.HasValue
+                            ? await editionSearch.SearchAndDownloadAsync(download.EditionId.Value, cancellationToken)
+                            : await editionSearch.SearchAndDownloadForBookAsync(download.AudiobookId.Value, cancellationToken);
                     }
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException && ex is not OutOfMemoryException && ex is not StackOverflowException)

@@ -44,7 +44,12 @@ public sealed class BookEdition
     public Audiobook Book { get; set; } = null!;
     public EditionMediaType MediaType { get; set; }
     public bool Monitored { get; set; } = true;
-    public bool UpgradeAllowed { get; set; } = true;
+    /// <summary>
+    /// Whether an edition that already has files is searched again for a better format. Off unless
+    /// asked for: left on, every imported book below the profile cutoff was searched again on
+    /// every pass and anything scoring higher was downloaded beside what was already there.
+    /// </summary>
+    public bool UpgradeAllowed { get; set; }
     public EditionWantedStatus Status { get; set; } = EditionWantedStatus.Missing;
     public int? QualityProfileId { get; set; }
     public QualityProfile? QualityProfile { get; set; }
@@ -53,6 +58,12 @@ public sealed class BookEdition
     public string? RootPath { get; set; }
     [MaxLength(100)] public string DownloadCategory { get; set; } = string.Empty;
     public DateTime? LastSearchTime { get; set; }
+    /// <summary>Automatic searches in a row that found nothing to take; each one lengthens the wait.</summary>
+    public int SearchMisses { get; set; }
+    /// <summary>The automatic pass leaves this edition alone until then. Null means it is due.</summary>
+    public DateTime? NextSearchTime { get; set; }
+    /// <summary>What the last search came to, in words: what was grabbed, or why nothing was.</summary>
+    [MaxLength(500)] public string? LastSearchOutcome { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public List<EditionFile> Files { get; set; } = [];

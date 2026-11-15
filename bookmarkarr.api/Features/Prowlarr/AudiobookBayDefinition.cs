@@ -103,7 +103,7 @@ namespace Bookmarkarr.Api.Features.Prowlarr
         /// twenty searches an hour at the default three pages, which is far more than an
         /// unattended pass needs and a fifth of what drew attention. Editable per indexer.
         /// </remarks>
-        public const int DefaultRequestsPerHour = 60;
+        public const int DefaultRequestsPerHour = Bookmarkarr.Domain.Search.AudiobookBayPolicy.DefaultRequestsPerHour;
 
         /// <summary>
         /// Seconds Prowlarr waits between the requests one search makes to the site.

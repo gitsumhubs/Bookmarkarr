@@ -127,6 +127,19 @@ namespace Bookmarkarr.Domain.Search
         public int? RequestsPerHour { get; set; }
 
         /// <summary>
+        /// Nothing is sent to this indexer before this moment. Set when it refuses or fails, and
+        /// stored so a restart does not hand a refusing site a fresh start.
+        /// </summary>
+        public DateTime? UnavailableUntilUtc { get; set; }
+
+        /// <summary>Failures in a row; each one lengthens the wait, and a success clears it.</summary>
+        public int ConsecutiveFailures { get; set; }
+
+        /// <summary>What the indexer said the last time it failed.</summary>
+        [System.ComponentModel.DataAnnotations.MaxLength(300)]
+        public string? LastFailureReason { get; set; }
+
+        /// <summary>
         /// When the indexer was created
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

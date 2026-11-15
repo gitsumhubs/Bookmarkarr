@@ -51,11 +51,14 @@ namespace Bookmarkarr.Api.Features.Downloads
         /// </summary>
         /// <param name="request">Request containing the audiobook ID to search for.</param>
         [HttpPost("search-and-download")]
-        public async Task<ActionResult<SearchAndDownloadResult>> SearchAndDownload([FromBody] SearchAndDownloadRequest request)
+        public async Task<ActionResult<SearchAndDownloadResult>> SearchAndDownload(
+            [FromBody] SearchAndDownloadRequest request,
+            [FromServices] IEditionSearchService editionSearch,
+            CancellationToken cancellationToken)
         {
             try
             {
-                var result = await _downloadService.SearchAndDownloadAsync(request.AudiobookId);
+                var result = await editionSearch.SearchAndDownloadForBookAsync(request.AudiobookId, cancellationToken);
                 return Ok(result);
             }
             catch (Exception ex) when (ex is not OperationCanceledException && ex is not OutOfMemoryException && ex is not StackOverflowException)

@@ -132,8 +132,10 @@ namespace Bookmarkarr.Domain.Configuration
         public int MissingSourceRetryInitialDelaySeconds { get; set; } = 30;
         public int MissingSourceMaxRetries { get; set; } = 3;
 
-        // Action to take when a download completes
-        public FileAction CompletedFileAction { get; set; } = FileAction.Copy;
+        // Action to take when a download completes. Hard link where the download and the library
+        // share a filesystem, so an imported book does not take its space twice; it falls back to a
+        // copy where they do not. New installs only: a saved choice is never changed.
+        public FileAction CompletedFileAction { get; set; } = FileAction.HardlinkCopy;
 
         // Whether to extract archive files (zip/rar/7z) when discovered in a completed download
         public bool ExtractArchives { get; set; } = true;

@@ -63,25 +63,48 @@ public class IndexerSearchWorkflow
         SearchSortDirection sortDirection = SearchSortDirection.Descending,
         bool isAutomaticSearch = false,
         SearchRequest? request = null)
-    {
-        var results = new List<IndexerSearchResult>();
-        var indexers = await _indexerRepository.GetEnabledAsync(isAutomaticSearch);
+        => (await SearchIndexersWithOutcomeAsync(query, category, isAutomaticSearch, request)).Results;
 
+    /// <summary>
+    /// Searches the enabled indexers of one protocol and keeps apart the two things an empty list
+    /// used to hide: an indexer that had nothing, and an indexer that could not be asked.
+    /// </summary>
+    public async Task<IndexerSearchOutcome> SearchIndexersWithOutcomeAsync(
+        string query,
+        string? category = null,
+        bool isAutomaticSearch = false,
+        SearchRequest? request = null,
+        IndexerProtocolFilter protocol = IndexerProtocolFilter.Any)
+    {
+        var enabled = await _indexerRepository.GetEnabledAsync(isAutomaticSearch);
+        var indexers = enabled.Where(indexer => protocol switch
+        {
+            IndexerProtocolFilter.Usenet => !IndexerProtocol.IsTorrent(indexer),
+            IndexerProtocolFilter.Torrent => IndexerProtocol.IsTorrent(indexer),
+            _ => true
+        }).ToList();
         _logger.LogInformation("Searching {Count} enabled indexers for query: {Query}", indexers.Count, query);
 
-        if (!indexers.Any())
+        if (indexers.Count == 0)
         {
-            _logger.LogWarning("No indexers configured, returning mock results for query: {Query}", query);
-            return GenerateMockIndexerResults(query);
+            // Placeholder results are for a person looking at an empty install. An unattended
+            // search must never be handed something invented that it could go on to grab.
+            if (enabled.Count == 0 && !isAutomaticSearch)
+            {
+                _logger.LogWarning("No indexers configured, returning mock results for query: {Query}", query);
+                return new IndexerSearchOutcome(GenerateMockIndexerResults(query), [], 0);
+            }
+
+            return IndexerSearchOutcome.Empty;
         }
 
+        var unavailable = new System.Collections.Concurrent.ConcurrentBag<IndexerUnavailability>();
         var searchTasks = indexers.Select(async indexer =>
         {
             try
             {
                 _logger.LogInformation("Searching indexer {Name} ({Type}) for query: {Query}", indexer.Name, indexer.Type, query);
                 var perIndexerRequest = ApplyIndexerMamOptions(indexer, request);
-
                 var indexerResults = await SearchIndexerAsync(
                     indexer,
                     query,
@@ -93,14 +116,15 @@ public class IndexerSearchWorkflow
             }
             catch (IndexerUnavailableException ex)
             {
-                // One indexer being throttled or down must not fail the others, but it is logged as
-                // what it is rather than as an empty result set.
+                // One indexer being throttled or down must not fail the others, but it is reported
+                // as what it is rather than as an empty result set.
                 _logger.LogWarning(
                     "Indexer {Name} unavailable for query {Query}: {Reason}{RateLimited}",
                     indexer.Name,
                     query,
                     ex.Message,
                     ex.IsRateLimited ? " (rate limited)" : string.Empty);
+                unavailable.Add(new IndexerUnavailability(indexer.Name, ex.Message, ex.IsRateLimited, ex.RetryAfter));
                 return new List<IndexerSearchResult>();
             }
             catch (Exception ex) when (ex is not OperationCanceledException && ex is not OutOfMemoryException && ex is not StackOverflowException)
@@ -110,15 +134,13 @@ public class IndexerSearchWorkflow
             }
         }).ToList();
 
-        var indexerResults = await Task.WhenAll(searchTasks);
-        foreach (var indexerResult in indexerResults)
-        {
-            results.AddRange(indexerResult);
-        }
-
+        var results = (await Task.WhenAll(searchTasks)).SelectMany(found => found).ToList();
         _logger.LogInformation("Total {Count} results from all indexers for query: {Query}", results.Count, query);
 
-        return results.OrderByDescending(r => r.Seeders ?? 0).ThenByDescending(r => r.PublishedDate).ToList();
+        return new IndexerSearchOutcome(
+            results.OrderByDescending(r => r.Seeders ?? 0).ThenByDescending(r => r.PublishedDate).ToList(),
+            unavailable.ToList(),
+            indexers.Count);
     }
 
     public async Task<List<SearchResult>> SearchByApiAsync(string apiId, string query, string? category = null)
@@ -260,6 +282,24 @@ public class IndexerSearchWorkflow
         SearchRequest? request = null,
         IndexerQuotaPurpose purpose = IndexerQuotaPurpose.InteractiveSearch)
     {
+        // Asked before joining the queue: an indexer that is cooling down after a refusal, or has
+        // no budget left, is answered here without a request and without a minute spent waiting
+        // for a turn that would be refused anyway.
+        if (_quotaService != null)
+        {
+            var cooldown = await _quotaService.GetCooldownAsync(indexer.Id);
+            if (cooldown != null)
+            {
+                throw IndexerUnavailableException.CoolingDown(indexer.Name, cooldown.UntilUtc - DateTime.UtcNow, cooldown.Reason);
+            }
+
+            var budgetWait = await _quotaService.TimeUntilAvailableAsync(indexer.Id, purpose);
+            if (budgetWait.HasValue)
+            {
+                throw IndexerUnavailableException.QuotaExhausted(indexer.Name, budgetWait);
+            }
+        }
+
         // Torrent sites are the ones that ban, so they are the ones that queue: one request at a
         // time, a minute apart. Usenet indexers fall straight through and answer at once, which is
         // what lets a manual search show NZB results while the torrent half is still waiting.
@@ -267,10 +307,9 @@ public class IndexerSearchWorkflow
             ? await _searchThrottle.AcquireTorrentRequestAsync(indexer.Name)
             : null;
 
-        // Checked before the request is built, because a budget that is enforced after the fact is
-        // not a budget: the point is that the refused request never reaches a site that bans by IP.
-        // After the throttle, not before, so a request that waited its turn is charged when it is
-        // actually sent rather than against the hour it queued in.
+        // Charged after the wait, so a request that queued is counted against the hour it is
+        // actually sent in. The budget is spent in site requests: a paginated search costs a page
+        // each, and a refused request never reaches a site that bans by IP.
         if (_quotaService != null && !await _quotaService.TryConsumeAsync(indexer.Id, purpose))
         {
             var wait = await _quotaService.TimeUntilAvailableAsync(indexer.Id, purpose);
@@ -295,6 +334,11 @@ public class IndexerSearchWorkflow
             }
 
             var providerResults = await provider.SearchAsync(indexer, query, category, request);
+            if (_quotaService != null && indexer.ConsecutiveFailures > 0)
+            {
+                await _quotaService.RecordSuccessAsync(indexer.Id);
+            }
+
             foreach (var r in providerResults.Where(r => string.IsNullOrWhiteSpace(r.Source)))
             {
                 r.Source = fallbackName;
@@ -316,6 +360,18 @@ public class IndexerSearchWorkflow
             }
 
             return filteredResults;
+        }
+        catch (IndexerUnavailableException ex)
+        {
+            // Not swallowed. The refusal is remembered so the next request is not sent either,
+            // and it travels up so the caller stops its ladder instead of trying the next rung.
+            if (_quotaService != null)
+            {
+                var until = await _quotaService.RecordFailureAsync(indexer.Id, ex.IsRateLimited, ex.RetryAfter, ex.Message);
+                _logger.LogWarning("Indexer {Name} will not be asked again before {Until:u}: {Reason}", indexer.Name, until, ex.Message);
+            }
+
+            throw;
         }
         catch (Exception ex) when (ex is not OperationCanceledException && ex is not OutOfMemoryException && ex is not StackOverflowException)
         {

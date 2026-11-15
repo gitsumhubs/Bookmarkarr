@@ -157,7 +157,7 @@ public class ManualImportController : ControllerBase
             // Fetch root folders once for the whole batch (used for path containment validation)
             var rootFolders = await _rootFolderService.GetAllAsync();
             var appSettings = await _configService.GetApplicationSettingsAsync();
-            var orderedItems = ManualImportPathPlanner.BuildOrderedItems(request.Items);
+            var orderedItems = ManualImportPathPlanner.BuildOrderedItems(request.Items, appSettings.MultiFileNamingPattern);
             var selectedAudioProfiles = request.IncludeCompanionFiles
                 ? await _companionImporter.BuildAudioMatchProfilesAsync(
                     orderedItems

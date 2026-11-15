@@ -142,6 +142,41 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.Downloads.Monitoring
         }
 
         [Fact]
+        [Trait("Scenario", "A download that has not moved for days is given up on even when the client calls it healthy")]
+        public void TrackProgressStall_WhenNothingMovesForDays_FailsTheDownloadWhateverTheClientSays()
+        {
+            var (processor, time) = CreateProcessor();
+            var download = BuildDownload(DownloadStatus.Downloading, progress: 50, clientState: "downloading");
+            var previous = BuildDownload(DownloadStatus.Downloading, progress: 50, clientState: "downloading");
+
+            processor.TrackProgressStall(Client, download, previous: null);
+            time.Advance(DownloadStallState.NoProgressAbandonThreshold - TimeSpan.FromMinutes(1));
+            processor.TrackProgressStall(Client, download, previous);
+            Assert.Equal(DownloadStatus.Downloading, download.Status);
+
+            time.Advance(TimeSpan.FromMinutes(2));
+            processor.TrackProgressStall(Client, download, previous);
+
+            Assert.Equal(DownloadStatus.Failed, download.Status);
+            Assert.Contains("No progress in the download client", download.ErrorMessage);
+        }
+
+        [Fact]
+        [Trait("Scenario", "A paused download is never abandoned for not moving")]
+        public void TrackProgressStall_ForAPausedDownload_NeverFailsIt()
+        {
+            var (processor, time) = CreateProcessor();
+            var download = BuildDownload(DownloadStatus.Paused, progress: 50);
+            var previous = BuildDownload(DownloadStatus.Paused, progress: 50);
+
+            processor.TrackProgressStall(Client, download, previous: null);
+            time.Advance(DownloadStallState.NoProgressAbandonThreshold * 2);
+            processor.TrackProgressStall(Client, download, previous);
+
+            Assert.Equal(DownloadStatus.Paused, download.Status);
+        }
+
+        [Fact]
         [Trait("Scenario", "A seeding torrent with no leechers is not a failed download")]
         public void TrackProgressStall_ForAStalledUpload_DoesNotFailTheDownload()
         {

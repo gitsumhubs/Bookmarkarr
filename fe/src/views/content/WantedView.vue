@@ -154,6 +154,13 @@
                 <PhSpinner v-if="searching[item.wantedKey]" class="ph-spin" :size="12" />
                 {{ searchResults[item.wantedKey] }}
               </div>
+              <div
+                v-else-if="item.wantedEdition?.lastSearchOutcome"
+                class="search-info last-search-outcome"
+                :title="lastSearchTitle(item)"
+              >
+                {{ item.wantedEdition.lastSearchOutcome }}
+              </div>
             </div>
             <div class="col-actions">
               <div class="actions-cell">
@@ -794,6 +801,18 @@ function handleDownloaded(result: SearchResult) {
   }, 2000)
 }
 
+const lastSearchTitle = (item: WantedItem): string => {
+  const edition = item.wantedEdition
+  const parts: string[] = []
+  if (edition?.lastSearchTime) {
+    parts.push(`Last searched ${new Date(edition.lastSearchTime).toLocaleString()}`)
+  }
+  if (edition?.nextSearchTime) {
+    parts.push(`Next automatic search ${new Date(edition.nextSearchTime).toLocaleString()}`)
+  }
+  return parts.join('. ')
+}
+
 const searchAudiobook = async (item: WantedItem) => {
   logger.debug('Searching wanted edition:', item.title, item.wantedEdition?.mediaType)
 
@@ -812,7 +831,9 @@ const searchAudiobook = async (item: WantedItem) => {
     const result = await apiService.searchAndDownload(item.id)
 
     if (result.success) {
-      searchResults.value[item.wantedKey] = `Found on ${result.indexerUsed}, downloading...`
+      searchResults.value[item.wantedKey] = result.indexerUsed
+        ? `Found on ${result.indexerUsed}, downloading...`
+        : 'Found, downloading...'
 
       setTimeout(async () => {
         try {
@@ -826,6 +847,8 @@ const searchAudiobook = async (item: WantedItem) => {
       }, 2000)
     } else {
       searchResults.value[item.wantedKey] = result.message || 'No matches found'
+      // The reason is stored on the edition; reload so it stays on the row after this clears.
+      void libraryStore.fetchLibrary()
       setTimeout(() => {
         delete searching.value[item.wantedKey]
         delete searchResults.value[item.wantedKey]
@@ -1313,6 +1336,14 @@ const markAsSkipped = async (item: WantedItem) => {
   align-items: center;
   gap: 0.3rem;
   margin-top: 0.15rem;
+}
+
+/* The stored reason nothing was grabbed. Quieter than a live search, and allowed to wrap. */
+.search-info.last-search-outcome {
+  display: block;
+  color: var(--text-muted, #8b949e);
+  white-space: normal;
+  line-height: 1.3;
 }
 
 .ph-spin {

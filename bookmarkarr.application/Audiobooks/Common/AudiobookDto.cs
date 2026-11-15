@@ -86,6 +86,13 @@ namespace Bookmarkarr.Application.Audiobooks.Common
         public int? RootFolderId { get; set; }
         public string? RootPath { get; set; }
         public string DownloadCategory { get; set; } = string.Empty;
+        public DateTime? LastSearchTime { get; set; }
+
+        /// <summary>What the last search came to, in words: what was grabbed, or why nothing was.</summary>
+        public string? LastSearchOutcome { get; set; }
+
+        /// <summary>When the automatic pass will next look for this edition; null when it is due.</summary>
+        public DateTime? NextSearchTime { get; set; }
     }
 
     public class AudiobookSeriesMembershipDto

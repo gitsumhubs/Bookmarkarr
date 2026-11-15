@@ -670,6 +670,11 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Search
             return Task.FromResult(new List<IndexerSearchResult>());
         }
 
+        public Task<IndexerSearchOutcome> SearchIndexersWithOutcomeAsync(string query, string? category = null, bool isAutomaticSearch = false, SearchRequest? request = null, IndexerProtocolFilter protocol = IndexerProtocolFilter.Any)
+        {
+            return Task.FromResult(IndexerSearchOutcome.Empty);
+        }
+
         public Task<List<ApiConfiguration>> GetEnabledMetadataSourcesAsync()
         {
             return Task.FromResult(new List<ApiConfiguration>());

@@ -61,8 +61,18 @@ namespace Bookmarkarr.Application.Search.Contracts
                 isRateLimited: true,
                 retryAfter: retryAfter);
 
+        /// <summary>The indexer refused or failed earlier and is being left alone for a while.</summary>
+        public static IndexerUnavailableException CoolingDown(string indexerName, TimeSpan wait, string? reason)
+            => new(
+                indexerName,
+                $"{indexerName} is being left alone for {FormatWait(wait)} after it failed{(string.IsNullOrWhiteSpace(reason) ? string.Empty : $" ({reason})")}.",
+                isRateLimited: true,
+                retryAfter: wait);
+
         private static string FormatWait(TimeSpan wait)
-            => wait.TotalMinutes >= 1
+            => wait.TotalHours >= 2
+                ? $"{(int)Math.Ceiling(wait.TotalHours)} h"
+                : wait.TotalMinutes >= 1
                 ? $"{(int)Math.Ceiling(wait.TotalMinutes)} min"
                 : $"{Math.Max(1, (int)Math.Ceiling(wait.TotalSeconds))} s";
     }

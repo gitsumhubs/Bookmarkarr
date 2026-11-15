@@ -1,5 +1,6 @@
 /* Bookmarkarr is licensed under the GNU AGPL v3 or later. */
 using System.Text.Json;
+using Bookmarkarr.Domain.Common;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Bookmarkarr.Infrastructure.Downloads.Processing;
@@ -113,6 +114,51 @@ public partial class DownloadProcessingJobProcessor
             exhausted ? HistoryEvents.ImportFailed : HistoryEvents.ImportRetry,
             exhausted ? HistoryOutcome.Failed : HistoryOutcome.Retrying, correlationId, reason,
             new Dictionary<string, object> { ["JobId"] = job.Id, ["RetryCount"] = job.RetryCount }, ct);
+    }
+
+    /// <summary>One history row per file the import touched, so each copy, move and skip can be traced.</summary>
+    private static async Task RecordFileHistoryAsync(
+        IHistoryRepository historyRepository, List<ImportResult> results, List<BookEdition> editions,
+        Audiobook audiobook, Download download, DownloadProcessingJob job, string correlationId, CancellationToken ct)
+    {
+        foreach (var result in results)
+        {
+            var outcome = string.IsNullOrWhiteSpace(result.SourcePath) || string.IsNullOrWhiteSpace(result.FinalPath)
+                ? HistoryOutcome.Skipped
+                : HistoryOutcome.Succeeded;
+            var eventType = outcome == HistoryOutcome.Skipped
+                ? HistoryEvents.FileSkipped
+                : result.Action == Bookmarkarr.Domain.Audiobooks.Enumerations.FileAction.Move
+                    ? HistoryEvents.FileMoved
+                    : HistoryEvents.FileCopied;
+            await historyRepository.AddAsync(new History
+            {
+                AudiobookId = audiobook.Id,
+                EditionId = editions.FirstOrDefault(e =>
+                    FileUtils.IsEbookFile(result.FinalPath ?? result.SourcePath ?? string.Empty)
+                        ? e.MediaType == EditionMediaType.Ebook
+                        : e.MediaType == EditionMediaType.Audiobook)?.Id,
+                MediaType = FileUtils.IsEbookFile(result.FinalPath ?? result.SourcePath ?? string.Empty) ? "ebook" : "audiobook",
+                AudiobookTitle = audiobook.Title,
+                SourceTitle = Path.GetFileName(result.FinalPath ?? result.SourcePath ?? download.Title),
+                DownloadId = download.Id.ToUpperInvariant(),
+                DownloadClientId = download.DownloadClientId,
+                EventType = eventType,
+                Outcome = outcome,
+                Source = "DownloadImport",
+                Message = result.Message ?? $"{result.Action} completed",
+                Timestamp = DateTime.UtcNow,
+                CorrelationId = correlationId,
+                Data = JsonSerializer.Serialize(new
+                {
+                    JobId = job.Id,
+                    result.Action,
+                    result.SourcePath,
+                    result.FinalPath,
+                    result.WasRegisteredToAudiobook
+                })
+            }, ct);
+        }
     }
 
     private static async Task FailImportAsync(

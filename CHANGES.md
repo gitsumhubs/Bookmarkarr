@@ -1,5 +1,66 @@
 # Changes
 
+## 2026-11-15 — claude — Hold packs at import, replace upgraded files, stop keeping second copies
+
+Why: review findings 5, 7 and 8. A series pack was filed as one book (676 files renamed to one
+title); an upgrade was imported beside the old files; multi-file names repeated the track number
+as the disc number ("Title-210-210"); every import kept a full second copy in the download
+folder; an 846 GB torrent sat at 50% for four weeks, holding its book out of search.
+Before → after:
+- A download named as a pack ("Books 1-12", "Collection"), or with its audio in several book
+  folders, or (unattended grabs only) holding more audio than the size ceiling, was imported as
+  one book → held in Import Blocked with the reason and nothing imported. Retrying the import
+  brings it in as the one book; Manual Import places the books separately. Disc, part and extras
+  folders and loose files in one folder are not held.
+- An upgrade kept the old files → a download grabbed as an upgrade removes the earlier audio files,
+  on disk and in the library, once at least one of its own files is imported.
+- Disc number copied the track number → disc number comes only from "CD 2"/"Disc 3" folders or
+  names, otherwise 1, with the default `{Title}-{DiskNumber:00}-{ChapterNumber:00}` pattern. A
+  pattern without a chapter token keeps one disc number per file, as before, so names stay unique.
+- Completed-download action defaulted to Copy → Hardlink/Copy (falls back to copy across
+  filesystems). New installs only; a saved setting is not changed.
+- A newly added usenet client defaulted to keep downloads → "Remove and Delete" after a confirmed
+  import. Torrent clients still keep theirs for seeding. Existing clients are not changed.
+- A download was only given up on when the client reported it stalled for 6 h → also when its
+  progress has not moved for 3 days while downloading, whatever the client says. Paused and
+  queued downloads are not affected.
+Not changed on this instance: its three clients keep "none" and the import action stays Copy;
+change them in Settings to stop keeping second copies. No schema change in this entry.
+Validation: 1,663 backend and 444 frontend tests passed; frontend type check and lint clean. Not
+released or deployed.
+
+## 2026-11-13 18:40 EST — claude — Unattended search: check the book, one path, stop on refusal
+
+Why: one grab in six in the live history was the wrong book or a pack, and the pacing leaked: a
+refusing indexer read as "no results" and the hourly budget counted searches while the site counts
+pages.
+Before → after:
+- Any result could be grabbed → results must pass `ReleaseRelevanceEvaluator` and a size check
+  before scoring (15 MB floor for audiobooks; the profile maximum, or 6 GB / 500 MB when it sets
+  none). The profile size limits now apply to usenet too.
+- Wanted "Search", failed-download retry and Goodreads search-after-import used an older search
+  without blocklist or minimum score → all go through the edition search; the older path is deleted.
+- A refusal or spent budget was swallowed twice and the ladder continued → it stops the ladder, the
+  edition is not stamped as searched, and the indexer is left alone for 1 h / 6 h / 24 h / 72 h /
+  7 d (10 min upwards for other failures), stored on the indexer row.
+- Budget counted one per search → one per page (3 for AudioBook Bay, or the recorded patch pages).
+  An AudioBook Bay indexer with no budget set → 60 an hour.
+- All indexers asked together on every rung → usenet first, torrent only if usenet had nothing.
+- Unfound editions re-searched every 6 h for ever → 6 h, 12 h, 24 h … up to 7 days.
+- Editions allowed quality upgrades by default → off; the migration turns it off on existing
+  editions (no screen ever offered the choice). Settable per edition through the API.
+- Nothing recorded why a search grabbed nothing → `LastSearchOutcome` on the edition, returned by
+  the API and shown on the Wanted row.
+- With no indexers configured an unattended search received invented placeholder results → none.
+Schema: migration `AddSearchOutcomeBackoffAndIndexerCooldown` adds `LastSearchOutcome`,
+`SearchMisses`, `NextSearchTime` to `BookEditions` and `UnavailableUntilUtc`,
+`ConsecutiveFailures`, `LastFailureReason` to `Indexers`, and sets `UpgradeAllowed = 0`. Applied
+to a copy of the live database: 102 editions, upgrade flag 102 → 0, both indexers unaffected.
+Backup: take the usual pre-upgrade database copy before deploying; the upgrade flag is not
+restored by a downgrade.
+Validation: 1,649 backend and 444 frontend tests passed; frontend type check clean. Not released
+or deployed.
+
 ## 2026-11-13 14:15 EST — claude — Add a "is this the wanted book" check for releases (not yet wired)
 
 Why: unattended grabs pick the best-scored result of whatever a search returned, with no check

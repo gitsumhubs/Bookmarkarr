@@ -322,6 +322,13 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
                     return;
                 }
 
+                // A pack filed under one book cannot be untangled afterwards; see the partial.
+                if (!isEbook && await TryHoldMultiBookDownloadAsync(scope, job, download, audiobook, files,
+                        downloadProcessingJobService, historyRepository, correlationId, cancellationToken))
+                {
+                    return;
+                }
+
                 List<ImportResult> results;
                 try
                 {
@@ -374,10 +381,7 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
                     return;
                 }
 
-                foreach (var result in results)
-                {
-                    if (!string.IsNullOrEmpty(result.Message)) job.AddLogEntry(result.Message);
-                }
+                foreach (var result in results.Where(result => !string.IsNullOrEmpty(result.Message))) job.AddLogEntry(result.Message!);
 
                 if (results.Any(result => !result.Success))
                 {
@@ -448,44 +452,8 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
                     await downloadService.UpdateAsync(download);
                 }
 
-                foreach (var result in results)
-                {
-                    var outcome = string.IsNullOrWhiteSpace(result.SourcePath) || string.IsNullOrWhiteSpace(result.FinalPath)
-                        ? HistoryOutcome.Skipped
-                        : HistoryOutcome.Succeeded;
-                    var eventType = outcome == HistoryOutcome.Skipped
-                        ? HistoryEvents.FileSkipped
-                        : result.Action == Bookmarkarr.Domain.Audiobooks.Enumerations.FileAction.Move
-                            ? HistoryEvents.FileMoved
-                            : HistoryEvents.FileCopied;
-                    await historyRepository.AddAsync(new History
-                    {
-                        AudiobookId = audiobook.Id,
-                        EditionId = editions.FirstOrDefault(e =>
-                            FileUtils.IsEbookFile(result.FinalPath ?? result.SourcePath ?? string.Empty)
-                                ? e.MediaType == EditionMediaType.Ebook
-                                : e.MediaType == EditionMediaType.Audiobook)?.Id,
-                        MediaType = FileUtils.IsEbookFile(result.FinalPath ?? result.SourcePath ?? string.Empty) ? "ebook" : "audiobook",
-                        AudiobookTitle = audiobook.Title,
-                        SourceTitle = Path.GetFileName(result.FinalPath ?? result.SourcePath ?? download.Title),
-                        DownloadId = download.Id.ToUpperInvariant(),
-                        DownloadClientId = download.DownloadClientId,
-                        EventType = eventType,
-                        Outcome = outcome,
-                        Source = "DownloadImport",
-                        Message = result.Message ?? $"{result.Action} completed",
-                        Timestamp = DateTime.UtcNow,
-                        CorrelationId = correlationId,
-                        Data = JsonSerializer.Serialize(new
-                        {
-                            JobId = job.Id,
-                            result.Action,
-                            result.SourcePath,
-                            result.FinalPath,
-                            result.WasRegisteredToAudiobook
-                        })
-                    }, cancellationToken);
-                }
+                await RecordFileHistoryAsync(historyRepository, results, editions, audiobook, download, job, correlationId, cancellationToken);
+                await RemoveSupersededFilesAsync(scope, job, download, audiobook, editionDb, editions, results, cancellationToken);
 
                 job.SetCheckpoint("FilesImported", results.Count);
                 await downloadProcessingJobService.UpdateJobAsync(job);

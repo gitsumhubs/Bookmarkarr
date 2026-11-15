@@ -108,7 +108,7 @@ namespace Bookmarkarr.Application.Downloads.Import
                         .Where(IsImportableAudio)
                         .Select(f => (f, (string?)null)));
                 var planByPath = plannedAudioFiles.ToDictionary(p => p.FullPath, StringComparer.OrdinalIgnoreCase);
-                var diskNumbersForNaming = MultiFileImportPlanner.BuildStableNamingNumbers(plannedAudioFiles, p => p.DiskNumberHint);
+                var diskNumbersForNaming = MultiFileImportPlanner.BuildDiskNumbers(plannedAudioFiles, settings.MultiFileNamingPattern);
                 var chapterNumbersForNaming = MultiFileImportPlanner.BuildStableNamingNumbers(plannedAudioFiles, p => p.ChapterNumberHint);
                 var isMultiFileBatch = plannedAudioFiles.Count > 1;
                 var sourceRootPath = FileUtils.GetCommonDirectory(sourceFiles);
@@ -241,7 +241,6 @@ namespace Bookmarkarr.Application.Downloads.Import
                             var effectiveChapterNumber = namingChapterNumber > 0 ? namingChapterNumber : (namingMetadata.TrackNumber ?? plan?.ChapterNumberHint);
                             if (isMultiFileBatch)
                             {
-                                effectiveDiskNumber ??= effectiveChapterNumber;
                                 effectiveChapterNumber ??= effectiveDiskNumber;
                             }
                             var stableSuffixNumber = effectiveChapterNumber ?? effectiveDiskNumber ?? plan?.SequenceNumber;

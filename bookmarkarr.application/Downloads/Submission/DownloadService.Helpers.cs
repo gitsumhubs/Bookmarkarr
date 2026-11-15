@@ -36,19 +36,6 @@ public partial class DownloadService
         DownloadType = prepared.Protocol.ToString()
     };
 
-    private async Task LogDownloadHistory(Audiobook audiobook, string source, SearchResult result)
-    {
-        try
-        {
-            logger.LogInformation("LogDownloadHistory: audiobook={Title}, source={Source}, result={ResultTitle}", audiobook?.Title, source, result?.Title);
-        }
-        catch (Exception exception) when (exception is not (OperationCanceledException or OutOfMemoryException or StackOverflowException))
-        {
-            System.Diagnostics.Debug.WriteLine("Suppressed non-fatal exception in catch block.");
-        }
-        await Task.CompletedTask;
-    }
-
     public async Task UpdateAsync(Download download)
     {
         var previous = await downloadRepository.GetByIdAsync(download.Id);
