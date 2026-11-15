@@ -155,6 +155,9 @@ snapshots becomes `SourceMissing` with its history retained; choose another rele
 Upgrading from 0.1.42/0.1.43 to 0.1.45: review the one-time monitoring alignment described in
 [release notes](docs/RELEASES.md#edition-monitoring-upgrade).
 
+Upgrading to 0.1.46: back up the config volume first; upgrades are turned off and downloaded books
+stop being monitored. See [0.1.46 behaviour changes](docs/RELEASES.md#0146-behaviour-changes).
+
 ---
 
 ## Features

@@ -48,6 +48,27 @@ before/after flags. It changes audiobook monitoring flags only; ebook monitoring
 and categories stay as configured. Startup seeding remains additive and does not perform this
 alignment automatically.
 
+## 0.1.46 behaviour changes
+
+0.1.46 includes a database migration. Back up the config volume before upgrading; the migration's
+rollback does not restore the settings below.
+
+- **Upgrades off for every edition.** The migration sets `UpgradeAllowed` to off on all existing
+  editions, and new editions default to off. A book that already has files is no longer searched
+  again for a better release. Turn upgrades back on per edition where you want them.
+- **Downloaded books stop being monitored.** "Stop Monitoring Imported Books" (Settings > Search)
+  is now on by default, and the migration turns it on for existing installs. An edition is
+  unmonitored once its import succeeds and it has files. Turn the setting off to keep monitoring.
+- **Unattended grabs are checked against the wanted book.** Automatic and Goodreads grabs refuse
+  releases whose title, author, series number or language do not match, packs and collections,
+  and releases outside the size limits. Manual picks from Interactive Search are unaffected.
+- **Indexer refusals stop the search.** A 429/403/503 or connection failure puts that indexer on an
+  escalating cooldown instead of retrying it every pass. AudioBook Bay is charged per page.
+- **Packs are held at import.** A download that looks like several books is held in Import Blocked;
+  retry it to import as one book, or use Manual Import to place the books separately.
+- **New installs only:** the completed-download action defaults to hardlink-or-copy, and new usenet
+  clients default to removing the job and its files after import. Existing settings are unchanged.
+
 ## Updating a running deployment
 
 ```bash
@@ -59,7 +80,7 @@ curl --fail http://localhost:3018/api/v1/system/info
 
 The published image includes `org.opencontainers.image.version` and
 `org.opencontainers.image.revision`. Compare the revision with System Info to identify the running
-source. Manual image builds can set `--build-arg VERSION=0.1.45 --build-arg VCS_REF=<commit>`.
+source. Manual image builds can set `--build-arg VERSION=0.1.46 --build-arg VCS_REF=<commit>`.
 
 The .NET SDK and Go compiler run natively on the build host and target the requested Docker
 architecture. The final amd64/arm64 runtime image uses the matching target dependencies. This uses

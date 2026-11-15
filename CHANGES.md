@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-11-15 — claude — Release 0.1.46
+
+Why: Josh approved tagging and deploying the relevance, search, import and unmonitor work.
+Before → after: version 0.1.45 → 0.1.46 (csproj, root and fe npm manifests, RELEASES.md build-arg
+example). Added the 0.1.46 behaviour-change notes to `docs/RELEASES.md` and a README pointer, since
+the migration turns upgrades off on every edition and turns unmonitor-after-download on.
+
 ## 2026-11-15 — claude — Unmonitor a book once it is downloaded, by default
 
 Why: Josh wants a downloaded book to stop being monitored without having to set anything.
