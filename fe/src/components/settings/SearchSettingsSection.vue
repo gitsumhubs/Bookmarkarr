@@ -71,7 +71,7 @@
         :modelValue="settings.unmonitorImportedEditions"
         @update:modelValue="updateUnmonitorImportedEditions"
         title="Stop Monitoring Imported Books"
-        description="Unmonitor an edition once it is imported and has a file, so a finished book is no longer searched every six hours. Turns off upgrade searching for anything already imported. Books still waiting on a file keep their monitor."
+        description="On by default. Unmonitor an edition as soon as it is imported and has a file, so a downloaded book is not searched again. Books still waiting on a file keep their monitor. Turn off to keep imported books monitored for upgrades."
       />
     </div>
   </div>

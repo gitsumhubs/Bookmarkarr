@@ -1,5 +1,16 @@
 # Changes
 
+## 2026-11-15 — claude — Unmonitor a book once it is downloaded, by default
+
+Why: Josh wants a downloaded book to stop being monitored without having to set anything.
+Before → after: "Stop Monitoring Imported Books" (Settings > Search, `UnmonitorImportedEditions`)
+was off by default → on. The unreleased migration `AddSearchOutcomeBackoffAndIndexerCooldown` also
+sets it on for existing installs (it arrived off, so "off" is almost always the untouched default).
+An edition is unmonitored as soon as its import succeeds and it has files; one with no files keeps
+its monitor. It can be turned back off in Settings > Search.
+This instance: 0 → 1 when 0.1.46 is deployed (applied to a copy of the live database).
+Validation: 1,664 backend tests passed. Not released or deployed.
+
 ## 2026-11-15 — claude — Hold packs at import, replace upgraded files, stop keeping second copies
 
 Why: review findings 5, 7 and 8. A series pack was filed as one book (676 files renamed to one

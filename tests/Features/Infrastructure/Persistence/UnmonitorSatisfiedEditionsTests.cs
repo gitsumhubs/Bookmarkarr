@@ -27,6 +27,12 @@ namespace Bookmarkarr.Tests.Features.Infrastructure.Persistence
     /// </summary>
     public class UnmonitorSatisfiedEditionsTests : BaseTests
     {
+        [Fact]
+        public void ADownloadedBookIsUnmonitored_ByDefault()
+        {
+            Assert.True(new ApplicationSettings().UnmonitorImportedEditions);
+        }
+
         private async Task<Audiobook> AddBookAsync(string title, params BookEdition[] editions)
         {
             var book = new Audiobook

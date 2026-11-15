@@ -56,6 +56,11 @@ namespace Bookmarkarr.Infrastructure.Persistence.Migrations
             // its profile cutoff was searched again on every pass. It can be set back per edition
             // through the API. Down() does not restore it: which rows were on by choice is unknown.
             migrationBuilder.Sql("UPDATE BookEditions SET UpgradeAllowed = 0;");
+
+            // A downloaded book stops being monitored by default. The setting arrived off, so on an
+            // existing install "off" is almost always the untouched default rather than a choice;
+            // it can be turned back off under Settings > Search.
+            migrationBuilder.Sql("UPDATE ApplicationSettings SET UnmonitorImportedEditions = 1;");
         }
 
         /// <inheritdoc />

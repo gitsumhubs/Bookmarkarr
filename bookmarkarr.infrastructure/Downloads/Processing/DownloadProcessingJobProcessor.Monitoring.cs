@@ -23,7 +23,7 @@ namespace Bookmarkarr.Infrastructure.Downloads.Processing
         /// An edition that keeps its monitor after import keeps being searched every six hours in
         /// the hope of an upgrade, whether or not anyone wants one. That is the *arr default and it
         /// is harmless against a private tracker; against a site that bans for request volume it is
-        /// the entire bill. Opt-in, because it does turn off upgrade searching.
+        /// the entire bill. On unless the operator turns it off.
         ///
         /// The file check matters: an edition marked imported with nothing on disk is a failed
         /// import, and retiring its monitor would strand it with no way back.

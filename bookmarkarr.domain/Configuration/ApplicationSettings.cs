@@ -312,10 +312,10 @@ namespace Bookmarkarr.Domain.Configuration
         /// A monitored edition is searched every six hours whether or not it is wanted, so a
         /// finished library keeps querying indexers forever in the hope of an upgrade. That is the
         /// *arr default and it is defensible on a private tracker; against a site that bans for
-        /// volume it is the whole bill. Off by default, because it does turn off upgrade searching
-        /// for anything already imported — which is the point, but not something to impose.
+        /// volume it is the whole bill. On by default: a downloaded book is done, and upgrade
+        /// searching is opt-in per edition anyway. Turn it off to keep imported books monitored.
         /// </remarks>
-        public bool UnmonitorImportedEditions { get; set; } = false;
+        public bool UnmonitorImportedEditions { get; set; } = true;
 
         /// <summary>
         /// Enable searching Amazon as part of intelligent searches.
