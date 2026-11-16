@@ -105,6 +105,36 @@ namespace Bookmarkarr.Tests.Features.Api.Features.Prowlarr
             Assert.Contains(@"args: ""File Size:\\s*([\\d.]+\\s*[KMGT]B)""", yaml, StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// The site states each post's language, and nothing else in the torznab result carries
+        /// it: without it a German post of an English book reads as an unknown-language match.
+        /// </summary>
+        [Fact]
+        public void Build_CarriesThePostLanguageInTheDescription()
+        {
+            var yaml = AudiobookBayDefinition.Build(3).ReplaceLineEndings("\n");
+
+            Assert.Contains("abblanguage:\n      selector: div.postInfo", yaml, StringComparison.Ordinal);
+            Assert.Contains("abblanguagecontent:\n      selector: div.postContent", yaml, StringComparison.Ordinal);
+            Assert.Contains(@"args: ""Language:\\s*([A-Za-z]+)""", yaml, StringComparison.Ordinal);
+            Assert.Contains(
+                "description:\n      text: \"[{{ .Result.abblanguage }}] [{{ .Result.abblanguagecontent }}]\"",
+                yaml,
+                StringComparison.Ordinal);
+            // An unstated language leaves "[]", which must not reach the description.
+            Assert.Contains(@"args: [""\\[\\]"", """"]", yaml, StringComparison.Ordinal);
+        }
+
+        /// <summary>The description the definition produces is one Bookmarkarr reads a language from.</summary>
+        [Theory]
+        [InlineData("[German] [German]", "German")]
+        [InlineData("[Spanish]", "Spanish")]
+        [InlineData("[English]", "English")]
+        public void TheDescriptionFormat_IsReadAsTheReleaseLanguage(string description, string expected)
+        {
+            Assert.Equal(expected, Bookmarkarr.Domain.Search.ReleaseLanguageDetector.FromText(description));
+        }
+
         [Fact]
         public void Build_ResolvesMagnetsFromTheDetailPageInfoHash()
         {

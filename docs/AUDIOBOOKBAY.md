@@ -123,6 +123,19 @@ available as **Test & save connection** in **Settings → Indexers**.
 Once the patch is applied, importing from Prowlarr skips its compiled AudioBook Bay indexer rather
 than adding the nine-result one back alongside the patched one.
 
+## Language
+
+Each AudioBook Bay post states its language ("Language: German"). Prowlarr's compiled indexer drops
+it, so the patched definition reads it and passes it on in the result description as `[German]`.
+Unattended searches refuse a release in a language other than the book's (or the quality profile's
+preferred languages when the book has none); a post that states no language is not judged.
+
+An installed definition does not update itself. Applying the patch again creates another Prowlarr
+indexer, and Prowlarr tests every new indexer with a search of the site. To update one that is
+already working, replace `Definitions/Custom/audiobookbay.yml` in Prowlarr's config directory with
+the newly generated definition: the existing indexer reads the same file, and Prowlarr reloads it
+without contacting the site.
+
 ## Titles with apostrophes
 
 Prowlarr's AudioBook Bay indexer requests `?s=<terms>&tt=1`, a title-only search matching whole

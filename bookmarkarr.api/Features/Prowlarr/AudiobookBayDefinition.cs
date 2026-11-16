@@ -207,6 +207,30 @@ namespace Bookmarkarr.Api.Features.Prowlarr
                       filters:
                         - name: re_replace
                           args: ["\\s*\\[\\]$", ""]
+                    # The post's own "Language: German" line. Neither the compiled indexer nor a
+                    # torznab attribute carries it, so it travels in the description as "[German]",
+                    # where Bookmarkarr's language reader takes a bracketed language name. The post
+                    # info block is where the site writes it; the content block is a fallback.
+                    abblanguage:
+                      selector: div.postInfo
+                      optional: true
+                      default: ""
+                      filters:
+                        - name: regexp
+                          args: "Language:\\s*([A-Za-z]+)"
+                    abblanguagecontent:
+                      selector: div.postContent
+                      optional: true
+                      default: ""
+                      filters:
+                        - name: regexp
+                          args: "Language:\\s*([A-Za-z]+)"
+                    description:
+                      text: "[{{ .Result.abblanguage }}] [{{ .Result.abblanguagecontent }}]"
+                      filters:
+                        - name: re_replace
+                          args: ["\\[\\]", ""]
+                        - name: trim
                     details:
                       selector: div.postTitle a
                       attribute: href

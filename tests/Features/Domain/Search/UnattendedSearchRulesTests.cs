@@ -41,6 +41,32 @@ namespace Bookmarkarr.Tests.Features.Domain.Search
         }
 
         [Theory]
+        [InlineData("German", "The Name of the Wind", null, false)]                           // the indexer says German
+        [InlineData(null, "The Name of the Wind [German]", null, false)]                      // ABB's line, carried in brackets
+        [InlineData(null, "Der Name des Windes (DE)", null, false)]
+        [InlineData("English", "The Name of the Wind", null, true)]
+        [InlineData(null, "The Name of the Wind - Patrick Rothfuss [M4B]", null, true)]       // says nothing: not judged
+        [InlineData(null, "Discount Dan - Cul-de-Sac Carnage [M4B]", null, true)]             // "de" in a word is not German
+        [InlineData("German", "Der Name des Windes", "german", true)]                          // the book itself is German
+        [InlineData("Italian", "Il nome del vento", "english", false)]
+        public void LanguageGuard_RefusesOnlyAStatedOtherLanguage(string? releaseLanguage, string title, string? bookLanguage, bool allowed)
+        {
+            Assert.Equal(allowed, ReleaseLanguageGuard.Check(releaseLanguage, title, bookLanguage, ["English"]) == null);
+        }
+
+        [Fact]
+        public void LanguageGuard_WithNoWantedLanguage_JudgesNothing()
+        {
+            Assert.Null(ReleaseLanguageGuard.Check("German", "Title", null, []));
+        }
+
+        [Fact]
+        public void LanguageGuard_SaysWhichLanguagesWereWanted()
+        {
+            Assert.Equal("in German, not English", ReleaseLanguageGuard.Check("German", "Title", null, ["English"]));
+        }
+
+        [Theory]
         [InlineData(1, 6)]
         [InlineData(2, 12)]
         [InlineData(3, 24)]

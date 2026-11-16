@@ -60,8 +60,9 @@ rollback does not restore the settings below.
   is now on by default, and the migration turns it on for existing installs. An edition is
   unmonitored once its import succeeds and it has files. Turn the setting off to keep monitoring.
 - **Unattended grabs are checked against the wanted book.** Automatic and Goodreads grabs refuse
-  releases whose title, author, series number or language do not match, packs and collections,
-  and releases outside the size limits. Manual picks from Interactive Search are unaffected.
+  releases whose title, author or series number do not match, packs and collections, and
+  releases outside the size limits. Manual picks from Interactive Search are unaffected. Release
+  language is still only a scoring penalty in 0.1.46.
 - **Indexer refusals stop the search.** A 429/403/503 or connection failure puts that indexer on an
   escalating cooldown instead of retrying it every pass. AudioBook Bay is charged per page.
 - **Packs are held at import.** A download that looks like several books is held in Import Blocked;

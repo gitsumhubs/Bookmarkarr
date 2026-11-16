@@ -50,6 +50,13 @@ namespace Bookmarkarr.Application.Search.Scoring
                     continue;
                 }
 
+                var language = ReleaseLanguageGuard.Check(release.Language, release.Title, book.Language, profile.PreferredLanguages);
+                if (language != null)
+                {
+                    refused.Add(new ReleaseRefusal(release.Title, ReleaseRejection.DifferentLanguage, language));
+                    continue;
+                }
+
                 var size = ReleaseSizeGuard.Check(release.Size, ebook, profile.MaximumSize);
                 if (size != null)
                 {
@@ -79,6 +86,7 @@ namespace Bookmarkarr.Application.Search.Scoring
             ReleaseRejection.AuthorUnconfirmed => "with no author to confirm it",
             ReleaseRejection.MultiBookPack => "several books in one",
             ReleaseRejection.PartialRelease => "only part of the book",
+            ReleaseRejection.DifferentLanguage => "in another language",
             _ => "the wrong size"
         };
     }

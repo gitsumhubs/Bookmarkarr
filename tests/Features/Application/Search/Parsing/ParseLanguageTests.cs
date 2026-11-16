@@ -65,6 +65,27 @@ namespace Bookmarkarr.Tests.Features.Application.Search.Parsing
             Assert.Equal(expected, SearchResultAttributeParser.ParseLanguageFromText(input));
         }
 
+        // AudioBook Bay's own language line reaches the description as "[Italian]".
+        [Theory]
+        [InlineData("[Italian]", "Italian")]
+        [InlineData("[Russian]", "Russian")]
+        [InlineData("[Swedish] [Swedish]", "Swedish")]
+        [InlineData("[Portuguese]", "Portuguese")]
+        public void ParseLanguageFromText_ReadsBracketedLanguageNames(string input, string expected)
+        {
+            Assert.Equal(expected, SearchResultAttributeParser.ParseLanguageFromText(input));
+        }
+
+        // Outside brackets these names stay words: "The Russian Concubine" is an English book.
+        [Theory]
+        [InlineData("The.Russian.Concubine.2007.MP3")]
+        [InlineData("The Italian Job - Some Author")]
+        [InlineData("Spit and Polish [M4B]")]
+        public void LanguageNamesOutsideBrackets_AreNotTags(string title)
+        {
+            Assert.Null(ReleaseLanguageDetector.FromUsenetReleaseName(title, null));
+        }
+
         // A language field holds nothing but the language, so its case carries no meaning.
         [Theory]
         [InlineData("en", "English")]

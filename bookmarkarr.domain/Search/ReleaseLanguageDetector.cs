@@ -50,7 +50,13 @@ namespace Bookmarkarr.Domain.Search
             { "German", "German" }, { "Deutsch", "German" },
             { "French", "French" },
             { "Dutch", "Dutch" },
-            { "Spanish", "Spanish" }
+            { "Spanish", "Spanish" },
+            // Read only inside brackets, where AudioBook Bay's "Language:" line arrives as
+            // "[Italian]". Not in the usenet whole-word pattern, and words that are also ordinary
+            // English ("Polish", "Chinese") are left out so a bracketed title cannot trip them.
+            { "Italian", "Italian" }, { "Portuguese", "Portuguese" }, { "Russian", "Russian" },
+            { "Swedish", "Swedish" }, { "Norwegian", "Norwegian" }, { "Danish", "Danish" },
+            { "Finnish", "Finnish" }, { "Czech", "Czech" }, { "Hungarian", "Hungarian" }, { "Hindi", "Hindi" }
         };
 
         /// <summary>

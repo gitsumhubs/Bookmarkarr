@@ -28,7 +28,8 @@ namespace Bookmarkarr.Domain.Search
         DifferentAuthor,
         AuthorUnconfirmed,
         MultiBookPack,
-        PartialRelease
+        PartialRelease,
+        DifferentLanguage
     }
 
     public sealed record ReleaseRelevanceVerdict(bool IsRelevant, ReleaseRejection Rejection, string Detail)

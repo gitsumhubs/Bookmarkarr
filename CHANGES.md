@@ -1,11 +1,28 @@
 # Changes
 
+## 2026-11-15 — claude — Refuse a release in another language when nobody is watching
+
+Why: open item from the 0.1.46 release; a German or Swedish release of the right title could be
+grabbed unattended, and AudioBook Bay results carried no language at all.
+Before → after:
+- A stated language that differed from the wanted one cost 15 points → an unattended search
+  refuses it ("in another language"). Manual picks are unchanged; a release stating no language is
+  not judged.
+- The patched AudioBook Bay definition dropped the post's "Language:" line → it passes it on in
+  the description as "[German]". Takes effect when the patch is re-applied.
+- Bracketed language names known: 5 → 15 (Italian, Portuguese, Russian, Swedish, Norwegian,
+  Danish, Finnish, Czech, Hungarian, Hindi). Usenet whole-word guessing is unchanged.
+- 0.1.46 notes (`docs/RELEASES.md`) said unattended grabs refuse a language mismatch → corrected:
+  in 0.1.46 language is only a scoring penalty.
+Validation: 1,685 backend tests passed. Not released.
+
 ## 2026-11-15 — claude — Release 0.1.46
 
 Why: Josh approved tagging and deploying the relevance, search, import and unmonitor work.
 Before → after: version 0.1.45 → 0.1.46 (csproj, root and fe npm manifests, RELEASES.md build-arg
 example). Added the 0.1.46 behaviour-change notes to `docs/RELEASES.md` and a README pointer, since
 the migration turns upgrades off on every edition and turns unmonitor-after-download on.
+Published: tag v0.1.46, GHCR image built (multi-architecture) and deployed here; see RECREATE.md.
 
 ## 2026-11-15 — claude — Unmonitor a book once it is downloaded, by default
 
@@ -15,8 +32,8 @@ was off by default → on. The unreleased migration `AddSearchOutcomeBackoffAndI
 sets it on for existing installs (it arrived off, so "off" is almost always the untouched default).
 An edition is unmonitored as soon as its import succeeds and it has files; one with no files keeps
 its monitor. It can be turned back off in Settings > Search.
-This instance: 0 → 1 when 0.1.46 is deployed (applied to a copy of the live database).
-Validation: 1,664 backend tests passed. Not released or deployed.
+This instance: 0 → 1, applied by the 0.1.46 deployment on 2026-11-15.
+Validation: 1,664 backend tests passed. Released and deployed in 0.1.46.
 
 ## 2026-11-15 — claude — Hold packs at import, replace upgraded files, stop keeping second copies
 
